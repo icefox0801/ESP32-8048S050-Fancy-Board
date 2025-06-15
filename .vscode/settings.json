@@ -1,0 +1,53 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPathWin": "C:\\Users\\icefo\\esp\\v5.4.1\\esp-idf",
+  "idf.pythonInstallPath": "C:\\Users\\icefo\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+  "idf.openOcdConfigs": [
+    "board/esp32s3-builtin.cfg"
+  ],
+  "idf.portWin": "COM3",
+  "idf.toolsPathWin": "C:\\Users\\icefo\\.espressif",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3"
+  },
+  "idf.flashType": "UART",
+  "files.associations": {
+    "sdkconfig": "ini",
+    "sdkconfig.*": "ini"
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.formatOnSave": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "[c]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[cpp]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[cmake]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[json]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[jsonc]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[yaml]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[markdown]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  }
+}

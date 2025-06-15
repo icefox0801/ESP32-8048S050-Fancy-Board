@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "espressif.esp-idf-extension",
+    "ms-vscode.cpptools",
+    "ms-vscode.cpptools-extension-pack",
+    "ms-vscode.cmake-tools",
+    "twxs.cmake",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "eamodio.gitlens",
+    "ms-vscode.hexeditor",
+    "ms-vscode.vscode-serial-monitor"
+  ]
+}
