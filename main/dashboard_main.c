@@ -1,5 +1,6 @@
 #include "lvgl/lvgl_setup.h"
-#include "lvgl/simple_ui.h"
+#include "lvgl/system_monitor_ui.h"
+#include "lvgl/serial_data_handler.h"
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -10,7 +11,7 @@ static const char *TAG = "dashboard";
 
 void app_main(void)
 {
-  ESP_LOGI(TAG, "Dashboard main started!");
+  ESP_LOGI(TAG, "System Monitor Dashboard started!");
 
   // Initialize and turn off LCD backlight
   lvgl_setup_init_backlight();
@@ -28,13 +29,21 @@ void app_main(void)
   // Start LVGL task
   lvgl_setup_start_task();
 
-  // Create simple UI with thread safety and logging
-  lvgl_setup_create_ui_safe(display, simple_ui_create);
+  // Create system monitor UI with thread safety and logging
+  lvgl_setup_create_ui_safe(display, system_monitor_ui_create);
+
+  // Initialize serial data handler
+  ESP_ERROR_CHECK(serial_data_init());
+
+  // Start receiving serial data
+  serial_data_start_task();
+
+  ESP_LOGI(TAG, "System monitor initialized, waiting for JSON data...");
 
   // Main loop - dashboard can do other tasks here
   while (1)
   {
-    ESP_LOGI(TAG, "Dashboard running...");
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    ESP_LOGI(TAG, "System monitor running... (waiting for serial JSON data)");
+    vTaskDelay(10000 / portTICK_PERIOD_MS); // Check every 10 seconds
   }
 }
