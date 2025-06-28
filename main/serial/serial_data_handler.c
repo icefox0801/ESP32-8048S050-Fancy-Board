@@ -239,6 +239,7 @@ static void serial_data_task(void *pvParameters)
   static char buffer[BUF_SIZE];
   static char json_buffer[JSON_BUFFER_SIZE];
   static int json_buffer_pos = 0;
+  static bool connection_status = false; // Track connection status
 
   system_data_t system_data = {0};
   uint32_t current_time;
@@ -250,6 +251,8 @@ static void serial_data_task(void *pvParameters)
     // Read data from UART
     int len = uart_read_bytes(UART_PORT_NUM, buffer, BUF_SIZE - 1,
                               pdMS_TO_TICKS(100));
+
+    current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
     current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
@@ -278,7 +281,13 @@ static void serial_data_task(void *pvParameters)
         if (parse_json_data(json_buffer, &system_data))
         {
           system_monitor_ui_update(&system_data);
-          system_monitor_ui_set_connection_status(true);
+
+          // Only update connection status if it changed
+          if (!connection_status)
+          {
+            connection_status = true;
+            system_monitor_ui_set_connection_status(true);
+          }
         }
         else
         {
@@ -313,8 +322,14 @@ static void serial_data_task(void *pvParameters)
       if (!timeout_logged)
       {
         ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
-        system_monitor_ui_set_connection_status(false);
         timeout_logged = true;
+      }
+
+      // Only update connection status if it changed
+      if (connection_status)
+      {
+        connection_status = false;
+        system_monitor_ui_set_connection_status(false);
       }
     }
     else
@@ -355,6 +370,9 @@ void serial_data_start_task(void)
   {
     serial_running = true;
     last_data_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    // Initialize connection status as disconnected
+    system_monitor_ui_set_connection_status(false);
 
     xTaskCreate(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
                 NULL, SERIAL_TASK_PRIORITY, &serial_task_handle);
