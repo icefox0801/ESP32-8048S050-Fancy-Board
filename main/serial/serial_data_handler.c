@@ -5,8 +5,9 @@
  * Provides UART communication and JSON parsing functionality for real-time
  * system monitoring data. Handles connection timeout detection and data
  * validation for reliable operation.
- *
- * @author ESP32 System Monitor
+ *      }
+
+      // Prevent buffer overflow32 System Monitor
  * @version 1.0
  * @date 2024
  */
@@ -68,6 +69,34 @@ static uint32_t connection_timeout_ms = 5000;  ///< Connection timeout (5 second
  * @param data Output system data structure
  * @return true if parsing successful, false otherwise
  */
+static bool parse_json_data(const char *json_str, system_data_t *data);
+
+/**
+ * @brief Process a complete line of received data
+ * @param line_buffer The line buffer containing the data
+ * @param system_data System data structure to update
+ */
+static void process_received_line(const char *line_buffer, system_data_t *system_data);
+
+/**
+ * @brief Add a byte to the line buffer and handle line completion
+ * @param byte The byte to add
+ * @param line_buffer The line buffer
+ * @param line_pos Pointer to the current line position
+ * @param system_data System data structure to update
+ * @return true if a complete line was processed, false otherwise
+ */
+static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos, system_data_t *system_data);
+
+/**
+ * @brief Check for connection timeout and update UI status
+ * @param current_time Current timestamp
+ */
+static void check_connection_timeout(uint32_t current_time);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PRIVATE FUNCTION IMPLEMENTATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
 static bool parse_json_data(const char *json_str, system_data_t *data)
 {
   cJSON *json = cJSON_Parse(json_str);
@@ -181,54 +210,86 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
 }
 
 /**
- * @brief Find complete JSON string in buffer
+ * @brief Process a complete line of received data
  */
-static int find_json_end(const char *buffer, int len)
+static void process_received_line(const char *line_buffer, system_data_t *system_data)
 {
-  int brace_count = 0;
-  bool in_string = false;
-  bool escape_next = false;
-
-  for (int i = 0; i < len; i++)
+  // Skip empty lines and non-JSON data
+  if (line_buffer[0] == '{')
   {
-    char c = buffer[i];
+    ESP_LOGI(TAG, "Received JSON: %s", line_buffer);
 
-    if (escape_next)
+    // Parse and update UI
+    if (parse_json_data(line_buffer, system_data))
     {
-      escape_next = false;
-      continue;
+      system_monitor_ui_update(system_data);
+      system_monitor_ui_set_connection_status(true);
+      ESP_LOGI(TAG, "Successfully parsed and updated system data");
     }
-
-    if (c == '\\' && in_string)
+    else
     {
-      escape_next = true;
-      continue;
-    }
-
-    if (c == '"' && !escape_next)
-    {
-      in_string = !in_string;
-      continue;
-    }
-
-    if (!in_string)
-    {
-      if (c == '{')
-      {
-        brace_count++;
-      }
-      else if (c == '}')
-      {
-        brace_count--;
-        if (brace_count == 0)
-        {
-          return i + 1; // Return position after closing brace
-        }
-      }
+      ESP_LOGW(TAG, "Failed to parse JSON data");
     }
   }
+  else
+  {
+    // Log non-JSON debug messages from sender
+    ESP_LOGI(TAG, "[SENDER DEBUG] %s", line_buffer);
+  }
+}
 
-  return -1; // Complete JSON not found
+/**
+ * @brief Add a byte to the line buffer and handle line completion
+ */
+static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos, system_data_t *system_data)
+{
+  // Check for end of line
+  if (byte == '\n' || byte == '\r')
+  {
+    // Process line if we have data
+    if (*line_pos > 0)
+    {
+      line_buffer[*line_pos] = '\0';
+      process_received_line(line_buffer, system_data);
+      *line_pos = 0; // Reset for next line
+      return true;
+    }
+  }
+  else if (*line_pos < JSON_BUFFER_SIZE - 1)
+  {
+    // Add character to line buffer
+    line_buffer[(*line_pos)++] = byte;
+  }
+  else
+  {
+    // Line too long, reset buffer
+    ESP_LOGW(TAG, "Line buffer overflow, resetting");
+    *line_pos = 0;
+  }
+
+  return false;
+}
+
+/**
+ * @brief Check for connection timeout and update UI status
+ */
+static void check_connection_timeout(uint32_t current_time)
+{
+  if (current_time - last_data_time > connection_timeout_ms)
+  {
+    static bool timeout_logged = false;
+    if (!timeout_logged)
+    {
+      ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
+      system_monitor_ui_set_connection_status(false);
+      timeout_logged = true;
+    }
+  }
+  else
+  {
+    static bool timeout_logged = false;
+    timeout_logged = false;
+  }
 }
 
 /**
@@ -236,10 +297,8 @@ static int find_json_end(const char *buffer, int len)
  */
 static void serial_data_task(void *pvParameters)
 {
-  static char buffer[BUF_SIZE];
-  static char json_buffer[JSON_BUFFER_SIZE];
-  static int json_buffer_pos = 0;
-  static bool connection_status = false; // Track connection status
+  static char line_buffer[JSON_BUFFER_SIZE];
+  static int line_pos = 0;
 
   system_data_t system_data = {0};
   uint32_t current_time;
@@ -248,94 +307,20 @@ static void serial_data_task(void *pvParameters)
 
   while (serial_running)
   {
-    // Read data from UART
-    int len = uart_read_bytes(UART_PORT_NUM, buffer, BUF_SIZE - 1,
-                              pdMS_TO_TICKS(100));
-
-    current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    // Read one byte at a time to detect newline
+    uint8_t byte;
+    int len = uart_read_bytes(UART_PORT_NUM, &byte, 1, pdMS_TO_TICKS(100));
 
     current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
     if (len > 0)
     {
-      buffer[len] = '\0';
       last_data_time = current_time;
-
-      // Add received data to JSON buffer
-      for (int i = 0; i < len && json_buffer_pos < JSON_BUFFER_SIZE - 1; i++)
-      {
-        json_buffer[json_buffer_pos++] = buffer[i];
-      }
-      json_buffer[json_buffer_pos] = '\0';
-
-      // Look for complete JSON object
-      int json_end = find_json_end(json_buffer, json_buffer_pos);
-      if (json_end > 0)
-      {
-        // Null-terminate the JSON string
-        json_buffer[json_end] = '\0';
-
-        ESP_LOGI(TAG, "Received JSON: %s", json_buffer);
-
-        // Parse and update UI
-        if (parse_json_data(json_buffer, &system_data))
-        {
-          system_monitor_ui_update(&system_data);
-
-          // Only update connection status if it changed
-          if (!connection_status)
-          {
-            connection_status = true;
-            system_monitor_ui_set_connection_status(true);
-          }
-        }
-        else
-        {
-          ESP_LOGW(TAG, "Failed to parse JSON data");
-        }
-
-        // Remove processed JSON from buffer
-        if (json_end < json_buffer_pos)
-        {
-          memmove(json_buffer, json_buffer + json_end,
-                  json_buffer_pos - json_end);
-          json_buffer_pos -= json_end;
-        }
-        else
-        {
-          json_buffer_pos = 0;
-        }
-      }
-
-      // Prevent buffer overflow
-      if (json_buffer_pos >= JSON_BUFFER_SIZE - 100)
-      {
-        ESP_LOGW(TAG, "JSON buffer overflow, clearing");
-        json_buffer_pos = 0;
-      }
+      handle_incoming_byte(byte, line_buffer, &line_pos, &system_data);
     }
 
     // Check for connection timeout
-    static bool timeout_logged = false;
-    if (current_time - last_data_time > connection_timeout_ms)
-    {
-      if (!timeout_logged)
-      {
-        ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
-        timeout_logged = true;
-      }
-
-      // Only update connection status if it changed
-      if (connection_status)
-      {
-        connection_status = false;
-        system_monitor_ui_set_connection_status(false);
-      }
-    }
-    else
-    {
-      timeout_logged = false;
-    }
+    check_connection_timeout(current_time);
 
     vTaskDelay(pdMS_TO_TICKS(10)); // Small delay to prevent CPU hogging
   }
@@ -370,9 +355,6 @@ void serial_data_start_task(void)
   {
     serial_running = true;
     last_data_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
-
-    // Initialize connection status as disconnected
-    system_monitor_ui_set_connection_status(false);
 
     xTaskCreate(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
                 NULL, SERIAL_TASK_PRIORITY, &serial_task_handle);

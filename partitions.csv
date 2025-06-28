@@ -1,19 +1,24 @@
+# =============================================================================
 # ESP32-S3-8048S050 Partition Table for 16MB Flash
-# Based on Arduino default_16MB.csv with optimizations for LVGL graphics applications
+# =============================================================================
+# Based on Arduino default_16MB.csv with optimizations for LVGL graphics
 # Compatible with OTA updates and large graphics assets
 #
-# Partition Layout Summary:
-# - NVS:       20KB  (Non-volatile storage for WiFi, settings)
-# - OTA Data:   8KB  (OTA selection data)
-# - App0:    6.25MB  (Primary application partition)
-# - App1:    6.25MB  (Secondary application for OTA)
-# - SPIFFS:  3.375MB (File system for assets, fonts, config files)
-# - CoreDump: 64KB  (Crash dump storage for debugging)
+# Partition Layout:
+# - NVS:         20 KB  - Non-volatile storage for WiFi, settings
+# - OTA Data:     8 KB  - OTA selection data
+# - App0:      6.25 MB  - Primary application partition
+# - App1:      6.25 MB  - Secondary application for OTA
+# - SPIFFS:    3.38 MB  - File system for assets, fonts, config files
+# - CoreDump:    64 KB  - Crash dump storage for debugging
 #
-# Name,     Type, SubType, Offset,   Size,     Flags
-nvs,        data, nvs,     0x9000,   0x5000,
-otadata,    data, ota,     0xe000,   0x2000,
-app0,       app,  ota_0,   0x10000,  0x640000,
-app1,       app,  ota_1,   0x650000, 0x640000,
-spiffs,     data, spiffs,  0xc90000, 0x360000,
-coredump,   data, coredump,0xFF0000, 0x10000,
+# Total Flash Usage: ~16 MB
+# =============================================================================
+
+# Name,       Type,  SubType,  Offset,    Size,       Flags
+nvs,          data,  nvs,      0x9000,    0x5000,
+otadata,      data,  ota,      0xe000,    0x2000,
+app0,         app,   ota_0,    0x10000,   0x640000,
+app1,         app,   ota_1,    0x650000,  0x640000,
+spiffs,       data,  spiffs,   0xc90000,  0x360000,
+coredump,     data,  coredump, 0xFF0000,  0x10000,

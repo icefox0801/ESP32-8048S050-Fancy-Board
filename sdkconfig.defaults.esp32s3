@@ -13,6 +13,10 @@ CONFIG_SPIRAM_SPEED_80M=y
 # Enable XIP from PSRAM for better LCD performance when frame buffer is in PSRAM
 CONFIG_SPIRAM_XIP_FROM_PSRAM=y
 
+# Allow frame buffers to be allocated in PSRAM
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384
+
 # ----------------------------------------------------------
 # LCD & LVGL Configuration
 # ----------------------------------------------------------
