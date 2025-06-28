@@ -42,6 +42,7 @@ typedef struct
   {
     uint8_t usage; ///< CPU usage percentage (0-100)
     uint8_t temp;  ///< CPU temperature in Celsius
+    uint16_t fan;  ///< CPU fan speed in RPM
     char name[32]; ///< CPU name/model string
   } cpu;
 
@@ -86,3 +87,9 @@ void system_monitor_ui_update(const system_data_t *data);
  * @param connected True if receiving data, false if connection lost
  */
 void system_monitor_ui_set_connection_status(bool connected);
+
+/**
+ * @brief Update clock display with current time
+ * @note Call this function regularly (e.g., every second) to keep clock current
+ */
+void system_monitor_ui_update_clock(void);

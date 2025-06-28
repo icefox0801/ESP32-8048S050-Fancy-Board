@@ -126,6 +126,7 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
   {
     cJSON *cpu_usage = cJSON_GetObjectItem(cpu, "usage");
     cJSON *cpu_temp = cJSON_GetObjectItem(cpu, "temp");
+    cJSON *cpu_fan = cJSON_GetObjectItem(cpu, "fan");
     cJSON *cpu_name = cJSON_GetObjectItem(cpu, "name");
 
     if (cJSON_IsNumber(cpu_usage))
@@ -135,6 +136,10 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
     if (cJSON_IsNumber(cpu_temp))
     {
       data->cpu.temp = (uint8_t)cJSON_GetNumberValue(cpu_temp);
+    }
+    if (cJSON_IsNumber(cpu_fan))
+    {
+      data->cpu.fan = (uint16_t)cJSON_GetNumberValue(cpu_fan);
     }
     if (cJSON_IsString(cpu_name))
     {
@@ -275,9 +280,10 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
  */
 static void check_connection_timeout(uint32_t current_time)
 {
+  static bool timeout_logged = false;
+
   if (current_time - last_data_time > connection_timeout_ms)
   {
-    static bool timeout_logged = false;
     if (!timeout_logged)
     {
       ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
@@ -287,7 +293,7 @@ static void check_connection_timeout(uint32_t current_time)
   }
   else
   {
-    static bool timeout_logged = false;
+    // Reset timeout flag when data is received
     timeout_logged = false;
   }
 }
