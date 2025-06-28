@@ -1,11 +1,11 @@
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================================
 # ESP32-S3-8048S050 Development Board Configuration
 # 5.0" 800x480 RGB LCD Display with 16MB Flash & 8MB PSRAM
-# ═══════════════════════════════════════════════════════════════════════════════
+# ==========================================================
 
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 # PSRAM Configuration
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
@@ -13,18 +13,18 @@ CONFIG_SPIRAM_SPEED_80M=y
 # Enable XIP from PSRAM for better LCD performance when frame buffer is in PSRAM
 CONFIG_SPIRAM_XIP_FROM_PSRAM=y
 
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 # LCD & LVGL Configuration
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 # LCD_CAM peripheral supports up to 16 data lines
 CONFIG_EXAMPLE_LCD_DATA_LINES_16=y
 
 # LVGL 16-bit color depth for RGB565 format
 CONFIG_LV_COLOR_DEPTH_16=y
 
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 # RGB LCD GPIO Pin Assignment (ESP32-S3-8048S050)
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 
 # LCD Control Signals
 CONFIG_EXAMPLE_LCD_VSYNC_GPIO=41    # Vertical Sync
@@ -32,14 +32,14 @@ CONFIG_EXAMPLE_LCD_HSYNC_GPIO=39    # Horizontal Sync
 CONFIG_EXAMPLE_LCD_DE_GPIO=40       # Data Enable
 CONFIG_EXAMPLE_LCD_PCLK_GPIO=42     # Pixel Clock
 
-# Blue Channel Data Lines (B3:B7 → DATA0:DATA4)
+# Blue Channel Data Lines (B3:B7 -> DATA0:DATA4)
 CONFIG_EXAMPLE_LCD_DATA0_GPIO=8     # Blue Bit 3
 CONFIG_EXAMPLE_LCD_DATA1_GPIO=3     # Blue Bit 4
 CONFIG_EXAMPLE_LCD_DATA2_GPIO=46    # Blue Bit 5
 CONFIG_EXAMPLE_LCD_DATA3_GPIO=9     # Blue Bit 6
 CONFIG_EXAMPLE_LCD_DATA4_GPIO=1     # Blue Bit 7
 
-# Green Channel Data Lines (G2:G7 → DATA5:DATA10)
+# Green Channel Data Lines (G2:G7 -> DATA5:DATA10)
 CONFIG_EXAMPLE_LCD_DATA5_GPIO=5     # Green Bit 2
 CONFIG_EXAMPLE_LCD_DATA6_GPIO=6     # Green Bit 3
 CONFIG_EXAMPLE_LCD_DATA7_GPIO=7     # Green Bit 4
@@ -47,16 +47,16 @@ CONFIG_EXAMPLE_LCD_DATA8_GPIO=15    # Green Bit 5
 CONFIG_EXAMPLE_LCD_DATA9_GPIO=16    # Green Bit 6
 CONFIG_EXAMPLE_LCD_DATA10_GPIO=4    # Green Bit 7
 
-# Red Channel Data Lines (R3:R7 → DATA11:DATA15)
+# Red Channel Data Lines (R3:R7 -> DATA11:DATA15)
 CONFIG_EXAMPLE_LCD_DATA11_GPIO=45   # Red Bit 3
 CONFIG_EXAMPLE_LCD_DATA12_GPIO=48   # Red Bit 4
 CONFIG_EXAMPLE_LCD_DATA13_GPIO=47   # Red Bit 5
 CONFIG_EXAMPLE_LCD_DATA14_GPIO=21   # Red Bit 6
 CONFIG_EXAMPLE_LCD_DATA15_GPIO=14   # Red Bit 7
 
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 # Flash Memory Configuration
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 CONFIG_ESPTOOLPY_FLASH_MODE_AUTO_DETECT=y
 CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
 CONFIG_ESPTOOLPY_FLASHMODE="dio"
@@ -74,9 +74,9 @@ CONFIG_ESPTOOLPY_AFTER="hard_reset"
 # Serial Monitor Configuration
 CONFIG_ESPTOOLPY_MONITOR_BAUD=115200
 
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 # Custom Partition Table Configuration
-# ───────────────────────────────────────────────────────────────────────────────
+# ----------------------------------------------------------
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
