@@ -46,82 +46,102 @@ menu "Example Configuration"
     menu "GPIO assignment"
         config EXAMPLE_LCD_VSYNC_GPIO
             int "VSYNC GPIO"
+            default 41
             help
                 GPIO pin number for VSYNC signal.
         config EXAMPLE_LCD_HSYNC_GPIO
             int "HSYNC GPIO"
+            default 39
             help
                 GPIO pin number for HSYNC signal.
         config EXAMPLE_LCD_DE_GPIO
             int "DE GPIO"
+            default 40
             help
                 GPIO pin number for DE signal.
         config EXAMPLE_LCD_PCLK_GPIO
             int "PCLK GPIO"
+            default 42
             help
                 GPIO pin number for PCLK signal.
         config EXAMPLE_LCD_DATA0_GPIO
             int "DATA0 GPIO"
+            default 8
             help
                 GPIO pin number for data bus[0].
         config EXAMPLE_LCD_DATA1_GPIO
             int "DATA1 GPIO"
+            default 3
             help
                 GPIO pin number for data bus[1].
         config EXAMPLE_LCD_DATA2_GPIO
             int "DATA2 GPIO"
+            default 46
             help
                 GPIO pin number for data bus[2].
         config EXAMPLE_LCD_DATA3_GPIO
             int "DATA3 GPIO"
+            default 9
             help
                 GPIO pin number for data bus[3].
         config EXAMPLE_LCD_DATA4_GPIO
             int "DATA4 GPIO"
+            default 1
             help
                 GPIO pin number for data bus[4].
         config EXAMPLE_LCD_DATA5_GPIO
             int "DATA5 GPIO"
+            default 5
             help
                 GPIO pin number for data bus[5].
         config EXAMPLE_LCD_DATA6_GPIO
             int "DATA6 GPIO"
+            default 6
             help
                 GPIO pin number for data bus[6].
         config EXAMPLE_LCD_DATA7_GPIO
             int "DATA7 GPIO"
+            default 7
             help
                 GPIO pin number for data bus[7].
         config EXAMPLE_LCD_DATA8_GPIO
             int "DATA8 GPIO"
+            default 15
             help
                 GPIO pin number for data bus[8].
         config EXAMPLE_LCD_DATA9_GPIO
             int "DATA9 GPIO"
+            default 16
             help
                 GPIO pin number for data bus[9].
         config EXAMPLE_LCD_DATA10_GPIO
             int "DATA10 GPIO"
+            default 4
             help
                 GPIO pin number for data bus[10].
         config EXAMPLE_LCD_DATA11_GPIO
             int "DATA11 GPIO"
+            default 45
             help
                 GPIO pin number for data bus[11].
         config EXAMPLE_LCD_DATA12_GPIO
             int "DATA12 GPIO"
+            default 48
             help
                 GPIO pin number for data bus[12].
         config EXAMPLE_LCD_DATA13_GPIO
             int "DATA13 GPIO"
+            default 47
             help
                 GPIO pin number for data bus[13].
         config EXAMPLE_LCD_DATA14_GPIO
             int "DATA14 GPIO"
+            default 21
             help
                 GPIO pin number for data bus[14].
         config EXAMPLE_LCD_DATA15_GPIO
             int "DATA15 GPIO"
+            default 14
             help
                 GPIO pin number for data bus[15].
         config EXAMPLE_LCD_DATA16_GPIO
