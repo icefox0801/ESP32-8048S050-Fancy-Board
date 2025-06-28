@@ -307,9 +307,9 @@ static void serial_data_task(void *pvParameters)
     }
 
     // Check for connection timeout
+    static bool timeout_logged = false;
     if (current_time - last_data_time > connection_timeout_ms)
     {
-      static bool timeout_logged = false;
       if (!timeout_logged)
       {
         ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
@@ -319,7 +319,6 @@ static void serial_data_task(void *pvParameters)
     }
     else
     {
-      static bool timeout_logged = false;
       timeout_logged = false;
     }
 

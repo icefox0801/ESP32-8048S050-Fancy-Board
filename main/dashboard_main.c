@@ -1,6 +1,6 @@
 #include "lvgl/lvgl_setup.h"
 #include "lvgl/system_monitor_ui.h"
-#include "lvgl/serial_data_handler.h"
+#include "serial/serial_data_handler.h"
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
