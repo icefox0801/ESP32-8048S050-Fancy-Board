@@ -1,5 +1,17 @@
 # Claude AI Assistant - Project Documentation
 
+
+## Project Overview
+- **Project Type**: ESP-IDF RGB LCD Panel Example
+- **Target Hardware**: ESP32-S3 (ESP32-8048S050)
+- **Display**: 5" IPS LCD with capacitive touch
+- **Display Driver**: ST7262
+- **LCD Interface**: RGB (16-bit data lines)
+- **Graphics Library**: LVGL
+- **Display Resolution**: 800x480
+- **Touch Interface**: I2C (GT911 capacitive touch controller)
+- **Date**: August 13, 2025
+
 ## Hardware Configuration
 ESP32-8048S050 standard GPIO assignments:
 ```
@@ -101,17 +113,6 @@ feat(auth): 🔑 add JWT login flow
 - Implemented JWT token validation logic
 - Added documentation for the validation component
 ```
-
-## Project Overview
-- **Project Type**: ESP-IDF RGB LCD Panel Example
-- **Target Hardware**: ESP32-S3 (ESP32-8048S050)
-- **Display**: 5" IPS LCD with capacitive touch
-- **Display Driver**: ST7262
-- **LCD Interface**: RGB (16-bit data lines)
-- **Graphics Library**: LVGL
-- **Display Resolution**: 800x480
-- **Touch Interface**: I2C (GT911 capacitive touch controller)
-- **Date**: August 13, 2025
 
 ---
 *This documentation provides project overview and commit message guidelines for the ESP-IDF RGB LCD Panel project.*
