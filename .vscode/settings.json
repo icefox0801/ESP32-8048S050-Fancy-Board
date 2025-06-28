@@ -23,6 +23,16 @@
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
   "files.trimTrailingWhitespace": true,
+  "terminal.integrated.profiles.windows": {
+    "ESP-IDF CMD": {
+      "path": "cmd.exe",
+      "args": [
+        "/k",
+        "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat"
+      ]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "ESP-IDF CMD",
   "[c]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true

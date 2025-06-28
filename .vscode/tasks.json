@@ -1,0 +1,53 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "ESP-IDF Build",
+			"type": "shell",
+			"command": "idf.py",
+			"args": [
+				"build"
+			],
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "ESP-IDF Build Clean",
+			"type": "shell",
+			"command": "idf.py build",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "ESP-IDF Full Clean Build",
+			"type": "shell",
+			"command": "set PYTHONIOENCODING=utf-8 && idf.py fullclean && idf.py build",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "ESP-IDF Build Check",
+			"type": "shell",
+			"command": "idf.py build",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "ESP-IDF Build Final",
+			"type": "shell",
+			"command": "idf.py build",
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": "build"
+		}
+	]
+}
