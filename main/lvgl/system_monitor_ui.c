@@ -482,7 +482,7 @@ void system_monitor_ui_update(const system_data_t *data)
 
   if (mem_usage_bar && mem_usage_label)
   {
-    lv_bar_set_value(mem_usage_bar, data->mem.usage, LV_ANIM_ON);
+    lv_bar_set_value(mem_usage_bar, data->mem.usage, LV_ANIM_OFF); // Disable animation for instant updates
     char usage_str[16];
     snprintf(usage_str, sizeof(usage_str), "%d%%", data->mem.usage);
     lv_label_set_text(mem_usage_label, usage_str);
@@ -502,8 +502,13 @@ void system_monitor_ui_update(const system_data_t *data)
 
   lvgl_lock_release();
 
-  ESP_LOGI(TAG, "UI updated - CPU: %d%%, GPU: %d%%, MEM: %d%%",
-           data->cpu.usage, data->gpu.usage, data->mem.usage);
+  // Log less frequently to avoid blocking UI updates
+  static uint32_t log_counter = 0;
+  if (++log_counter % 10 == 0) // Log every 10th update
+  {
+    ESP_LOGI(TAG, "UI updated - CPU: %d%%, GPU: %d%%, MEM: %d%%",
+             data->cpu.usage, data->gpu.usage, data->mem.usage);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

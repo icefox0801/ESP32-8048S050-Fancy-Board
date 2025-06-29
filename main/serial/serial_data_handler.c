@@ -222,14 +222,18 @@ static void process_received_line(const char *line_buffer, system_data_t *system
   // Skip empty lines and non-JSON data
   if (line_buffer[0] == '{')
   {
-    ESP_LOGI(TAG, "Received JSON: %s", line_buffer);
-
-    // Parse and update UI
+    // Parse and update UI (reduce logging frequency)
     if (parse_json_data(line_buffer, system_data))
     {
       system_monitor_ui_update(system_data);
       system_monitor_ui_set_connection_status(true);
-      ESP_LOGI(TAG, "Successfully parsed and updated system data");
+
+      // Log less frequently to avoid blocking serial processing
+      static uint32_t success_counter = 0;
+      if (++success_counter % 20 == 0) // Log every 20th successful parse
+      {
+        ESP_LOGI(TAG, "Successfully parsed and updated system data");
+      }
     }
     else
     {
@@ -238,8 +242,12 @@ static void process_received_line(const char *line_buffer, system_data_t *system
   }
   else
   {
-    // Log non-JSON debug messages from sender
-    ESP_LOGI(TAG, "[SENDER DEBUG] %s", line_buffer);
+    // Log non-JSON debug messages from sender (less frequently)
+    static uint32_t debug_counter = 0;
+    if (++debug_counter % 5 == 0) // Log every 5th debug message
+    {
+      ESP_LOGI(TAG, "[SENDER DEBUG] %s", line_buffer);
+    }
   }
 }
 
@@ -313,22 +321,27 @@ static void serial_data_task(void *pvParameters)
 
   while (serial_running)
   {
-    // Read one byte at a time to detect newline
-    uint8_t byte;
-    int len = uart_read_bytes(UART_PORT_NUM, &byte, 1, pdMS_TO_TICKS(100));
+    // Read multiple bytes at once for better performance
+    uint8_t data_buffer[64];
+    int len = uart_read_bytes(UART_PORT_NUM, data_buffer, sizeof(data_buffer), pdMS_TO_TICKS(50));
 
     current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
     if (len > 0)
     {
       last_data_time = current_time;
-      handle_incoming_byte(byte, line_buffer, &line_pos, &system_data);
+
+      // Process each received byte
+      for (int i = 0; i < len; i++)
+      {
+        handle_incoming_byte(data_buffer[i], line_buffer, &line_pos, &system_data);
+      }
     }
 
     // Check for connection timeout
     check_connection_timeout(current_time);
 
-    vTaskDelay(pdMS_TO_TICKS(10)); // Small delay to prevent CPU hogging
+    vTaskDelay(pdMS_TO_TICKS(5)); // Reduced delay for faster response
   }
 
   ESP_LOGI(TAG, "Serial data task stopped");
