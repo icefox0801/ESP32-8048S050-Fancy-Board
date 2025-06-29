@@ -104,3 +104,11 @@ private_config.*
 # Patch files
 *.patch
 *.diff
+
+# Sensitive Configuration Files
+main/wifi/wifi_config.h
+main/smart/smart_config.h
+
+# Keep template files tracked
+!main/wifi/wifi_config_template.h
+!main/smart/smart_config_template.h

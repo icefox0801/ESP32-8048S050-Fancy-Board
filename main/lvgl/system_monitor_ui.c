@@ -241,52 +241,62 @@ static lv_obj_t *create_smart_panel(lv_obj_t *parent)
 {
   lv_obj_t *smart_panel = create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
 
+  // Controls title (centered vertically)
+  lv_obj_t *controls_title = lv_label_create(smart_panel);
+  lv_label_set_text(controls_title, "Controls");
+  lv_obj_set_style_text_font(controls_title, font_title, 0);
+  lv_obj_set_style_text_color(controls_title, lv_color_hex(0x4fc3f7), 0);
+  lv_obj_set_pos(controls_title, 10, 36);
+
+  // Vertical separator after controls title (centered)
+  create_vertical_separator(smart_panel, 140, 25, 50, 0x4fc3f7);
+
   // Water pump switch (left)
   water_pump_switch = lv_switch_create(smart_panel);
   lv_obj_set_size(water_pump_switch, 60, 30);
-  lv_obj_set_pos(water_pump_switch, 40, 45);
+  lv_obj_set_pos(water_pump_switch, 180, 35);
 
   lv_obj_t *water_pump_label = lv_label_create(smart_panel);
   lv_label_set_text(water_pump_label, "Water Pump");
   lv_obj_set_style_text_font(water_pump_label, font_small, 0);
   lv_obj_set_style_text_color(water_pump_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(water_pump_label, 40, 15);
+  lv_obj_set_pos(water_pump_label, 180, 5);
 
-  // Vertical separator after water pump
-  create_vertical_separator(smart_panel, 160, 10, 80, 0x555555);
+  // Vertical separator after water pump (centered)
+  create_vertical_separator(smart_panel, 300, 25, 50, 0x555555);
 
   // Wave maker switch (left-center)
   wave_maker_switch = lv_switch_create(smart_panel);
   lv_obj_set_size(wave_maker_switch, 60, 30);
-  lv_obj_set_pos(wave_maker_switch, 200, 45);
+  lv_obj_set_pos(wave_maker_switch, 340, 35);
 
   lv_obj_t *wave_maker_label = lv_label_create(smart_panel);
   lv_label_set_text(wave_maker_label, "Wave Maker");
   lv_obj_set_style_text_font(wave_maker_label, font_small, 0);
   lv_obj_set_style_text_color(wave_maker_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(wave_maker_label, 200, 15);
+  lv_obj_set_pos(wave_maker_label, 340, 5);
 
-  // Vertical separator after wave maker
-  create_vertical_separator(smart_panel, 320, 10, 80, 0x555555);
+  // Vertical separator after wave maker (centered)
+  create_vertical_separator(smart_panel, 460, 25, 50, 0x555555);
 
   // Light switch (right-center)
   light_switch = lv_switch_create(smart_panel);
   lv_obj_set_size(light_switch, 60, 30);
-  lv_obj_set_pos(light_switch, 360, 45);
+  lv_obj_set_pos(light_switch, 500, 35);
 
   lv_obj_t *light_label = lv_label_create(smart_panel);
   lv_label_set_text(light_label, "Light");
   lv_obj_set_style_text_font(light_label, font_small, 0);
   lv_obj_set_style_text_color(light_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(light_label, 360, 15);
+  lv_obj_set_pos(light_label, 500, 5);
 
-  // Vertical separator before feed button
-  create_vertical_separator(smart_panel, 480, 10, 80, 0x555555);
+  // Vertical separator before feed button (centered)
+  create_vertical_separator(smart_panel, 580, 25, 50, 0x555555);
 
-  // Feed button (right)
+  // Feed button (right with proper padding)
   feed_button = lv_btn_create(smart_panel);
-  lv_obj_set_size(feed_button, 100, 50);
-  lv_obj_set_pos(feed_button, 620, 25);
+  lv_obj_set_size(feed_button, 90, 50);
+  lv_obj_set_pos(feed_button, 680, 25);
   lv_obj_set_style_bg_color(feed_button, lv_color_hex(0x4caf50), 0);
   lv_obj_set_style_radius(feed_button, 10, 0);
 
@@ -370,7 +380,7 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
   lv_obj_t *mem_panel = create_panel(parent, 780, 120, 10, 280, 0x2e1a1a, 0x4f2e2e);
 
   // Memory title with separator
-  create_title_with_separator(mem_panel, "System Memory", 0xff7043, 750);
+  create_title_with_separator(mem_panel, "Memory", 0xff7043, 750);
 
   // Memory info positioned to the right of title (baseline aligned)
   mem_info_label = lv_label_create(mem_panel);
@@ -379,8 +389,12 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
   lv_obj_set_style_text_color(mem_info_label, lv_color_hex(0xcccccc), 0);
   lv_obj_set_pos(mem_info_label, 240, 8);
 
-  // Create memory usage field
-  mem_usage_label = create_field(mem_panel, "Usage", "0%", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
+  // Create memory usage value (without label)
+  mem_usage_label = lv_label_create(mem_panel);
+  lv_label_set_text(mem_usage_label, "0%");
+  lv_obj_set_style_text_font(mem_usage_label, font_big_numbers, 0);
+  lv_obj_set_style_text_color(mem_usage_label, lv_color_hex(0xff7043), 0);
+  lv_obj_align(mem_usage_label, LV_ALIGN_BOTTOM_LEFT, 10, -5);
 
   // Dimmed vertical separator between usage field and progress bar
   create_vertical_separator(mem_panel, 150, 45, 55, 0x555555);
