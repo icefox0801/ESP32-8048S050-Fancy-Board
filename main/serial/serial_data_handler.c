@@ -219,32 +219,53 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
  */
 static void process_received_line(const char *line_buffer, system_data_t *system_data)
 {
-  // Skip empty lines and non-JSON data
-  if (line_buffer[0] == '{')
-  {
-    // Parse and update UI (reduce logging frequency)
-    if (parse_json_data(line_buffer, system_data))
-    {
-      system_monitor_ui_update(system_data);
-      system_monitor_ui_set_connection_status(true);
+  // Skip empty lines
+  if (strlen(line_buffer) < 5)
+    return;
 
-      // Log less frequently to avoid blocking serial processing
-      static uint32_t success_counter = 0;
-      if (++success_counter % 20 == 0) // Log every 20th successful parse
+  // Check if this looks like JSON data (starts with { and ends with })
+  const char *trimmed = line_buffer;
+  while (*trimmed == ' ' || *trimmed == '\t')
+    trimmed++; // Skip whitespace
+
+  if (trimmed[0] == '{')
+  {
+    // Find the end of JSON
+    size_t len = strlen(trimmed);
+    const char *end = trimmed + len - 1;
+    while (end > trimmed && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r'))
+      end--;
+
+    if (*end == '}')
+    {
+      // Parse and update UI (reduce logging frequency)
+      if (parse_json_data(trimmed, system_data))
       {
-        ESP_LOGI(TAG, "Successfully parsed and updated system data");
+        system_monitor_ui_update(system_data);
+        system_monitor_ui_set_connection_status(true);
+
+        // Log less frequently to avoid blocking serial processing
+        static uint32_t success_counter = 0;
+        if (++success_counter % 10 == 0) // Log every 10th successful parse (more frequent for debugging)
+        {
+          ESP_LOGI(TAG, "Successfully parsed and updated system data (total: %lu)", success_counter);
+        }
+      }
+      else
+      {
+        ESP_LOGW(TAG, "Failed to parse JSON: %.50s...", trimmed);
       }
     }
     else
     {
-      ESP_LOGW(TAG, "Failed to parse JSON data");
+      ESP_LOGW(TAG, "Incomplete JSON received: %.50s...", trimmed);
     }
   }
   else
   {
     // Log non-JSON debug messages from sender (less frequently)
     static uint32_t debug_counter = 0;
-    if (++debug_counter % 5 == 0) // Log every 5th debug message
+    if (++debug_counter % 10 == 0) // More frequent debug logging
     {
       ESP_LOGI(TAG, "[SENDER DEBUG] %s", line_buffer);
     }
@@ -268,16 +289,19 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
       return true;
     }
   }
-  else if (*line_pos < JSON_BUFFER_SIZE - 1)
+  else if (byte >= 32 && byte <= 126) // Only accept printable ASCII characters
   {
-    // Add character to line buffer
-    line_buffer[(*line_pos)++] = byte;
-  }
-  else
-  {
-    // Line too long, reset buffer
-    ESP_LOGW(TAG, "Line buffer overflow, resetting");
-    *line_pos = 0;
+    if (*line_pos < JSON_BUFFER_SIZE - 1)
+    {
+      // Add character to line buffer
+      line_buffer[(*line_pos)++] = byte;
+    }
+    else
+    {
+      // Line too long, reset buffer
+      ESP_LOGW(TAG, "Line buffer overflow, resetting");
+      *line_pos = 0;
+    }
   }
 
   return false;
@@ -321,9 +345,10 @@ static void serial_data_task(void *pvParameters)
 
   while (serial_running)
   {
-    // Read multiple bytes at once for better performance
-    uint8_t data_buffer[64];
-    int len = uart_read_bytes(UART_PORT_NUM, data_buffer, sizeof(data_buffer), pdMS_TO_TICKS(50));
+    // Read multiple bytes at once for better performance, but smaller buffer
+    // to reduce risk of partial JSON objects
+    uint8_t data_buffer[32];                                                                       // Reduced from 64 to 32 bytes
+    int len = uart_read_bytes(UART_PORT_NUM, data_buffer, sizeof(data_buffer), pdMS_TO_TICKS(20)); // Reduced timeout
 
     current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
