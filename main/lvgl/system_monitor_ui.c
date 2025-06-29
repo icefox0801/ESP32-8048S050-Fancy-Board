@@ -314,7 +314,7 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
   create_vertical_separator(mem_panel, 150, 55, 60, 0x555555);
 
   // Progress bar (positioned to the right of the separator)
-  mem_usage_bar = create_progress_bar(mem_panel, 500, 25, 170, 75, 0x333333, 0xff7043, 12);
+  mem_usage_bar = create_progress_bar(mem_panel, 500, 25, 170, 75, 0x1a1a2e, 0xff7043, 12);
 
   return mem_panel;
 }
