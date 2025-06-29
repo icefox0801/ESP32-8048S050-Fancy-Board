@@ -244,10 +244,10 @@ static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
   lv_obj_set_style_text_color(cpu_name_label, lv_color_hex(0x888888), 0);
   lv_obj_set_pos(cpu_name_label, 80, 8);
 
-  // Create CPU fields
-  cpu_usage_label = create_field(cpu_panel, "Usage", "0%", 10, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
-  cpu_temp_label = create_field(cpu_panel, "Temp", "--°C", 128, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  cpu_fan_label = create_field(cpu_panel, "Fan", "-- RPM", 246, font_normal, font_normal, 0xaaaaaa, 0x81c784);
+  // Create CPU fields - Temperature first
+  cpu_temp_label = create_field(cpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
+  cpu_usage_label = create_field(cpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
+  cpu_fan_label = create_field(cpu_panel, "Fan (RPM)", "--", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
 
   // Create vertical separators between fields
   create_vertical_separator(cpu_panel, 118, 50, 60, 0x555555);
@@ -275,10 +275,10 @@ static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
   lv_obj_set_style_text_color(gpu_name_label, lv_color_hex(0x888888), 0);
   lv_obj_set_pos(gpu_name_label, 80, 8);
 
-  // Create GPU fields
-  gpu_usage_label = create_field(gpu_panel, "Usage", "0%", 10, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
-  gpu_mem_label = create_field(gpu_panel, "Memory", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
-  gpu_temp_label = create_field(gpu_panel, "Temp", "--°C", 246, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
+  // Create GPU fields - Temperature first
+  gpu_temp_label = create_field(gpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
+  gpu_usage_label = create_field(gpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
+  gpu_mem_label = create_field(gpu_panel, "Memory", "0%", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
 
   // Create vertical separators between GPU fields
   create_vertical_separator(gpu_panel, 118, 50, 60, 0x555555);
@@ -441,7 +441,7 @@ void system_monitor_ui_update(const system_data_t *data)
   if (cpu_fan_label)
   {
     char fan_str[16];
-    snprintf(fan_str, sizeof(fan_str), "%d RPM", data->cpu.fan);
+    snprintf(fan_str, sizeof(fan_str), "%d", data->cpu.fan);
     lv_label_set_text(cpu_fan_label, fan_str);
   }
 
