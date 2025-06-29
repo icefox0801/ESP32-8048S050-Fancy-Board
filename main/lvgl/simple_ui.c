@@ -1,7 +1,8 @@
 #include "simple_ui.h"
-#include "lvgl_setup.h"
-#include "lvgl.h"
+
 #include "esp_log.h"
+#include "lvgl.h"
+#include "lvgl_setup.h"
 
 static const lv_font_t *font_normal = &lv_font_montserrat_14;
 

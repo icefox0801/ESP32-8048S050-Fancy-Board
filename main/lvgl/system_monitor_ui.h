@@ -16,8 +16,8 @@
 #pragma once
 
 #include "lvgl.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATA STRUCTURES

@@ -17,8 +17,8 @@
 // STANDARD INCLUDES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-#include "system_monitor_ui.h"
 #include "esp_err.h"
+#include "system_monitor_ui.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PUBLIC FUNCTION PROTOTYPES

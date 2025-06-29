@@ -4,19 +4,20 @@
  */
 
 #include "lvgl_setup.h"
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/lock.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_timer.h"
-#include "esp_lcd_panel_ops.h"
-#include "esp_lcd_panel_rgb.h"
+
 #include "driver/gpio.h"
 #include "esp_err.h"
-#include "esp_log.h"
 #include "esp_heap_caps.h"
+#include "esp_lcd_panel_ops.h"
+#include "esp_lcd_panel_rgb.h"
+#include "esp_log.h"
+#include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/lock.h>
+#include <unistd.h>
 
 static const char *TAG = "lvgl_setup";
 static _lock_t lvgl_api_lock;

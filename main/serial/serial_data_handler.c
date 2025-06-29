@@ -17,13 +17,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #include "serial_data_handler.h"
-#include "system_monitor_ui.h"
-#include "driver/uart.h"
+
 #include "cjson.h"
+#include "driver/uart.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/task.h"
+#include "system_monitor_ui.h"
 #include <string.h>
 #include <time.h>
 

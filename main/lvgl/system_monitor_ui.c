@@ -16,8 +16,9 @@
  */
 
 #include "system_monitor_ui.h"
-#include "lvgl_setup.h"
+
 #include "esp_log.h"
+#include "lvgl_setup.h"
 #include <stdio.h>
 #include <time.h>
 
