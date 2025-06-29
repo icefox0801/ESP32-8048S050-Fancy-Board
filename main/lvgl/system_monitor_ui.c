@@ -31,7 +31,13 @@ static const char *TAG = "system_monitor";
 // Status and Info Elements
 static lv_obj_t *timestamp_label = NULL;
 static lv_obj_t *connection_status_label = NULL;
-static lv_obj_t *clock_label = NULL;
+static lv_obj_t *wifi_status_label = NULL;
+
+// Smart Panel Elements
+static lv_obj_t *water_pump_switch = NULL;
+static lv_obj_t *wave_maker_switch = NULL;
+static lv_obj_t *light_switch = NULL;
+static lv_obj_t *feed_button = NULL;
 
 // CPU Section Elements
 static lv_obj_t *cpu_name_label = NULL;
@@ -217,7 +223,7 @@ static lv_obj_t *create_status_panel(lv_obj_t *parent, int width, int height, in
   lv_obj_set_style_border_color(panel, lv_color_hex(border_color), 0);
   lv_obj_set_style_border_width(panel, 1, 0);
   lv_obj_set_style_radius(panel, 6, 0);
-  lv_obj_set_style_pad_all(panel, 10, 0);
+  lv_obj_set_style_pad_all(panel, 6, 0);
   lv_obj_set_scrollbar_mode(panel, LV_SCROLLBAR_MODE_OFF);
   return panel;
 }
@@ -227,13 +233,79 @@ static lv_obj_t *create_status_panel(lv_obj_t *parent, int width, int height, in
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * @brief Create the smart home control panel
+ * @param parent Parent screen object
+ * @return Created smart panel
+ */
+static lv_obj_t *create_smart_panel(lv_obj_t *parent)
+{
+  lv_obj_t *smart_panel = create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
+
+  // Water pump switch (left)
+  water_pump_switch = lv_switch_create(smart_panel);
+  lv_obj_set_size(water_pump_switch, 60, 30);
+  lv_obj_set_pos(water_pump_switch, 40, 45);
+
+  lv_obj_t *water_pump_label = lv_label_create(smart_panel);
+  lv_label_set_text(water_pump_label, "Water Pump");
+  lv_obj_set_style_text_font(water_pump_label, font_small, 0);
+  lv_obj_set_style_text_color(water_pump_label, lv_color_hex(0xcccccc), 0);
+  lv_obj_set_pos(water_pump_label, 40, 15);
+
+  // Vertical separator after water pump
+  create_vertical_separator(smart_panel, 160, 10, 80, 0x555555);
+
+  // Wave maker switch (left-center)
+  wave_maker_switch = lv_switch_create(smart_panel);
+  lv_obj_set_size(wave_maker_switch, 60, 30);
+  lv_obj_set_pos(wave_maker_switch, 200, 45);
+
+  lv_obj_t *wave_maker_label = lv_label_create(smart_panel);
+  lv_label_set_text(wave_maker_label, "Wave Maker");
+  lv_obj_set_style_text_font(wave_maker_label, font_small, 0);
+  lv_obj_set_style_text_color(wave_maker_label, lv_color_hex(0xcccccc), 0);
+  lv_obj_set_pos(wave_maker_label, 200, 15);
+
+  // Vertical separator after wave maker
+  create_vertical_separator(smart_panel, 320, 10, 80, 0x555555);
+
+  // Light switch (right-center)
+  light_switch = lv_switch_create(smart_panel);
+  lv_obj_set_size(light_switch, 60, 30);
+  lv_obj_set_pos(light_switch, 360, 45);
+
+  lv_obj_t *light_label = lv_label_create(smart_panel);
+  lv_label_set_text(light_label, "Light");
+  lv_obj_set_style_text_font(light_label, font_small, 0);
+  lv_obj_set_style_text_color(light_label, lv_color_hex(0xcccccc), 0);
+  lv_obj_set_pos(light_label, 360, 15);
+
+  // Vertical separator before feed button
+  create_vertical_separator(smart_panel, 480, 10, 80, 0x555555);
+
+  // Feed button (right)
+  feed_button = lv_btn_create(smart_panel);
+  lv_obj_set_size(feed_button, 100, 50);
+  lv_obj_set_pos(feed_button, 620, 25);
+  lv_obj_set_style_bg_color(feed_button, lv_color_hex(0x4caf50), 0);
+  lv_obj_set_style_radius(feed_button, 10, 0);
+
+  lv_obj_t *feed_label = lv_label_create(feed_button);
+  lv_label_set_text(feed_label, "FEED");
+  lv_obj_set_style_text_font(feed_label, font_normal, 0);
+  lv_obj_set_style_text_color(feed_label, lv_color_hex(0xffffff), 0);
+  lv_obj_center(feed_label);
+  return smart_panel;
+}
+
+/**
  * @brief Create the CPU monitoring panel
  * @param parent Parent screen object
  * @return Created CPU panel
  */
 static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
 {
-  lv_obj_t *cpu_panel = create_panel(parent, 385, 150, 10, 10, 0x1a1a2e, 0x16213e);
+  lv_obj_t *cpu_panel = create_panel(parent, 385, 150, 10, 120, 0x1a1a2e, 0x16213e);
 
   // CPU Title with separator
   create_title_with_separator(cpu_panel, "CPU", 0x4fc3f7, 355);
@@ -264,7 +336,7 @@ static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
  */
 static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
 {
-  lv_obj_t *gpu_panel = create_panel(parent, 385, 150, 405, 10, 0x1a2e1a, 0x2e4f2e);
+  lv_obj_t *gpu_panel = create_panel(parent, 385, 150, 405, 120, 0x1a2e1a, 0x2e4f2e);
 
   // GPU Title with separator
   create_title_with_separator(gpu_panel, "GPU", 0x4caf50, 355);
@@ -295,7 +367,7 @@ static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
  */
 static lv_obj_t *create_memory_panel(lv_obj_t *parent)
 {
-  lv_obj_t *mem_panel = create_panel(parent, 780, 150, 10, 170, 0x2e1a1a, 0x4f2e2e);
+  lv_obj_t *mem_panel = create_panel(parent, 780, 120, 10, 280, 0x2e1a1a, 0x4f2e2e);
 
   // Memory title with separator
   create_title_with_separator(mem_panel, "System Memory", 0xff7043, 750);
@@ -311,43 +383,41 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
   mem_usage_label = create_field(mem_panel, "Usage", "0%", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
 
   // Dimmed vertical separator between usage field and progress bar
-  create_vertical_separator(mem_panel, 150, 55, 60, 0x555555);
+  create_vertical_separator(mem_panel, 150, 45, 55, 0x555555);
 
   // Progress bar (positioned to the right of the separator)
-  mem_usage_bar = create_progress_bar(mem_panel, 500, 25, 170, 75, 0x1a1a2e, 0xff7043, 12);
+  mem_usage_bar = create_progress_bar(mem_panel, 500, 25, 170, 65, 0x1a1a2e, 0xff7043, 12);
 
   return mem_panel;
 }
 
 /**
- * @brief Create the status panel with connection and clock info
+ * @brief Create the status panel with connection info
  * @param parent Parent screen object
  * @return Created status panel
  */
 static lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 {
-  lv_obj_t *status_panel = create_status_panel(parent, 780, 50, 10, 330, 0x0f0f0f, 0x222222);
+  lv_obj_t *status_panel = create_status_panel(parent, 780, 50, 10, 410, 0x0f0f0f, 0x222222);
 
-  // Connection status (left side)
+  // Serial connection status with last update time (left side)
   connection_status_label = lv_label_create(status_panel);
-  lv_label_set_text(connection_status_label, "[WAIT] Waiting for data...");
-  lv_obj_set_style_text_font(connection_status_label, font_normal, 0);
+  lv_label_set_text(connection_status_label, "[SERIAL] Waiting... | Last: Never");
+  lv_obj_set_style_text_font(connection_status_label, font_small, 0);
   lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xffaa00), 0);
-  lv_obj_set_pos(connection_status_label, 10, 8);
+  lv_obj_set_pos(connection_status_label, 10, 11);
 
-  // Clock (right side)
-  clock_label = lv_label_create(status_panel);
-  lv_label_set_text(clock_label, "00:00:00");
-  lv_obj_set_style_text_font(clock_label, font_normal, 0);
-  lv_obj_set_style_text_color(clock_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_align(clock_label, LV_ALIGN_TOP_RIGHT, 0, 8);
+  // WiFi status (right side)
+  wifi_status_label = lv_label_create(status_panel);
+  lv_label_set_text(wifi_status_label, "[WIFI] Connecting...");
+  lv_obj_set_style_text_font(wifi_status_label, font_small, 0);
+  lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00aaff), 0);
+  lv_obj_align(wifi_status_label, LV_ALIGN_TOP_RIGHT, -10, 11);
 
-  // Last update timestamp (center)
+  // Hidden timestamp label for internal timestamp tracking
   timestamp_label = lv_label_create(status_panel);
-  lv_label_set_text(timestamp_label, "Last Update: Never");
-  lv_obj_set_style_text_font(timestamp_label, font_small, 0);
-  lv_obj_set_style_text_color(timestamp_label, lv_color_hex(0x888888), 0);
-  lv_obj_align(timestamp_label, LV_ALIGN_TOP_MID, 0, 10);
+  lv_label_set_text(timestamp_label, "Last: Never");
+  lv_obj_add_flag(timestamp_label, LV_OBJ_FLAG_HIDDEN); // Hide this element
 
   return status_panel;
 }
@@ -368,7 +438,8 @@ void system_monitor_ui_create(lv_display_t *disp)
 
   lv_obj_t *screen = lv_display_get_screen_active(disp);
 
-  // Create all UI panels
+  // Create all UI panels (smart panel at top, status panel at bottom)
+  create_smart_panel(screen);
   create_cpu_panel(screen);
   create_gpu_panel(screen);
   create_memory_panel(screen);
@@ -397,23 +468,30 @@ void system_monitor_ui_update(const system_data_t *data)
   // Update Timestamp and Clock Display
   // ─────────────────────────────────────────────────────────────────
 
-  if (timestamp_label)
+  if (timestamp_label && connection_status_label)
   {
     time_t timestamp_sec = data->timestamp / 1000;
     struct tm *timeinfo = localtime(&timestamp_sec);
     char time_str[64];
     strftime(time_str, sizeof(time_str), "Last: %H:%M:%S", timeinfo);
     lv_label_set_text(timestamp_label, time_str);
-  }
 
-  // Update current clock
-  if (clock_label)
-  {
-    time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-    char clock_str[16];
-    strftime(clock_str, sizeof(clock_str), "%H:%M:%S", current_time);
-    lv_label_set_text(clock_label, clock_str);
+    // Update the combined connection status with timestamp
+    char combined_status[128];
+    const char *current_status = lv_label_get_text(connection_status_label);
+    if (strstr(current_status, "[SERIAL] Connected"))
+    {
+      snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected | %s", time_str);
+    }
+    else if (strstr(current_status, "[SERIAL] Connection Lost"))
+    {
+      snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost | %s", time_str);
+    }
+    else
+    {
+      snprintf(combined_status, sizeof(combined_status), "[SERIAL] Waiting... | %s", time_str);
+    }
+    lv_label_set_text(connection_status_label, combined_status);
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -513,30 +591,6 @@ void system_monitor_ui_update(const system_data_t *data)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CLOCK UPDATE FUNCTION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Update the clock display with current time
- * @note This function can be called independently to update just the clock
- */
-void system_monitor_ui_update_clock(void)
-{
-  if (!clock_label)
-    return;
-
-  lvgl_lock_acquire();
-
-  time_t now = time(NULL);
-  struct tm *current_time = localtime(&now);
-  char clock_str[16];
-  strftime(clock_str, sizeof(clock_str), "%H:%M:%S", current_time);
-  lv_label_set_text(clock_label, clock_str);
-
-  lvgl_lock_release();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // CONNECTION STATUS MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -552,16 +606,187 @@ void system_monitor_ui_set_connection_status(bool connected)
 
   lvgl_lock_acquire();
 
+  // Get current timestamp from the hidden timestamp label
+  const char *current_timestamp = "Last: Never";
+  if (timestamp_label)
+  {
+    current_timestamp = lv_label_get_text(timestamp_label);
+  }
+
+  char combined_status[128];
   if (connected)
   {
-    lv_label_set_text(connection_status_label, "[OK] Connected");
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected | %s", current_timestamp);
+    lv_label_set_text(connection_status_label, combined_status);
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0x00ff88), 0); // Green
   }
   else
   {
-    lv_label_set_text(connection_status_label, "[ERROR] Connection Lost");
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost | %s", current_timestamp);
+    lv_label_set_text(connection_status_label, combined_status);
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
   }
 
   lvgl_lock_release();
+}
+
+/**
+ * @brief Update WiFi connection status in the status panel
+ * @param status_text WiFi status message to display
+ * @param connected True if WiFi is connected, false otherwise
+ */
+void system_monitor_ui_update_wifi_status(const char *status_text, bool connected)
+{
+  if (!wifi_status_label || !status_text)
+    return;
+
+  lvgl_lock_acquire();
+
+  // Create formatted status message
+  char wifi_msg[128];
+
+  if (connected && strstr(status_text, "Connected:") != NULL)
+  {
+    // Extract SSID from "Connected: SSID (IP)" format
+    const char *ssid_start = strstr(status_text, "Connected: ") + 11; // Skip "Connected: "
+    const char *ssid_end = strchr(ssid_start, ' ');                   // Find space before (IP)
+
+    if (ssid_end != NULL)
+    {
+      // Extract SSID
+      size_t ssid_len = ssid_end - ssid_start;
+      char ssid[64];
+      strncpy(ssid, ssid_start, ssid_len);
+      ssid[ssid_len] = '\0';
+
+      snprintf(wifi_msg, sizeof(wifi_msg), "[WIFI:%s] Connected", ssid);
+    }
+    else
+    {
+      // Fallback if format is unexpected
+      snprintf(wifi_msg, sizeof(wifi_msg), "[WIFI] %s", status_text);
+    }
+  }
+  else
+  {
+    // For non-connected states, use normal format
+    snprintf(wifi_msg, sizeof(wifi_msg), "[WIFI] %s", status_text);
+  }
+
+  lv_label_set_text(wifi_status_label, wifi_msg);
+
+  // Set color based on connection status
+  if (connected)
+  {
+    lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00ff88), 0); // Green
+  }
+  else
+  {
+    lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff4444), 0); // Red
+  }
+
+  lvgl_lock_release();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMART HOME CONTROL FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Set the state of the water pump switch
+ * @param state True to turn on, false to turn off
+ */
+void system_monitor_ui_set_water_pump(bool state)
+{
+  if (!water_pump_switch)
+    return;
+
+  lvgl_lock_acquire();
+  if (state)
+    lv_obj_add_state(water_pump_switch, LV_STATE_CHECKED);
+  else
+    lv_obj_clear_state(water_pump_switch, LV_STATE_CHECKED);
+  lvgl_lock_release();
+}
+
+/**
+ * @brief Set the state of the wave maker switch
+ * @param state True to turn on, false to turn off
+ */
+void system_monitor_ui_set_wave_maker(bool state)
+{
+  if (!wave_maker_switch)
+    return;
+
+  lvgl_lock_acquire();
+  if (state)
+    lv_obj_add_state(wave_maker_switch, LV_STATE_CHECKED);
+  else
+    lv_obj_clear_state(wave_maker_switch, LV_STATE_CHECKED);
+  lvgl_lock_release();
+}
+
+/**
+ * @brief Set the state of the light switch
+ * @param state True to turn on, false to turn off
+ */
+void system_monitor_ui_set_light(bool state)
+{
+  if (!light_switch)
+    return;
+
+  lvgl_lock_acquire();
+  if (state)
+    lv_obj_add_state(light_switch, LV_STATE_CHECKED);
+  else
+    lv_obj_clear_state(light_switch, LV_STATE_CHECKED);
+  lvgl_lock_release();
+}
+
+/**
+ * @brief Get the state of the water pump switch
+ * @return True if on, false if off
+ */
+bool system_monitor_ui_get_water_pump(void)
+{
+  if (!water_pump_switch)
+    return false;
+
+  bool state = false;
+  lvgl_lock_acquire();
+  state = lv_obj_has_state(water_pump_switch, LV_STATE_CHECKED);
+  lvgl_lock_release();
+  return state;
+}
+
+/**
+ * @brief Get the state of the wave maker switch
+ * @return True if on, false if off
+ */
+bool system_monitor_ui_get_wave_maker(void)
+{
+  if (!wave_maker_switch)
+    return false;
+
+  bool state = false;
+  lvgl_lock_acquire();
+  state = lv_obj_has_state(wave_maker_switch, LV_STATE_CHECKED);
+  lvgl_lock_release();
+  return state;
+}
+
+/**
+ * @brief Get the state of the light switch
+ * @return True if on, false if off
+ */
+bool system_monitor_ui_get_light(void)
+{
+  if (!light_switch)
+    return false;
+
+  bool state = false;
+  lvgl_lock_acquire();
+  state = lv_obj_has_state(light_switch, LV_STATE_CHECKED);
+  lvgl_lock_release();
+  return state;
 }

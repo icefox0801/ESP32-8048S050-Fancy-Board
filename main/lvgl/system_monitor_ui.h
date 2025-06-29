@@ -89,7 +89,48 @@ void system_monitor_ui_update(const system_data_t *data);
 void system_monitor_ui_set_connection_status(bool connected);
 
 /**
- * @brief Update clock display with current time
- * @note Call this function regularly (e.g., every second) to keep clock current
+ * @brief Update WiFi connection status display
+ * @param status_text WiFi status message to display
+ * @param connected True if WiFi is connected, false otherwise
  */
-void system_monitor_ui_update_clock(void);
+void system_monitor_ui_update_wifi_status(const char *status_text, bool connected);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMART HOME CONTROL FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Set the state of the water pump switch
+ * @param state True to turn on, false to turn off
+ */
+void system_monitor_ui_set_water_pump(bool state);
+
+/**
+ * @brief Set the state of the wave maker switch
+ * @param state True to turn on, false to turn off
+ */
+void system_monitor_ui_set_wave_maker(bool state);
+
+/**
+ * @brief Set the state of the light switch
+ * @param state True to turn on, false to turn off
+ */
+void system_monitor_ui_set_light(bool state);
+
+/**
+ * @brief Get the state of the water pump switch
+ * @return True if on, false if off
+ */
+bool system_monitor_ui_get_water_pump(void);
+
+/**
+ * @brief Get the state of the wave maker switch
+ * @return True if on, false if off
+ */
+bool system_monitor_ui_get_wave_maker(void);
+
+/**
+ * @brief Get the state of the light switch
+ * @return True if on, false if off
+ */
+bool system_monitor_ui_get_light(void);
