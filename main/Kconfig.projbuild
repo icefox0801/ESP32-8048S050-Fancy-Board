@@ -186,3 +186,74 @@ menu "Example Configuration"
                 GPIO pin number for data bus[23].
     endmenu
 endmenu
+
+menu "WiFi Configuration"
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "your_wifi_network"
+        help
+            SSID (network name) for the example to connect to.
+
+    config WIFI_PASSWORD
+        string "WiFi Password"
+        default "your_wifi_password"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    config WIFI_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
+            Set the maximum connection retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+    config WIFI_CONNECT_TIMEOUT
+        int "Connection timeout (ms)"
+        default 30000
+        help
+            Maximum time to wait for WiFi connection in milliseconds.
+
+    config ENABLE_WIFI_AUTO_CONNECT
+        bool "Enable automatic WiFi connection on startup"
+        default y
+        help
+            Automatically connect to WiFi network on system startup.
+
+    config WIFI_SCAN_RSSI_THRESHOLD
+        int "WiFi Scan RSSI threshold"
+        default -127
+        help
+            Weakest allowable signal strength for WiFi connection.
+
+    config WIFI_CONNECT_AP_BY_SIGNAL
+        bool "Connect to AP with best signal"
+        default n
+        help
+            When multiple APs with same SSID are available, connect to the one with strongest signal.
+
+    menu "Advanced WiFi Settings"
+        config WIFI_LISTEN_INTERVAL
+            int "WiFi Listen Interval"
+            default 3
+            help
+                Interval for station to listen to beacon from AP. The unit of listen interval is one beacon interval.
+
+        config WIFI_BEACON_TIMEOUT
+            int "WiFi Beacon Timeout"
+            default 6
+            help
+                For station to timeout after losing beacon from AP.
+
+        config WIFI_MAX_TX_POWER
+            int "WiFi Maximum TX Power (0.25dBm units)"
+            range 8 84
+            default 84
+            help
+                Maximum WiFi TX power in 0.25dBm units. Default is 21dBm (84*0.25).
+
+        config ENABLE_WIFI_NVS_FLASH
+            bool "Enable WiFi settings storage in NVS flash"
+            default y
+            help
+                Store WiFi settings in non-volatile storage for persistence across reboots.
+    endmenu
+endmenu
