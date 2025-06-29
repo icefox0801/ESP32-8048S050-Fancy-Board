@@ -14,6 +14,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "gt911_touch.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/lock.h>
@@ -99,6 +100,8 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
     ESP_LOGE(TAG, "Failed to allocate LVGL draw buffer");
     return NULL;
   }
+
+  ESP_LOGI(TAG, "LVGL draw buffer allocated: %zu bytes at %p", draw_buffer_sz, buf1);
   lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 
@@ -202,7 +205,7 @@ static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config)
   panel_config->data_gpio_nums[23] = CONFIG_EXAMPLE_LCD_DATA23_GPIO;
 #endif
 
-  // Timing
+  // Timing - adjusted for ESP32-8048S050 stability
   panel_config->timings.pclk_hz = LCD_PIXEL_CLOCK_HZ;
   panel_config->timings.h_res = LCD_H_RES;
   panel_config->timings.v_res = LCD_V_RES;
@@ -212,6 +215,8 @@ static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config)
   panel_config->timings.vsync_back_porch = LCD_VBP;
   panel_config->timings.vsync_front_porch = LCD_VFP;
   panel_config->timings.vsync_pulse_width = LCD_VSYNC;
+
+  // Critical: Set correct pixel clock polarity for this display
   panel_config->timings.flags.pclk_active_neg = true;
 
   return ESP_OK;
@@ -251,4 +256,37 @@ static void lvgl_port_task(void *arg)
 
     usleep(1000 * time_till_next_ms);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOUCH INPUT DEVICE SETUP
+// ═══════════════════════════════════════════════════════════════════════════════
+
+lv_indev_t *lvgl_setup_init_touch(void)
+{
+  ESP_LOGI(TAG, "Initializing GT911 touch controller...");
+
+  // Initialize GT911 hardware
+  esp_err_t ret = gt911_init();
+  if (ret != ESP_OK)
+  {
+    ESP_LOGE(TAG, "GT911 initialization failed: %s", esp_err_to_name(ret));
+    return NULL;
+  }
+
+  // Create LVGL input device for touch
+  lv_indev_t *indev = lv_indev_create();
+  if (!indev)
+  {
+    ESP_LOGE(TAG, "Failed to create LVGL input device");
+    gt911_deinit();
+    return NULL;
+  }
+
+  // Configure input device
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, gt911_lvgl_read);
+
+  ESP_LOGI(TAG, "GT911 touch controller initialized successfully");
+  return indev;
 }
