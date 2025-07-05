@@ -18,7 +18,7 @@
 #ifndef SMART_HOME_H
 #define SMART_HOME_H
 
-#include "home_assistant_api.h"
+#include "ha_api.h"
 #include <esp_err.h>
 #include <stdbool.h>
 #include <stdint.h>

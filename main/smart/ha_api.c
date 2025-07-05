@@ -1,5 +1,5 @@
 /**
- * @file home_assistant_api.c
+ * @file ha_api.c
  * @brief Home Assistant REST API Client Implementation
  *
  * This module implements HTTP client functionality for Home Assistant REST API.
@@ -8,7 +8,7 @@
  * @date 2025-08-14
  */
 
-#include "home_assistant_api.h"
+#include "ha_api.h"
 #include "smart_config.h"
 #include <esp_log.h>
 #include <esp_http_client.h>
@@ -126,7 +126,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
 
   esp_err_t err = ESP_FAIL;
 
-  for (int retry = 0; retry < HA_REQUEST_RETRY_COUNT; retry++)
+  for (int retry = 0; retry < HA_SYNC_RETRY_COUNT; retry++)
   {
     esp_http_client_handle_t client = create_http_client(url);
     if (client == NULL)
@@ -173,7 +173,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     else
     {
       ESP_LOGW(TAG, "HTTP request failed (attempt %d/%d): %s",
-               retry + 1, HA_REQUEST_RETRY_COUNT, esp_err_to_name(err));
+               retry + 1, HA_SYNC_RETRY_COUNT, esp_err_to_name(err));
       if (response)
       {
         snprintf(response->error_message, sizeof(response->error_message),
@@ -182,7 +182,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     }
 
     // Wait before retry
-    if (retry < HA_REQUEST_RETRY_COUNT - 1)
+    if (retry < HA_SYNC_RETRY_COUNT - 1)
     {
       vTaskDelay(pdMS_TO_TICKS(1000 * (retry + 1))); // Progressive backoff
     }

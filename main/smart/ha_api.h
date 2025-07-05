@@ -1,5 +1,5 @@
 /**
- * @file home_assistant_api.h
+ * @file ha_api.h
  * @brief Home Assistant REST API Client Header
  *
  * This module provides HTTP client functionality for interacting with Home Assistant
@@ -16,8 +16,8 @@
  * @date 2025-08-14
  */
 
-#ifndef HOME_ASSISTANT_API_H
-#define HOME_ASSISTANT_API_H
+#ifndef HA_API_H
+#define HA_API_H
 
 #include <esp_err.h>
 #include <esp_http_client.h>
@@ -251,4 +251,4 @@ extern "C"
 }
 #endif
 
-#endif // HOME_ASSISTANT_API_H
+#endif // HA_API_H
