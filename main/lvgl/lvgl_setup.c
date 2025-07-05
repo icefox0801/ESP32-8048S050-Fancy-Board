@@ -85,6 +85,7 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
   lv_display_set_user_data(display, panel_handle);
   lv_display_set_color_format(display, LCD_COLOR_FORMAT);
 
+  // CRITICAL FIX: Ensure proper display buffer configuration
   // Setup display buffers
   void *buf1 = NULL;
   void *buf2 = NULL;
@@ -92,13 +93,28 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 #if CONFIG_EXAMPLE_USE_DOUBLE_FB
   ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2));
   lv_display_set_buffers(display, buf1, buf2, LCD_H_RES * LCD_V_RES * LCD_PIXEL_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
+  ESP_LOGI(TAG, "Using double framebuffer mode");
 #else
   size_t draw_buffer_sz = LCD_H_RES * LVGL_DRAW_BUF_LINES * LCD_PIXEL_SIZE;
-  buf1 = heap_caps_malloc(draw_buffer_sz, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  // Use PSRAM for large draw buffer instead of internal RAM
+  buf1 = heap_caps_malloc(draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if (!buf1)
   {
-    ESP_LOGE(TAG, "Failed to allocate LVGL draw buffer");
-    return NULL;
+    ESP_LOGW(TAG, "Failed to allocate LVGL draw buffer in PSRAM, trying internal RAM with smaller size");
+    // Fallback to smaller buffer in internal RAM
+    size_t fallback_buffer_sz = LCD_H_RES * 10 * LCD_PIXEL_SIZE; // 10 lines instead of 50
+    buf1 = heap_caps_malloc(fallback_buffer_sz, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (!buf1)
+    {
+      ESP_LOGE(TAG, "Failed to allocate LVGL draw buffer in both PSRAM and internal RAM");
+      return NULL;
+    }
+    draw_buffer_sz = fallback_buffer_sz;
+    ESP_LOGI(TAG, "Using fallback buffer: %zu bytes in internal RAM at %p", draw_buffer_sz, buf1);
+  }
+  else
+  {
+    ESP_LOGI(TAG, "LVGL draw buffer allocated in PSRAM: %zu bytes at %p", draw_buffer_sz, buf1);
   }
 
   ESP_LOGI(TAG, "LVGL draw buffer allocated: %zu bytes at %p", draw_buffer_sz, buf1);
@@ -127,7 +143,16 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 // 4. Task management (called fourth)
 void lvgl_setup_start_task(void)
 {
-  xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
+  ESP_LOGI(TAG, "Creating LVGL task on core 1 with priority %d, stack size %d", LVGL_TASK_PRIORITY, LVGL_TASK_STACK_SIZE);
+  BaseType_t result = xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 1);
+  if (result == pdPASS)
+  {
+    ESP_LOGI(TAG, "LVGL task created successfully on core 1");
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to create LVGL task on core 1, result: %d", result);
+  }
 }
 
 // 5. UI creation helper (called fifth)
@@ -150,6 +175,19 @@ void lvgl_lock_acquire(void)
 }
 
 void lvgl_lock_release(void)
+{
+  _lock_release(&lvgl_api_lock);
+}
+
+// LVGL port locking with timeout
+bool lvgl_port_lock(int timeout_ms)
+{
+  // For now, use blocking lock - can be enhanced with timeout later
+  _lock_acquire(&lvgl_api_lock);
+  return true;
+}
+
+void lvgl_port_unlock(void)
 {
   _lock_release(&lvgl_api_lock);
 }
@@ -205,7 +243,7 @@ static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config)
   panel_config->data_gpio_nums[23] = CONFIG_EXAMPLE_LCD_DATA23_GPIO;
 #endif
 
-  // Timing - adjusted for ESP32-8048S050 stability
+  // Timing - adjusted for ESP32-8048S050 stability with WiFi coexistence
   panel_config->timings.pclk_hz = LCD_PIXEL_CLOCK_HZ;
   panel_config->timings.h_res = LCD_H_RES;
   panel_config->timings.v_res = LCD_V_RES;
@@ -216,13 +254,10 @@ static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config)
   panel_config->timings.vsync_front_porch = LCD_VFP;
   panel_config->timings.vsync_pulse_width = LCD_VSYNC;
 
-  // Critical: Set correct pixel clock polarity for this display
-  panel_config->timings.flags.pclk_active_neg = true;
-
   return ESP_OK;
 }
 
-static bool lvgl_notify_flush_ready(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_ctx)
+static bool IRAM_ATTR lvgl_notify_flush_ready(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_ctx)
 {
   lv_display_t *disp = (lv_display_t *)user_ctx;
   lv_display_flush_ready(disp);

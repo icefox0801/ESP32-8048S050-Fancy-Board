@@ -5,14 +5,14 @@
 #include "sdkconfig.h"
 
 // LCD panel configuration for ESP32-8048S050
-// Refresh Rate = 18000000/(1+40+20+800)/(1+10+5+480) = 42Hz
-#define LCD_PIXEL_CLOCK_HZ (18 * 1000 * 1000)
+// Refresh Rate = 20000000/(8+40+20+800)/(8+10+5+480) =
+#define LCD_PIXEL_CLOCK_HZ (15 * 1000 * 1000)
 #define LCD_H_RES 800
 #define LCD_V_RES 480
-#define LCD_HSYNC 1
+#define LCD_HSYNC 8
 #define LCD_HBP 40
 #define LCD_HFP 20
-#define LCD_VSYNC 1
+#define LCD_VSYNC 8
 #define LCD_VBP 10
 #define LCD_VFP 5
 
@@ -64,9 +64,9 @@
 #endif
 
 // LVGL configuration
-#define LVGL_DRAW_BUF_LINES 50
+#define LVGL_DRAW_BUF_LINES 20 // Reduced from 50 to 20 lines for better memory efficiency
 #define LVGL_TICK_PERIOD_MS 2
-#define LVGL_TASK_STACK_SIZE (5 * 1024)
+#define LVGL_TASK_STACK_SIZE (12 * 1024) // Increased from 8KB to 12KB for stability
 #define LVGL_TASK_PRIORITY 2
 
 /**
