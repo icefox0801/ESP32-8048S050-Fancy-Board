@@ -4,86 +4,53 @@
 # ==========================================================
 
 # ----------------------------------------------------------
-# PSRAM Configuration
+# Memory and Task Configuration (Increased for Stability)
+# ----------------------------------------------------------
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=8192
+CONFIG_ESP_INT_WDT_TIMEOUT_MS=800
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=10
+
+# Heap debugging and corruption detection
+CONFIG_HEAP_POISONING_LIGHT=y
+CONFIG_HEAP_TRACING=y
+CONFIG_HEAP_TASK_TRACKING=y
+
+# ESP Timer task stack size (increased for stability)
+CONFIG_ESP_TIMER_TASK_STACK_SIZE=6144
+CONFIG_ESP_TIMER_INTERRUPT_LEVEL=1
+
+# System event task stack size (increased for stability)
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=12288
+
+# Additional task stack sizes for stability (increased)
+CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=6144
+
+# Stack overflow detection and monitoring
+CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y
+CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y
+CONFIG_ESP_SYSTEM_CHECK_INT_LEVEL_5=y
+
+# TCP/IP task stack size (increased for stability)
+CONFIG_LWIP_TCPIP_TASK_STACK_SIZE=8192
+
+# ----------------------------------------------------------
+# PSRAM Configuration (8MB Octal SPI PSRAM)
 # ----------------------------------------------------------
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
-
-# Enable XIP from PSRAM for better LCD performance when frame buffer is in PSRAM
 CONFIG_SPIRAM_XIP_FROM_PSRAM=y
-
-# Allow frame buffers to be allocated in PSRAM
 CONFIG_SPIRAM_USE_MALLOC=y
 CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+
+# Enable PSRAM malloc for large allocations like frame buffers
+CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768
 
 # ----------------------------------------------------------
-# LCD & LVGL Configuration
+# Flash Memory Configuration (16MB)
 # ----------------------------------------------------------
-# LCD_CAM peripheral supports up to 16 data lines
-CONFIG_EXAMPLE_LCD_DATA_LINES_16=y
-
-# LVGL 16-bit color depth for RGB565 format
-CONFIG_LV_COLOR_DEPTH_16=y
-
-# CONFIG_LV_FONT_MONTSERRAT_8 is not set
-# CONFIG_LV_FONT_MONTSERRAT_10 is not set
-CONFIG_LV_FONT_MONTSERRAT_12=y
-CONFIG_LV_FONT_MONTSERRAT_14=y
-CONFIG_LV_FONT_MONTSERRAT_16=y
-CONFIG_LV_FONT_MONTSERRAT_18=y
-CONFIG_LV_FONT_MONTSERRAT_20=y
-CONFIG_LV_FONT_MONTSERRAT_22=y
-CONFIG_LV_FONT_MONTSERRAT_24=y
-# CONFIG_LV_FONT_MONTSERRAT_26 is not set
-CONFIG_LV_FONT_MONTSERRAT_28=y
-# CONFIG_LV_FONT_MONTSERRAT_30 is not set
-CONFIG_LV_FONT_MONTSERRAT_32=y
-# CONFIG_LV_FONT_MONTSERRAT_34 is not set
-CONFIG_LV_FONT_MONTSERRAT_36=y
-# CONFIG_LV_FONT_MONTSERRAT_38 is not set
-CONFIG_LV_FONT_MONTSERRAT_40=y
-# CONFIG_LV_FONT_MONTSERRAT_42 is not set
-# CONFIG_LV_FONT_MONTSERRAT_44 is not set
-# CONFIG_LV_FONT_MONTSERRAT_46 is not set
-CONFIG_LV_FONT_MONTSERRAT_48=y
-
-# ----------------------------------------------------------
-# RGB LCD GPIO Pin Assignment (ESP32-S3-8048S050)
-# ----------------------------------------------------------
-
-# LCD Control Signals
-CONFIG_EXAMPLE_LCD_VSYNC_GPIO=41
-CONFIG_EXAMPLE_LCD_HSYNC_GPIO=39
-CONFIG_EXAMPLE_LCD_DE_GPIO=40
-CONFIG_EXAMPLE_LCD_PCLK_GPIO=42
-
-# Blue Channel Data Lines (B3:B7 -> DATA0:DATA4)
-CONFIG_EXAMPLE_LCD_DATA0_GPIO=8
-CONFIG_EXAMPLE_LCD_DATA1_GPIO=3
-CONFIG_EXAMPLE_LCD_DATA2_GPIO=46
-CONFIG_EXAMPLE_LCD_DATA3_GPIO=9
-CONFIG_EXAMPLE_LCD_DATA4_GPIO=1
-
-# Green Channel Data Lines (G2:G7 -> DATA5:DATA10)
-CONFIG_EXAMPLE_LCD_DATA5_GPIO=5
-CONFIG_EXAMPLE_LCD_DATA6_GPIO=6
-CONFIG_EXAMPLE_LCD_DATA7_GPIO=7
-CONFIG_EXAMPLE_LCD_DATA8_GPIO=15
-CONFIG_EXAMPLE_LCD_DATA9_GPIO=16
-CONFIG_EXAMPLE_LCD_DATA10_GPIO=4
-
-# Red Channel Data Lines (R3:R7 -> DATA11:DATA15)
-CONFIG_EXAMPLE_LCD_DATA11_GPIO=45
-CONFIG_EXAMPLE_LCD_DATA12_GPIO=48
-CONFIG_EXAMPLE_LCD_DATA13_GPIO=47
-CONFIG_EXAMPLE_LCD_DATA14_GPIO=21
-CONFIG_EXAMPLE_LCD_DATA15_GPIO=14
-
-# ----------------------------------------------------------
-# Flash Memory Configuration
-# ----------------------------------------------------------
-CONFIG_ESPTOOLPY_FLASH_MODE_AUTO_DETECT=y
 CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
 CONFIG_ESPTOOLPY_FLASHMODE="dio"
 CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
@@ -91,20 +58,98 @@ CONFIG_ESPTOOLPY_FLASHFREQ="80m"
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_ESPTOOLPY_FLASHSIZE="16MB"
 
-# Flash Programming Behavior
-CONFIG_ESPTOOLPY_BEFORE_RESET=y
-CONFIG_ESPTOOLPY_BEFORE="default_reset"
-CONFIG_ESPTOOLPY_AFTER_RESET=y
-CONFIG_ESPTOOLPY_AFTER="hard_reset"
-
-# Serial Monitor Configuration
-CONFIG_ESPTOOLPY_MONITOR_BAUD=115200
-
 # ----------------------------------------------------------
-# Custom Partition Table Configuration
+# Partition Table Configuration
 # ----------------------------------------------------------
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_OFFSET=0x8000
 CONFIG_PARTITION_TABLE_MD5=y
+
+# ----------------------------------------------------------
+# LVGL Graphics Library Configuration
+# ----------------------------------------------------------
+CONFIG_LV_COLOR_DEPTH_16=y
+CONFIG_LV_DEF_REFR_PERIOD=16
+CONFIG_LV_OS_FREERTOS=y
+CONFIG_LV_MEM_SIZE_KILOBYTES=128
+
+# LVGL Montserrat Font Configuration (optimized selection)
+CONFIG_LV_FONT_MONTSERRAT_12=y
+CONFIG_LV_FONT_MONTSERRAT_14=y
+CONFIG_LV_FONT_MONTSERRAT_16=y
+CONFIG_LV_FONT_MONTSERRAT_18=y
+CONFIG_LV_FONT_MONTSERRAT_20=y
+CONFIG_LV_FONT_MONTSERRAT_22=y
+CONFIG_LV_FONT_MONTSERRAT_24=y
+CONFIG_LV_FONT_MONTSERRAT_28=y
+CONFIG_LV_FONT_MONTSERRAT_32=y
+CONFIG_LV_FONT_MONTSERRAT_36=y
+CONFIG_LV_FONT_MONTSERRAT_40=y
+CONFIG_LV_FONT_MONTSERRAT_48=y
+
+# Enable LVGL built-in fonts
+CONFIG_LV_FONT_DEFAULT_MONTSERRAT_14=y
+
+# ----------------------------------------------------------
+# LCD CAM and RGB Panel Configuration
+# ----------------------------------------------------------
+CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
+CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
+
+# ----------------------------------------------------------
+# RGB LCD Hardware Configuration (ST7262 Controller)
+# ----------------------------------------------------------
+CONFIG_EXAMPLE_LCD_DATA_LINES_16=y
+
+# LCD Control Signals
+CONFIG_EXAMPLE_LCD_VSYNC_GPIO=41
+CONFIG_EXAMPLE_LCD_HSYNC_GPIO=39
+CONFIG_EXAMPLE_LCD_DE_GPIO=40
+CONFIG_EXAMPLE_LCD_PCLK_GPIO=42
+
+# RGB Data Lines (16-bit parallel interface)
+# Blue Channel (B3-B7 -> DATA0-DATA4)
+CONFIG_EXAMPLE_LCD_DATA0_GPIO=8
+CONFIG_EXAMPLE_LCD_DATA1_GPIO=3
+CONFIG_EXAMPLE_LCD_DATA2_GPIO=46
+CONFIG_EXAMPLE_LCD_DATA3_GPIO=9
+CONFIG_EXAMPLE_LCD_DATA4_GPIO=1
+
+# Green Channel (G2-G7 -> DATA5-DATA10)
+CONFIG_EXAMPLE_LCD_DATA5_GPIO=5
+CONFIG_EXAMPLE_LCD_DATA6_GPIO=6
+CONFIG_EXAMPLE_LCD_DATA7_GPIO=7
+CONFIG_EXAMPLE_LCD_DATA8_GPIO=15
+CONFIG_EXAMPLE_LCD_DATA9_GPIO=16
+CONFIG_EXAMPLE_LCD_DATA10_GPIO=4
+
+# Red Channel (R3-R7 -> DATA11-DATA15)
+CONFIG_EXAMPLE_LCD_DATA11_GPIO=45
+CONFIG_EXAMPLE_LCD_DATA12_GPIO=48
+CONFIG_EXAMPLE_LCD_DATA13_GPIO=47
+CONFIG_EXAMPLE_LCD_DATA14_GPIO=21
+CONFIG_EXAMPLE_LCD_DATA15_GPIO=14
+
+# ----------------------------------------------------------
+# FreeRTOS Configuration
+# ----------------------------------------------------------
+CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=4096
+
+# ----------------------------------------------------------
+# Serial Monitor Configuration & Debugging
+# ----------------------------------------------------------
+CONFIG_ESPTOOLPY_MONITOR_BAUD=115200
+
+# Enable debug logging for LCD and LVGL
+CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y
+CONFIG_LOG_MAXIMUM_LEVEL=4
+
+# ----------------------------------------------------------
+# Flash Programming Behavior
+# ----------------------------------------------------------
+CONFIG_ESPTOOLPY_BEFORE_RESET=y
+CONFIG_ESPTOOLPY_BEFORE="default_reset"
+CONFIG_ESPTOOLPY_AFTER_RESET=y
+CONFIG_ESPTOOLPY_AFTER="hard_reset"
