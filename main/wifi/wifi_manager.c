@@ -60,6 +60,7 @@ typedef struct
   uint8_t retry_count;                    ///< Current retry attempt count
   TaskHandle_t reconnect_task_handle;     ///< Handle for reconnection task
   bool initialized;                       ///< Initialization status flag
+  bool sntp_initialized;                  ///< SNTP initialization status flag
   char configured_ssid[33];               ///< Configured SSID
   char configured_password[64];           ///< Configured password
 } wifi_manager_state_t;
@@ -169,16 +170,29 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base, int32_t eve
       xEventGroupSetBits(s_wifi_manager.wifi_event_group, WIFI_CONNECTED_BIT);
       xEventGroupClearBits(s_wifi_manager.wifi_event_group, WIFI_DISCONNECTED_BIT | WIFI_FAIL_BIT);
 
-      // Initialize SNTP for network time synchronization
-      esp_sntp_setservername(0, "pool.ntp.org");
-      esp_sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
-      esp_sntp_init();
+      // Initialize SNTP for network time synchronization (only once)
+      if (!s_wifi_manager.sntp_initialized)
+      {
+        esp_sntp_setservername(0, "pool.ntp.org");
+        esp_sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
+        esp_sntp_init();
+        s_wifi_manager.sntp_initialized = true;
+        ESP_LOGI(TAG, "SNTP initialized successfully");
+      }
       break;
     }
 
     case IP_EVENT_STA_LOST_IP:
       ESP_LOGW(TAG, "Lost IP address");
       wifi_set_status(WIFI_STATUS_DISCONNECTED);
+
+      // Clean up SNTP when IP is lost
+      if (s_wifi_manager.sntp_initialized)
+      {
+        esp_sntp_stop();
+        s_wifi_manager.sntp_initialized = false;
+        ESP_LOGI(TAG, "SNTP stopped due to IP loss");
+      }
       break;
 
     default:
@@ -268,13 +282,14 @@ static esp_err_t wifi_start_reconnect_task(void)
 {
   if (s_wifi_manager.reconnect_task_handle == NULL)
   {
-    BaseType_t result = xTaskCreate(wifi_reconnect_task, "wifi_reconnect",
-                                    4096, NULL, 5, &s_wifi_manager.reconnect_task_handle);
+    BaseType_t result = xTaskCreatePinnedToCore(wifi_reconnect_task, "wifi_reconnect",
+                                                6144, NULL, 5, &s_wifi_manager.reconnect_task_handle, 0);
     if (result != pdPASS)
     {
-      ESP_LOGE(TAG, "Failed to create reconnection task");
+      ESP_LOGE(TAG, "Failed to create reconnection task on core 0");
       return ESP_ERR_NO_MEM;
     }
+    ESP_LOGI(TAG, "WiFi reconnection task started on core 0 with 6KB stack");
   }
   return ESP_OK;
 }
@@ -361,24 +376,57 @@ esp_err_t wifi_manager_init(void)
   // Set WiFi mode to station
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
+// Use default credentials if configured - set BEFORE starting WiFi
+#ifdef DEFAULT_WIFI_SSID
+  if (strlen(DEFAULT_WIFI_SSID) > 0)
+  {
+    ESP_LOGI(TAG, "WiFi manager initialized, connecting to '%s'", DEFAULT_WIFI_SSID);
+
+    // Set WiFi config before starting
+    wifi_config_t wifi_config = {0};
+    strncpy((char *)wifi_config.sta.ssid, DEFAULT_WIFI_SSID, sizeof(wifi_config.sta.ssid) - 1);
+#ifdef DEFAULT_WIFI_PASSWORD
+    if (strlen(DEFAULT_WIFI_PASSWORD) > 0)
+    {
+      strncpy((char *)wifi_config.sta.password, DEFAULT_WIFI_PASSWORD, sizeof(wifi_config.sta.password) - 1);
+    }
+#endif
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    wifi_config.sta.pmf_cfg.capable = true;
+    wifi_config.sta.pmf_cfg.required = false;
+
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+
+    // Store configured credentials
+    strncpy(s_wifi_manager.configured_ssid, DEFAULT_WIFI_SSID, sizeof(s_wifi_manager.configured_ssid) - 1);
+#ifdef DEFAULT_WIFI_PASSWORD
+    if (strlen(DEFAULT_WIFI_PASSWORD) > 0)
+    {
+      strncpy(s_wifi_manager.configured_password, DEFAULT_WIFI_PASSWORD, sizeof(s_wifi_manager.configured_password) - 1);
+    }
+    else
+    {
+      s_wifi_manager.configured_password[0] = '\0';
+    }
+#else
+    s_wifi_manager.configured_password[0] = '\0';
+#endif
+  }
+#endif
+
+  // Start WiFi first before configuring power settings
+  ESP_ERROR_CHECK(esp_wifi_start());
+
+  // Configure WiFi power settings to reduce LCD interference (after WiFi is started)
+  ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_MIN_MODEM)); // Enable power saving to reduce interference
+
+  // Reduce WiFi TX power to minimize interference with LCD (default is 84 = 21dBm)
+  ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(48)); // Further reduced to 12dBm (48 * 0.25) for maximum stability
+
   // Initialize state
   s_wifi_manager.status = WIFI_STATUS_DISCONNECTED;
   s_wifi_manager.retry_count = 0;
   s_wifi_manager.initialized = true;
-
-// Use default credentials if configured
-#ifdef DEFAULT_WIFI_SSID
-  if (strlen(DEFAULT_WIFI_SSID) > 0)
-  {
-    strncpy(s_wifi_manager.configured_ssid, DEFAULT_WIFI_SSID, sizeof(s_wifi_manager.configured_ssid) - 1);
-#ifdef DEFAULT_WIFI_PASSWORD
-    strncpy(s_wifi_manager.configured_password, DEFAULT_WIFI_PASSWORD, sizeof(s_wifi_manager.configured_password) - 1);
-#endif
-
-    ESP_LOGI(TAG, "WiFi manager initialized, connecting to '%s'", s_wifi_manager.configured_ssid);
-    return wifi_manager_connect(s_wifi_manager.configured_ssid, s_wifi_manager.configured_password);
-  }
-#endif
 
   ESP_LOGI(TAG, "WiFi manager initialized successfully");
   return ESP_OK;
@@ -411,6 +459,10 @@ esp_err_t wifi_manager_connect(const char *ssid, const char *password)
     s_wifi_manager.configured_password[0] = '\0';
   }
 
+  // Disconnect first if already connected/connecting
+  esp_wifi_disconnect();
+  vTaskDelay(pdMS_TO_TICKS(100)); // Give it time to disconnect
+
   // Configure WiFi
   wifi_config_t wifi_config = {0};
   strncpy((char *)wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid) - 1);
@@ -424,7 +476,9 @@ esp_err_t wifi_manager_connect(const char *ssid, const char *password)
   wifi_config.sta.pmf_cfg.required = false;
 
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-  ESP_ERROR_CHECK(esp_wifi_start());
+
+  // Now start the connection
+  ESP_ERROR_CHECK(esp_wifi_connect());
 
   return ESP_OK;
 }
