@@ -178,6 +178,49 @@ static lv_obj_t *create_vertical_separator(lv_obj_t *parent, int x, int y, int h
 }
 
 /**
+ * @brief Create a vertically centered separator using alignment API
+ * @param parent Parent panel
+ * @param x X position
+ * @param height Separator height
+ * @param color Separator color (hex)
+ * @return Created separator object
+ */
+static lv_obj_t *create_centered_vertical_separator(lv_obj_t *parent, int x, int height, uint32_t color)
+{
+  lv_obj_t *separator = lv_obj_create(parent);
+  lv_obj_set_size(separator, 1, height);
+  lv_obj_set_style_bg_color(separator, lv_color_hex(color), 0);
+  lv_obj_set_style_border_width(separator, 0, 0);
+  lv_obj_set_style_radius(separator, 0, 0);
+  lv_obj_align(separator, LV_ALIGN_LEFT_MID, x, 0);
+  return separator;
+}
+
+/**
+ * @brief Create a switch field with label above it, positioned and aligned together
+ * @param parent Parent panel
+ * @param label_text Text for the label above the switch
+ * @param x_offset X position offset from left edge
+ * @return Created switch object
+ */
+static lv_obj_t *create_switch_field(lv_obj_t *parent, const char *label_text, int x_offset)
+{
+  // Create the label first (positioned above where the switch will be)
+  lv_obj_t *label = lv_label_create(parent);
+  lv_label_set_text(label, label_text);
+  lv_obj_set_style_text_font(label, font_small, 0);
+  lv_obj_set_style_text_color(label, lv_color_hex(0xcccccc), 0);
+  lv_obj_align(label, LV_ALIGN_LEFT_MID, x_offset, -25); // Position 25px above center
+
+  // Create the switch (moved down 10px from center)
+  lv_obj_t *switch_obj = lv_switch_create(parent);
+  lv_obj_set_size(switch_obj, 60, 30);
+  lv_obj_align(switch_obj, LV_ALIGN_LEFT_MID, x_offset, 10);
+
+  return switch_obj;
+}
+
+/**
  * @brief Create a progress bar
  * @param parent Parent panel
  * @param width Bar width
@@ -233,70 +276,46 @@ static lv_obj_t *create_status_panel(lv_obj_t *parent, int width, int height, in
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Create the smart home control panel
+ * @brief Create the control panel
  * @param parent Parent screen object
- * @return Created smart panel
+ * @return Created control panel
  */
-static lv_obj_t *create_smart_panel(lv_obj_t *parent)
+static lv_obj_t *create_control_panel(lv_obj_t *parent)
 {
-  lv_obj_t *smart_panel = create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
+  lv_obj_t *control_panel = create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
 
-  // Controls title (centered vertically)
-  lv_obj_t *controls_title = lv_label_create(smart_panel);
+  // Controls title (centered vertically using align API)
+  lv_obj_t *controls_title = lv_label_create(control_panel);
   lv_label_set_text(controls_title, "Controls");
   lv_obj_set_style_text_font(controls_title, font_title, 0);
   lv_obj_set_style_text_color(controls_title, lv_color_hex(0x4fc3f7), 0);
-  lv_obj_set_pos(controls_title, 10, 36);
+  lv_obj_align(controls_title, LV_ALIGN_LEFT_MID, 0, 0);
 
-  // Vertical separator after controls title (centered)
-  create_vertical_separator(smart_panel, 140, 25, 50, 0x4fc3f7);
+  // Vertical separator after controls title (centered using align API)
+  create_centered_vertical_separator(control_panel, 140, 60, 0x4fc3f7);
 
-  // Water pump switch (left)
-  water_pump_switch = lv_switch_create(smart_panel);
-  lv_obj_set_size(water_pump_switch, 60, 30);
-  lv_obj_set_pos(water_pump_switch, 180, 35);
+  // Water pump switch field
+  water_pump_switch = create_switch_field(control_panel, "Water Pump", 180);
 
-  lv_obj_t *water_pump_label = lv_label_create(smart_panel);
-  lv_label_set_text(water_pump_label, "Water Pump");
-  lv_obj_set_style_text_font(water_pump_label, font_small, 0);
-  lv_obj_set_style_text_color(water_pump_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(water_pump_label, 180, 5);
+  // Vertical separator after water pump (centered using align API)
+  create_centered_vertical_separator(control_panel, 300, 60, 0x555555);
 
-  // Vertical separator after water pump (centered)
-  create_vertical_separator(smart_panel, 300, 25, 50, 0x555555);
+  // Wave maker switch field
+  wave_maker_switch = create_switch_field(control_panel, "Wave Maker", 340);
 
-  // Wave maker switch (left-center)
-  wave_maker_switch = lv_switch_create(smart_panel);
-  lv_obj_set_size(wave_maker_switch, 60, 30);
-  lv_obj_set_pos(wave_maker_switch, 340, 35);
+  // Vertical separator after wave maker (centered using align API)
+  create_centered_vertical_separator(control_panel, 460, 60, 0x555555);
 
-  lv_obj_t *wave_maker_label = lv_label_create(smart_panel);
-  lv_label_set_text(wave_maker_label, "Wave Maker");
-  lv_obj_set_style_text_font(wave_maker_label, font_small, 0);
-  lv_obj_set_style_text_color(wave_maker_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(wave_maker_label, 340, 5);
+  // Light switch field
+  light_switch = create_switch_field(control_panel, "Light", 500);
 
-  // Vertical separator after wave maker (centered)
-  create_vertical_separator(smart_panel, 460, 25, 50, 0x555555);
+  // Vertical separator before feed button (centered using align API)
+  create_centered_vertical_separator(control_panel, 580, 60, 0x555555);
 
-  // Light switch (right-center)
-  light_switch = lv_switch_create(smart_panel);
-  lv_obj_set_size(light_switch, 60, 30);
-  lv_obj_set_pos(light_switch, 500, 35);
-
-  lv_obj_t *light_label = lv_label_create(smart_panel);
-  lv_label_set_text(light_label, "Light");
-  lv_obj_set_style_text_font(light_label, font_small, 0);
-  lv_obj_set_style_text_color(light_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(light_label, 500, 5);
-
-  // Vertical separator before feed button (centered)
-  create_vertical_separator(smart_panel, 580, 25, 50, 0x555555);
-
-  // Feed button (right with proper padding)
-  feed_button = lv_btn_create(smart_panel);
-  lv_obj_set_size(feed_button, 90, 50);
-  lv_obj_set_pos(feed_button, 680, 25);
+  // Feed button (right with proper padding, centered using align API)
+  feed_button = lv_btn_create(control_panel);
+  lv_obj_set_size(feed_button, 120, 50);
+  lv_obj_align(feed_button, LV_ALIGN_RIGHT_MID, 0, 0);
   lv_obj_set_style_bg_color(feed_button, lv_color_hex(0x4caf50), 0);
   lv_obj_set_style_radius(feed_button, 10, 0);
 
@@ -305,7 +324,7 @@ static lv_obj_t *create_smart_panel(lv_obj_t *parent)
   lv_obj_set_style_text_font(feed_label, font_normal, 0);
   lv_obj_set_style_text_color(feed_label, lv_color_hex(0xffffff), 0);
   lv_obj_center(feed_label);
-  return smart_panel;
+  return control_panel;
 }
 
 /**
@@ -397,7 +416,7 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
   lv_obj_align(mem_usage_label, LV_ALIGN_BOTTOM_LEFT, 10, -5);
 
   // Dimmed vertical separator between usage field and progress bar
-  create_vertical_separator(mem_panel, 150, 45, 55, 0x555555);
+  create_vertical_separator(mem_panel, 150, 45, 45, 0x555555);
 
   // Progress bar (positioned to the right of the separator)
   mem_usage_bar = create_progress_bar(mem_panel, 500, 25, 170, 65, 0x1a1a2e, 0xff7043, 12);
@@ -453,7 +472,7 @@ void system_monitor_ui_create(lv_display_t *disp)
   lv_obj_t *screen = lv_display_get_screen_active(disp);
 
   // Create all UI panels (smart panel at top, status panel at bottom)
-  create_smart_panel(screen);
+  create_control_panel(screen);
   create_cpu_panel(screen);
   create_gpu_panel(screen);
   create_memory_panel(screen);
