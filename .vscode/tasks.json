@@ -1,53 +1,39 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "ESP-IDF Build",
-			"type": "shell",
-			"command": "idf.py",
-			"args": [
-				"build"
-			],
-			"problemMatcher": [
-				"$gcc"
-			],
-			"group": "build"
-		},
-		{
-			"label": "ESP-IDF Build Clean",
-			"type": "shell",
-			"command": "idf.py build",
-			"problemMatcher": [
-				"$gcc"
-			],
-			"group": "build"
-		},
-		{
-			"label": "ESP-IDF Full Clean Build",
-			"type": "shell",
-			"command": "set PYTHONIOENCODING=utf-8 && idf.py fullclean && idf.py build",
-			"problemMatcher": [
-				"$gcc"
-			],
-			"group": "build"
-		},
-		{
-			"label": "ESP-IDF Build Check",
-			"type": "shell",
-			"command": "idf.py build",
-			"problemMatcher": [
-				"$gcc"
-			],
-			"group": "build"
-		},
-		{
-			"label": "ESP-IDF Build Final",
-			"type": "shell",
-			"command": "idf.py build",
-			"problemMatcher": [
-				"$gcc"
-			],
-			"group": "build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build with System Manager Debug",
+      "type": "shell",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build",
+      "isBackground": false,
+      "group": "build"
+    },
+    {
+      "label": "Flash and Monitor with Debug",
+      "type": "shell",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py flash monitor",
+      "isBackground": true,
+      "group": "build"
+    },
+    {
+      "label": "Build System Manager with Debug",
+      "type": "shell",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build",
+      "isBackground": false,
+      "group": "build"
+    },
+    {
+      "label": "Build and Flash Debug",
+      "type": "shell",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build && idf.py flash",
+      "group": "build"
+    },
+    {
+      "label": "ESP-IDF Full Clean and Reconfigure",
+      "type": "shell",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py fullclean && idf.py reconfigure && idf.py build",
+      "isBackground": false,
+      "group": "build"
+    }
+  ]
 }

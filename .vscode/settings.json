@@ -13,8 +13,14 @@
   },
   "idf.flashType": "UART",
   "files.associations": {
+    "*.cpp": "cpp",
+    "*.h": "cpp",
+    "*.csv": "ino",
     "sdkconfig": "ini",
-    "sdkconfig.*": "ini"
+    "sdkconfig.*": "ini",
+    "cstdlib": "c",
+    "format": "c",
+    "thread": "c"
   },
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
