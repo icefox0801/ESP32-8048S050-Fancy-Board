@@ -12,6 +12,30 @@
 - **Touch Interface**: I2C (GT911 capacitive touch controller)
 - **Date**: August 13, 2025
 
+## Build and Development Workflow
+
+### VS Code Tasks Integration
+This project is configured with VS Code tasks for streamlined development. Use these tasks instead of running ESP-IDF CLI commands directly:
+
+**Available Tasks:**
+- `ESP-IDF Build` - Standard build
+- `Build with System Manager Debug` - Build with debug configuration
+- `ESP-IDF Build Clean` - Clean build
+- `ESP-IDF Full Clean Build` - Full clean and rebuild
+- `Flash and Monitor with Debug` - Flash firmware and start monitor
+- `Build and Flash Debug` - Combined build and flash
+
+**Usage:**
+- Press `Ctrl+Shift+P` → `Tasks: Run Task` → Select desired task
+- Or use the VS Code task runner interface
+- Tasks automatically handle ESP-IDF environment setup
+
+**Advantages:**
+- Automatic ESP-IDF environment initialization
+- Integrated with VS Code's problem matcher for error highlighting
+- Consistent build environment across different terminals
+- No need to manually run `export.bat` before each command
+
 ## Hardware Configuration
 ESP32-8048S050 standard GPIO assignments:
 ```
@@ -33,6 +57,35 @@ SDA: GPIO19      SCL: GPIO20      INT: GPIO18      RST: GPIO38
 Other Peripherals:
 USER_LED: GPIO17    BOOT: GPIO0    USB_D-: GPIO19   USB_D+: GPIO20
 ```
+
+## Configuration Management
+
+### SDK Configuration Hierarchy
+This project follows ESP-IDF's configuration management best practices:
+
+**Configuration Priority (highest to lowest):**
+1. `sdkconfig.defaults.esp32s3` - **SINGLE SOURCE OF TRUTH** for ESP32-S3 specific settings
+2. `sdkconfig.defaults` - General default configurations
+3. `sdkconfig` - Generated file, **DO NOT EDIT MANUALLY**
+
+**Important Rules:**
+- ✅ **Always modify** `sdkconfig.defaults.esp32s3` for configuration changes
+- ✅ **Reference** `sdkconfig` to search for existing configuration options
+- ❌ **Never edit** `sdkconfig` directly - it gets regenerated automatically
+- ❌ **Never commit** `sdkconfig` to version control (use `.gitignore`)
+
+**Configuration Workflow:**
+1. Search for configuration option in `sdkconfig` to find the correct CONFIG name
+2. Add or modify the setting in `sdkconfig.defaults.esp32s3`
+3. Run `idf.py reconfigure` or clean build to apply changes
+4. Verify the setting appears in the newly generated `sdkconfig`
+
+**Example Configuration Categories:**
+- Stack sizes: `CONFIG_ESP_MAIN_TASK_STACK_SIZE`, `CONFIG_FREERTOS_*_STACK_SIZE`
+- Memory settings: `CONFIG_SPIRAM_*`, heap configurations
+- Task priorities and watchdog timeouts
+- Hardware peripherals: LCD, WiFi, UART settings
+- Build optimizations and debug options
 
 ## Commit Message Convention
 
