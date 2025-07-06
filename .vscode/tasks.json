@@ -2,34 +2,34 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build",
+      "label": "ESP-IDF Build",
       "type": "shell",
       "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build",
       "isBackground": false,
       "group": "build"
     },
     {
-      "label": "Flash",
+      "label": "ESP-IDF Flash",
       "type": "shell",
       "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py flash",
       "isBackground": true,
       "group": "build"
     },
     {
-      "label": "Monitor",
+      "label": "ESP-IDF Monitor",
       "type": "shell",
       "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py monitor",
       "group": "build"
     },
     {
-      "label": "Full Clean",
+      "label": "ESP-IDF Full Clean",
       "type": "shell",
       "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py fullclean",
       "isBackground": false,
       "group": "build"
     },
     {
-      "label": "Reconfigure",
+      "label": "ESP-IDF Reconfigure",
       "type": "shell",
       "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py reconfigure",
       "isBackground": false,
