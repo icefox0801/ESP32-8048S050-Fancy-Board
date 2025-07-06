@@ -2,36 +2,36 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build with System Manager Debug",
+      "label": "Build",
       "type": "shell",
       "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build",
       "isBackground": false,
       "group": "build"
     },
     {
-      "label": "Flash and Monitor with Debug",
+      "label": "Flash",
       "type": "shell",
-      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py flash monitor",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py flash",
       "isBackground": true,
       "group": "build"
     },
     {
-      "label": "Build System Manager with Debug",
+      "label": "Monitor",
       "type": "shell",
-      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py monitor",
+      "group": "build"
+    },
+    {
+      "label": "Full Clean",
+      "type": "shell",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py fullclean",
       "isBackground": false,
       "group": "build"
     },
     {
-      "label": "Build and Flash Debug",
+      "label": "Reconfigure",
       "type": "shell",
-      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py build && idf.py flash",
-      "group": "build"
-    },
-    {
-      "label": "ESP-IDF Full Clean and Reconfigure",
-      "type": "shell",
-      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py fullclean && idf.py reconfigure && idf.py build",
+      "command": "C:\\Espressif\\frameworks\\esp-idf-v5.5\\export.bat && idf.py reconfigure",
       "isBackground": false,
       "group": "build"
     }
