@@ -48,7 +48,7 @@ static const char *TAG = "serial_data";
 #define JSON_BUFFER_SIZE 1024 ///< JSON parsing buffer size
 
 // Task Configuration
-#define SERIAL_TASK_STACK_SIZE 4096 ///< Task stack size in bytes
+#define SERIAL_TASK_STACK_SIZE 6144 ///< Task stack size in bytes (increased for stability)
 #define SERIAL_TASK_PRIORITY 5      ///< FreeRTOS task priority
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -243,11 +243,10 @@ static void process_received_line(const char *line_buffer, system_data_t *system
       if (parse_json_data(trimmed, system_data))
       {
         system_monitor_ui_update(system_data);
-        system_monitor_ui_set_connection_status(true);
 
         // Log less frequently to avoid blocking serial processing
         static uint32_t success_counter = 0;
-        if (++success_counter % 10 == 0) // Log every 10th successful parse (more frequent for debugging)
+        if (++success_counter % 10 == 0) // Log every 10th successful parse
         {
           ESP_LOGI(TAG, "Successfully parsed and updated system data (total: %lu)", success_counter);
         }
@@ -320,7 +319,6 @@ static void check_connection_timeout(uint32_t current_time)
     if (!timeout_logged)
     {
       ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
-      system_monitor_ui_set_connection_status(false);
       timeout_logged = true;
     }
   }
@@ -401,10 +399,10 @@ void serial_data_start_task(void)
     serial_running = true;
     last_data_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
-    xTaskCreate(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
-                NULL, SERIAL_TASK_PRIORITY, &serial_task_handle);
+    xTaskCreatePinnedToCore(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
+                            NULL, SERIAL_TASK_PRIORITY, &serial_task_handle, 0);
 
-    ESP_LOGI(TAG, "Serial data reception started");
+    ESP_LOGI(TAG, "Serial data reception started on core 0");
   }
 }
 

@@ -19,6 +19,7 @@
 
 #include "esp_log.h"
 #include "lvgl_setup.h"
+#include "smart/ha_api.h"
 #include <stdio.h>
 #include <time.h>
 
@@ -57,12 +58,107 @@ static lv_obj_t *mem_usage_label = NULL;
 static lv_obj_t *mem_info_label = NULL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// FONT DEFINITIONS
+// FONT DEFINITIONS WITH FALLBACK
 // ═══════════════════════════════════════════════════════════════════════════════
-static const lv_font_t *font_title = &lv_font_montserrat_28;       // Large title font (28px)
-static const lv_font_t *font_normal = &lv_font_montserrat_16;      // Normal text
-static const lv_font_t *font_small = &lv_font_montserrat_14;       // Small text
+#ifdef CONFIG_LV_FONT_MONTSERRAT_28
+static const lv_font_t *font_title = &lv_font_montserrat_28; // Large title font (28px)
+#else
+static const lv_font_t *font_title = &lv_font_montserrat_14; // Fallback to 14px
+#endif
+
+#ifdef CONFIG_LV_FONT_MONTSERRAT_16
+static const lv_font_t *font_normal = &lv_font_montserrat_16; // Normal text
+#else
+static const lv_font_t *font_normal = &lv_font_montserrat_14; // Fallback to 14px
+#endif
+
+static const lv_font_t *font_small = &lv_font_montserrat_14; // Small text
+
+#ifdef CONFIG_LV_FONT_MONTSERRAT_32
 static const lv_font_t *font_big_numbers = &lv_font_montserrat_32; // Large numbers (32px)
+#else
+static const lv_font_t *font_big_numbers = &lv_font_montserrat_14; // Fallback to 14px
+#endif
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EVENT HANDLERS - USING SYSTEM MANAGER TO PREVENT LVGL BLOCKING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Water pump switch event handler
+ */
+static void water_pump_event_handler(lv_event_t *e)
+{
+  lv_event_code_t code = lv_event_get_code(e);
+  lv_obj_t *obj = lv_event_get_target(e);
+
+  ESP_LOGI(TAG, "Water pump event handler called with code %d", code);
+
+  if (code == LV_EVENT_VALUE_CHANGED)
+  {
+    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
+    ESP_LOGI(TAG, "Water pump switch: %s", state ? "ON" : "OFF");
+
+    // TODO: Add Home Assistant API integration here
+    // For now, just log the action
+    ESP_LOGI(TAG, "Would set water pump to %s via Home Assistant API", state ? "ON" : "OFF");
+  }
+}
+
+/**
+ * @brief Wave maker switch event handler
+ */
+static void wave_maker_event_handler(lv_event_t *e)
+{
+  lv_event_code_t code = lv_event_get_code(e);
+  lv_obj_t *obj = lv_event_get_target(e);
+
+  if (code == LV_EVENT_VALUE_CHANGED)
+  {
+    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
+    ESP_LOGI(TAG, "Wave maker switch: %s", state ? "ON" : "OFF");
+
+    // TODO: Add Home Assistant API integration here
+    // For now, just log the action
+    ESP_LOGI(TAG, "Would set wave maker to %s via Home Assistant API", state ? "ON" : "OFF");
+  }
+}
+
+/**
+ * @brief Light switch event handler
+ */
+static void light_event_handler(lv_event_t *e)
+{
+  lv_event_code_t code = lv_event_get_code(e);
+  lv_obj_t *obj = lv_event_get_target(e);
+
+  if (code == LV_EVENT_VALUE_CHANGED)
+  {
+    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
+    ESP_LOGI(TAG, "Light switch: %s", state ? "ON" : "OFF");
+
+    // TODO: Add Home Assistant API integration here
+    // For now, just log the action
+    ESP_LOGI(TAG, "Would set light to %s via Home Assistant API", state ? "ON" : "OFF");
+  }
+}
+
+/**
+ * @brief Feed button event handler
+ */
+static void feed_button_event_handler(lv_event_t *e)
+{
+  lv_event_code_t code = lv_event_get_code(e);
+
+  if (code == LV_EVENT_CLICKED)
+  {
+    ESP_LOGI(TAG, "Feed button pressed");
+
+    // TODO: Add Home Assistant API integration here
+    // For now, just log the action
+    ESP_LOGI(TAG, "Would trigger feed via Home Assistant API");
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS FOR UI CREATION
@@ -296,18 +392,21 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
 
   // Water pump switch field
   water_pump_switch = create_switch_field(control_panel, "Water Pump", 180);
+  lv_obj_add_event_cb(water_pump_switch, water_pump_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
   // Vertical separator after water pump (centered using align API)
   create_centered_vertical_separator(control_panel, 300, 60, 0x555555);
 
   // Wave maker switch field
   wave_maker_switch = create_switch_field(control_panel, "Wave Maker", 340);
+  lv_obj_add_event_cb(wave_maker_switch, wave_maker_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
   // Vertical separator after wave maker (centered using align API)
   create_centered_vertical_separator(control_panel, 460, 60, 0x555555);
 
   // Light switch field
   light_switch = create_switch_field(control_panel, "Light", 500);
+  lv_obj_add_event_cb(light_switch, light_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
   // Vertical separator before feed button (centered using align API)
   create_centered_vertical_separator(control_panel, 580, 60, 0x555555);
@@ -318,6 +417,7 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
   lv_obj_align(feed_button, LV_ALIGN_RIGHT_MID, 0, 0);
   lv_obj_set_style_bg_color(feed_button, lv_color_hex(0x4caf50), 0);
   lv_obj_set_style_radius(feed_button, 10, 0);
+  lv_obj_add_event_cb(feed_button, feed_button_event_handler, LV_EVENT_CLICKED, NULL);
 
   lv_obj_t *feed_label = lv_label_create(feed_button);
   lv_label_set_text(feed_label, "FEED");
