@@ -4,6 +4,7 @@ managed_components/
 sdkconfig
 sdkconfig.old
 sdkconfig.bak
+.reconfigure_trigger
 
 # Note: dependencies.lock is NOT ignored - it should be tracked to lock dependency versions
 
