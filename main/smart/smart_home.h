@@ -124,32 +124,32 @@ extern "C"
   esp_err_t smart_home_get_status(smart_home_status_t *status);
 
   /**
-   * @brief Toggle the water pump switch
+   * @brief Toggle switch A
    *
-   * Convenience function to toggle the configured pump switch entity.
+   * Convenience function to toggle the configured switch A entity.
    *
    * @return ESP_OK on success, error code on failure
    */
   esp_err_t smart_home_toggle_pump(void);
 
   /**
-   * @brief Turn on the water pump
+   * @brief Turn on switch A
    *
    * @return ESP_OK on success, error code on failure
    */
   esp_err_t smart_home_pump_on(void);
 
   /**
-   * @brief Turn off the water pump
+   * @brief Turn off switch A
    *
    * @return ESP_OK on success, error code on failure
    */
   esp_err_t smart_home_pump_off(void);
 
   /**
-   * @brief Get pump switch status
+   * @brief Get switch A status
    *
-   * @param is_on Pointer to store pump on/off status
+   * @param is_on Pointer to store switch on/off status
    * @return ESP_OK on success, error code on failure
    */
   esp_err_t smart_home_get_pump_status(bool *is_on);
@@ -242,6 +242,59 @@ extern "C"
    * @return ESP_OK on success, error code on failure
    */
   esp_err_t smart_home_update_ui(void);
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // CONVENIENCE FUNCTIONS FOR SPECIFIC DEVICES
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * @brief Turn on switch B
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_wave_maker_on(void);
+
+  /**
+   * @brief Turn off switch B
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_wave_maker_off(void);
+
+  /**
+   * @brief Toggle switch B
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_wave_maker_toggle(void);
+
+  /**
+   * @brief Turn on switch C
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_light_on(void);
+
+  /**
+   * @brief Turn off switch C
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_light_off(void);
+
+  /**
+   * @brief Toggle switch C
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_light_toggle(void);
+
+  /**
+   * @brief Trigger the scene
+   *
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t smart_home_trigger_scene(void);
 
 #ifdef __cplusplus
 }

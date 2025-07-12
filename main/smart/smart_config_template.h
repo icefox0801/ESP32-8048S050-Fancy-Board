@@ -33,9 +33,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Smart Switches (Replace with your actual entity IDs)
-#define HA_ENTITY_A "switch.your_water_pump_switch" // Water Pump Control
-#define HA_ENTITY_B "switch.your_wave_maker_switch" // Wave Maker Control
-#define HA_ENTITY_C "switch.your_light_switch"      // Light Switch Control
+#define HA_ENTITY_A "switch.your_switch_a_switch" // Switch A Control
+#define HA_ENTITY_B "switch.your_switch_b_switch" // Switch B Maker Control
+#define HA_ENTITY_C "switch.your_switch_c_switch" // Switch C Light Control
 
 // Scene Control
 #define HA_ENTITY_D "scene.your_feed_scene" // Scene trigger button
@@ -45,10 +45,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Switch Labels for UI Display
-#define UI_LABEL_A "Water Pump"
-#define UI_LABEL_B "Wave Maker"
-#define UI_LABEL_C "Light Switch"
-#define UI_LABEL_D "FEED"
+#define UI_LABEL_A "Switch A"
+#define UI_LABEL_B "Switch B"
+#define UI_LABEL_C "Switch C"
+#define UI_LABEL_D "Button"
 
 // Button Text Configuration
 #define UI_BUTTON_ON "ON"
@@ -76,14 +76,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Automation Features
-#define ENABLE_A_CONTROL 1 // Enable water pump control
-#define ENABLE_B_CONTROL 1 // Enable wave maker control
-#define ENABLE_C_CONTROL 1 // Enable light switch control
+#define ENABLE_A_CONTROL 1 // Enable switch A control
+#define ENABLE_B_CONTROL 1 // Enable switch B control
+#define ENABLE_C_CONTROL 1 // Enable switch C control
 #define ENABLE_D_CONTROL 1 // Enable scene trigger button
 
 // Device Control Preferences
-#define A_AUTO_TURN_OFF_DELAY_MS 300000 // Auto turn off water pump after 5 minutes
-#define B_AUTO_TURN_OFF_DELAY_MS 600000 // Auto turn off wave maker after 10 minutes
+#define A_AUTO_TURN_OFF_DELAY_MS 300000 // Auto turn off switch A after 5 minutes
+#define B_AUTO_TURN_OFF_DELAY_MS 600000 // Auto turn off switch B after 10 minutes
 #define D_TRIGGER_COOLDOWN_MS 5000      // Prevent rapid scene triggering
 
 #endif // SMART_CONFIG_H
