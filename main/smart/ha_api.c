@@ -124,7 +124,16 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     return ESP_ERR_INVALID_STATE;
   }
 
+  ESP_LOGI(TAG, "=== HTTP REQUEST START ===");
+  ESP_LOGI(TAG, "Method: %s", method);
+  ESP_LOGI(TAG, "URL: %s", url);
+  if (post_data)
+  {
+    ESP_LOGI(TAG, "POST Data: %s", post_data);
+  }
+
   esp_err_t err = ESP_FAIL;
+  int status_code = 0;
 
   for (int retry = 0; retry < HA_SYNC_RETRY_COUNT; retry++)
   {
@@ -161,31 +170,43 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     }
 
     // Perform request
+    ESP_LOGI(TAG, "Sending HTTP request (attempt %d/%d)...", retry + 1, HA_SYNC_RETRY_COUNT);
     err = esp_http_client_perform(client);
+
+    // Get status code for logging
+    status_code = esp_http_client_get_status_code(client);
+    ESP_LOGI(TAG, "HTTP Status Code: %d", status_code);
 
     esp_http_client_cleanup(client);
 
     if (err == ESP_OK)
     {
-      ESP_LOGD(TAG, "HTTP request successful (attempt %d)", retry + 1);
+      ESP_LOGI(TAG, "HTTP request successful (attempt %d)", retry + 1);
+      ESP_LOGI(TAG, "=== HTTP REQUEST SUCCESS ===");
       break;
     }
     else
     {
-      ESP_LOGW(TAG, "HTTP request failed (attempt %d/%d): %s",
-               retry + 1, HA_SYNC_RETRY_COUNT, esp_err_to_name(err));
+      ESP_LOGW(TAG, "HTTP request failed (attempt %d/%d): %s (status: %d)",
+               retry + 1, HA_SYNC_RETRY_COUNT, esp_err_to_name(err), status_code);
       if (response)
       {
         snprintf(response->error_message, sizeof(response->error_message),
-                 "HTTP request failed: %s", esp_err_to_name(err));
+                 "HTTP request failed: %s (status: %d)", esp_err_to_name(err), status_code);
       }
     }
 
     // Wait before retry
     if (retry < HA_SYNC_RETRY_COUNT - 1)
     {
+      ESP_LOGI(TAG, "Waiting %d seconds before retry...", retry + 1);
       vTaskDelay(pdMS_TO_TICKS(1000 * (retry + 1))); // Progressive backoff
     }
+  }
+
+  if (err != ESP_OK)
+  {
+    ESP_LOGE(TAG, "=== HTTP REQUEST FAILED === (Final status: %d, Error: %s)", status_code, esp_err_to_name(err));
   }
 
   return err;
@@ -205,13 +226,37 @@ esp_err_t ha_api_init(void)
 
   ESP_LOGI(TAG, "Initializing Home Assistant API client...");
 
-  // Format authorization header
-  snprintf(auth_header, sizeof(auth_header), AUTH_HEADER_TEMPLATE, HA_API_TOKEN);
+  // Check if constants are properly defined
+  if (HA_API_TOKEN == NULL || strlen(HA_API_TOKEN) == 0)
+  {
+    ESP_LOGE(TAG, "HA API Token is not defined or empty");
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  if (HA_SERVER_HOST_NAME == NULL || strlen(HA_SERVER_HOST_NAME) == 0)
+  {
+    ESP_LOGE(TAG, "HA Server Host Name is not defined or empty");
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  ESP_LOGI(TAG, "HA Server: %s:%d", HA_SERVER_HOST_NAME, HA_SERVER_PORT);
+  ESP_LOGI(TAG, "Token length: %d", strlen(HA_API_TOKEN));
+
+  // Format authorization header with error checking
+  int ret = snprintf(auth_header, sizeof(auth_header), AUTH_HEADER_TEMPLATE, HA_API_TOKEN);
+  if (ret < 0 || ret >= sizeof(auth_header))
+  {
+    ESP_LOGE(TAG, "Failed to format authorization header: %d", ret);
+    return ESP_ERR_NO_MEM;
+  }
+
+  ESP_LOGI(TAG, "Authorization header formatted successfully");
 
   ha_api_initialized = true;
 
   ESP_LOGI(TAG, "Home Assistant API client initialized (Server: %s:%d)",
            HA_SERVER_HOST_NAME, HA_SERVER_PORT);
+  ESP_LOGI(TAG, "Base URL: %s", HA_API_BASE_URL);
 
   return ESP_OK;
 }
@@ -411,9 +456,10 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
   char *json_string = cJSON_Print(json);
 
-  ESP_LOGD(TAG, "Calling service %s.%s for entity %s",
-           service_call->domain, service_call->service, service_call->entity_id);
-  ESP_LOGD(TAG, "Service data: %s", json_string);
+  ESP_LOGI(TAG, "=== SERVICE CALL START ===");
+  ESP_LOGI(TAG, "Service: %s.%s", service_call->domain, service_call->service);
+  ESP_LOGI(TAG, "Entity: %s", service_call->entity_id);
+  ESP_LOGI(TAG, "Service data: %s", json_string);
 
   ha_api_response_t local_response;
   ha_api_response_t *resp = response ? response : &local_response;
@@ -422,11 +468,16 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
   if (err == ESP_OK && resp->success)
   {
-    ESP_LOGI(TAG, "Service call successful");
+    ESP_LOGI(TAG, "=== SERVICE CALL SUCCESS ===");
+    ESP_LOGI(TAG, "Service %s.%s executed successfully for %s",
+             service_call->domain, service_call->service, service_call->entity_id);
   }
   else
   {
-    ESP_LOGE(TAG, "Service call failed: %s", resp->error_message);
+    ESP_LOGE(TAG, "=== SERVICE CALL FAILED ===");
+    ESP_LOGE(TAG, "Service %s.%s failed for %s: %s",
+             service_call->domain, service_call->service, service_call->entity_id,
+             resp->error_message[0] ? resp->error_message : "Unknown error");
   }
 
   // Cleanup
@@ -454,24 +505,54 @@ esp_err_t ha_api_toggle_switch(const char *entity_id)
 
 esp_err_t ha_api_turn_on_switch(const char *entity_id)
 {
+  ESP_LOGI(TAG, ">>> TURN ON SWITCH: %s", entity_id);
+
   ha_service_call_t service_call = {
       .domain = "switch",
       .service = "turn_on",
       .service_data = NULL};
   strncpy(service_call.entity_id, entity_id, sizeof(service_call.entity_id) - 1);
 
-  return ha_api_call_service(&service_call, NULL);
+  ha_api_response_t response;
+  esp_err_t result = ha_api_call_service(&service_call, &response);
+
+  if (result == ESP_OK)
+  {
+    ESP_LOGI(TAG, "<<< TURN ON SUCCESS: %s", entity_id);
+  }
+  else
+  {
+    ESP_LOGE(TAG, "<<< TURN ON FAILED: %s (Error: %s)", entity_id, esp_err_to_name(result));
+  }
+
+  ha_api_free_response(&response);
+  return result;
 }
 
 esp_err_t ha_api_turn_off_switch(const char *entity_id)
 {
+  ESP_LOGI(TAG, ">>> TURN OFF SWITCH: %s", entity_id);
+
   ha_service_call_t service_call = {
       .domain = "switch",
       .service = "turn_off",
       .service_data = NULL};
   strncpy(service_call.entity_id, entity_id, sizeof(service_call.entity_id) - 1);
 
-  return ha_api_call_service(&service_call, NULL);
+  ha_api_response_t response;
+  esp_err_t result = ha_api_call_service(&service_call, &response);
+
+  if (result == ESP_OK)
+  {
+    ESP_LOGI(TAG, "<<< TURN OFF SUCCESS: %s", entity_id);
+  }
+  else
+  {
+    ESP_LOGE(TAG, "<<< TURN OFF FAILED: %s (Error: %s)", entity_id, esp_err_to_name(result));
+  }
+
+  ha_api_free_response(&response);
+  return result;
 }
 
 esp_err_t ha_api_get_sensor_value(const char *entity_id, float *value)
