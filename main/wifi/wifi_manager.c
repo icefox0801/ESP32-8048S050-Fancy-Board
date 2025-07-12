@@ -16,6 +16,7 @@
 #include <esp_netif.h>
 #include <esp_wifi.h>
 #include <esp_event.h>
+#include <esp_heap_caps.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
 #include <lwip/err.h>
@@ -52,17 +53,19 @@ static const char *TAG = "WiFi_Manager";
  */
 typedef struct
 {
-  EventGroupHandle_t wifi_event_group;    ///< FreeRTOS event group for WiFi events
-  esp_netif_t *netif;                     ///< Network interface handle
-  wifi_status_t status;                   ///< Current connection status
-  wifi_info_t connection_info;            ///< Current connection information
-  wifi_status_callback_t status_callback; ///< User callback for status changes
-  uint8_t retry_count;                    ///< Current retry attempt count
-  TaskHandle_t reconnect_task_handle;     ///< Handle for reconnection task
-  bool initialized;                       ///< Initialization status flag
-  bool sntp_initialized;                  ///< SNTP initialization status flag
-  char configured_ssid[33];               ///< Configured SSID
-  char configured_password[64];           ///< Configured password
+  EventGroupHandle_t wifi_event_group;                             ///< FreeRTOS event group for WiFi events
+  esp_netif_t *netif;                                              ///< Network interface handle
+  wifi_status_t status;                                            ///< Current connection status
+  wifi_info_t connection_info;                                     ///< Current connection information
+  wifi_status_callback_t status_callback;                          ///< User callback for status changes
+  void (*ui_callback)(const char *status_text, bool is_connected); ///< UI-specific callback
+  void (*ha_callback)(bool is_connected);                          ///< Home Assistant task management callback
+  uint8_t retry_count;                                             ///< Current retry attempt count
+  TaskHandle_t reconnect_task_handle;                              ///< Handle for reconnection task
+  bool initialized;                                                ///< Initialization status flag
+  bool sntp_initialized;                                           ///< SNTP initialization status flag
+  char configured_ssid[33];                                        ///< Configured SSID
+  char configured_password[64];                                    ///< Configured password
 } wifi_manager_state_t;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -70,6 +73,10 @@ typedef struct
 // ═══════════════════════════════════════════════════════════════════════════════
 
 static wifi_manager_state_t s_wifi_manager = {0};
+
+// SPIRAM optimization for WiFi reconnect task
+static StaticTask_t wifi_reconnect_tcb;
+static StackType_t *wifi_reconnect_stack = NULL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE FUNCTION DECLARATIONS
@@ -238,6 +245,41 @@ static void wifi_update_connection_info(void)
 }
 
 /**
+ * @brief Convert WiFi status to UI-friendly text
+ */
+static const char *wifi_status_to_text(wifi_status_t status, const wifi_info_t *info)
+{
+  static char detailed_status[128];
+
+  switch (status)
+  {
+  case WIFI_STATUS_DISCONNECTED:
+    return "Disconnected";
+
+  case WIFI_STATUS_CONNECTING:
+    return "Connecting...";
+
+  case WIFI_STATUS_CONNECTED:
+    if (info)
+    {
+      snprintf(detailed_status, sizeof(detailed_status), "Connected: %s (%s)",
+               info->ssid, info->ip_address);
+      return detailed_status;
+    }
+    return "Connected";
+
+  case WIFI_STATUS_FAILED:
+    return "Connection Failed";
+
+  case WIFI_STATUS_RECONNECTING:
+    return "Reconnecting...";
+
+  default:
+    return "Unknown";
+  }
+}
+
+/**
  * @brief Set WiFi status and notify callback
  */
 static void wifi_set_status(wifi_status_t new_status)
@@ -246,10 +288,27 @@ static void wifi_set_status(wifi_status_t new_status)
   {
     s_wifi_manager.status = new_status;
 
+    // Call the original callback if registered
     if (s_wifi_manager.status_callback)
     {
       const wifi_info_t *info = (new_status == WIFI_STATUS_CONNECTED) ? &s_wifi_manager.connection_info : NULL;
       s_wifi_manager.status_callback(new_status, info);
+    }
+
+    // Call the UI callback if registered
+    if (s_wifi_manager.ui_callback)
+    {
+      const wifi_info_t *info = (new_status == WIFI_STATUS_CONNECTED) ? &s_wifi_manager.connection_info : NULL;
+      const char *status_text = wifi_status_to_text(new_status, info);
+      bool is_connected = (new_status == WIFI_STATUS_CONNECTED);
+      s_wifi_manager.ui_callback(status_text, is_connected);
+    }
+
+    // Call the HA callback if registered
+    if (s_wifi_manager.ha_callback)
+    {
+      bool is_connected = (new_status == WIFI_STATUS_CONNECTED);
+      s_wifi_manager.ha_callback(is_connected);
     }
   }
 }
@@ -282,14 +341,40 @@ static esp_err_t wifi_start_reconnect_task(void)
 {
   if (s_wifi_manager.reconnect_task_handle == NULL)
   {
-    BaseType_t result = xTaskCreatePinnedToCore(wifi_reconnect_task, "wifi_reconnect",
-                                                6144, NULL, 5, &s_wifi_manager.reconnect_task_handle, 0);
-    if (result != pdPASS)
+    // Allocate WiFi task stack from SPIRAM to save internal RAM
+    // AGGRESSIVE utilization: 32KB stack for robust WiFi handling with 8MB PSRAM
+    const size_t stack_size = 8192; // Reduced for memory optimization
+    wifi_reconnect_stack = (StackType_t *)heap_caps_malloc(
+        stack_size, MALLOC_CAP_SPIRAM);
+
+    if (wifi_reconnect_stack == NULL)
     {
-      ESP_LOGE(TAG, "Failed to create reconnection task on core 0");
-      return ESP_ERR_NO_MEM;
+      ESP_LOGW(TAG, "Failed to allocate WiFi task stack from SPIRAM, using standard allocation");
+      // Fallback to standard task creation
+      BaseType_t result = xTaskCreatePinnedToCore(wifi_reconnect_task, "wifi_reconnect",
+                                                  stack_size, NULL, 2, &s_wifi_manager.reconnect_task_handle, 0);
+      if (result != pdPASS)
+      {
+        ESP_LOGE(TAG, "Failed to create reconnection task on core 0");
+        return ESP_ERR_NO_MEM;
+      }
+      ESP_LOGI(TAG, "WiFi reconnection task started with standard internal RAM stack");
     }
-    ESP_LOGI(TAG, "WiFi reconnection task started on core 0 with 6KB stack");
+    else
+    {
+      // Create static task with SPIRAM stack
+      s_wifi_manager.reconnect_task_handle = xTaskCreateStatic(
+          wifi_reconnect_task,              // Task function
+          "wifi_reconnect",                 // Task name
+          stack_size / sizeof(StackType_t), // Stack size in words
+          NULL,                             // Parameters
+          2,                                // Priority (lowered for LVGL priority)
+          wifi_reconnect_stack,             // Stack buffer
+          &wifi_reconnect_tcb               // Task control block
+      );
+
+      ESP_LOGI(TAG, "WiFi reconnection task started with SPIRAM stack at %p", wifi_reconnect_stack);
+    }
   }
   return ESP_OK;
 }
@@ -303,6 +388,14 @@ static void wifi_stop_reconnect_task(void)
   {
     vTaskDelete(s_wifi_manager.reconnect_task_handle);
     s_wifi_manager.reconnect_task_handle = NULL;
+
+    // Free SPIRAM stack if it was allocated
+    if (wifi_reconnect_stack)
+    {
+      heap_caps_free(wifi_reconnect_stack);
+      wifi_reconnect_stack = NULL;
+      ESP_LOGI(TAG, "WiFi reconnect task SPIRAM stack freed");
+    }
   }
 }
 
@@ -395,6 +488,12 @@ esp_err_t wifi_manager_init(void)
     wifi_config.sta.pmf_cfg.capable = true;
     wifi_config.sta.pmf_cfg.required = false;
 
+    // Optimize WiFi scanning for faster connection
+    wifi_config.sta.scan_method = WIFI_FAST_SCAN;
+    wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+    wifi_config.sta.threshold.rssi = -127; // Accept any signal strength
+    wifi_config.sta.failure_retry_cnt = 1; // Minimal retries for faster connection
+
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 
     // Store configured credentials
@@ -475,6 +574,12 @@ esp_err_t wifi_manager_connect(const char *ssid, const char *password)
   wifi_config.sta.pmf_cfg.capable = true;
   wifi_config.sta.pmf_cfg.required = false;
 
+  // Optimize WiFi scanning for faster connection
+  wifi_config.sta.scan_method = WIFI_FAST_SCAN;
+  wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+  wifi_config.sta.threshold.rssi = -127; // Accept any signal strength
+  wifi_config.sta.failure_retry_cnt = 1; // Minimal retries for faster connection
+
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 
   // Now start the connection
@@ -531,9 +636,50 @@ esp_err_t wifi_manager_register_callback(wifi_status_callback_t callback)
   return ESP_OK;
 }
 
+esp_err_t wifi_manager_register_ui_callback(void (*ui_update_func)(const char *status_text, bool is_connected))
+{
+  if (ui_update_func == NULL)
+  {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  s_wifi_manager.ui_callback = ui_update_func;
+
+  // Immediately call with current status if WiFi is already initialized
+  if (s_wifi_manager.initialized)
+  {
+    const wifi_info_t *info = (s_wifi_manager.status == WIFI_STATUS_CONNECTED) ? &s_wifi_manager.connection_info : NULL;
+    const char *status_text = wifi_status_to_text(s_wifi_manager.status, info);
+    bool is_connected = (s_wifi_manager.status == WIFI_STATUS_CONNECTED);
+    ui_update_func(status_text, is_connected);
+  }
+
+  return ESP_OK;
+}
+
+esp_err_t wifi_manager_register_ha_callback(void (*ha_callback_func)(bool is_connected))
+{
+  if (ha_callback_func == NULL)
+  {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  s_wifi_manager.ha_callback = ha_callback_func;
+
+  // Immediately call with current status if WiFi is already initialized
+  if (s_wifi_manager.initialized)
+  {
+    bool is_connected = (s_wifi_manager.status == WIFI_STATUS_CONNECTED);
+    ha_callback_func(is_connected);
+  }
+
+  return ESP_OK;
+}
+
 esp_err_t wifi_manager_unregister_callback(void)
 {
   s_wifi_manager.status_callback = NULL;
+  s_wifi_manager.ui_callback = NULL;
   return ESP_OK;
 }
 

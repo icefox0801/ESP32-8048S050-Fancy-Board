@@ -145,6 +145,27 @@ extern "C"
   esp_err_t wifi_manager_register_callback(wifi_status_callback_t callback);
 
   /**
+   * @brief Register UI callback for WiFi status changes
+   *
+   * This is a convenience function that handles UI updates automatically.
+   * It internally manages status text and connection state for UI display.
+   *
+   * @param ui_update_func Function to call for UI updates (status_text, is_connected)
+   * @return ESP_OK on successful registration
+   */
+  esp_err_t wifi_manager_register_ui_callback(void (*ui_update_func)(const char *status_text, bool is_connected));
+
+  /**
+   * @brief Register Home Assistant task management callback for WiFi status changes
+   *
+   * This callback handles starting/stopping Home Assistant tasks based on WiFi connectivity.
+   *
+   * @param ha_callback Function to call for HA task management (is_connected)
+   * @return ESP_OK on successful registration
+   */
+  esp_err_t wifi_manager_register_ha_callback(void (*ha_callback)(bool is_connected));
+
+  /**
    * @brief Unregister WiFi status change callback
    *
    * @return ESP_OK on successful unregistration

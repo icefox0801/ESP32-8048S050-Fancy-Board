@@ -21,6 +21,7 @@
 #include "cjson.h"
 #include "driver/uart.h"
 #include "esp_log.h"
+#include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -48,8 +49,8 @@ static const char *TAG = "serial_data";
 #define JSON_BUFFER_SIZE 1024 ///< JSON parsing buffer size
 
 // Task Configuration
-#define SERIAL_TASK_STACK_SIZE 6144 ///< Task stack size in bytes (increased for stability)
-#define SERIAL_TASK_PRIORITY 5      ///< FreeRTOS task priority
+#define SERIAL_TASK_STACK_SIZE 8192 ///< Task stack size in bytes (reduced for memory optimization)
+#define SERIAL_TASK_PRIORITY 2      ///< FreeRTOS task priority (lowered for LVGL priority)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STATIC VARIABLES
@@ -58,7 +59,11 @@ static const char *TAG = "serial_data";
 static TaskHandle_t serial_task_handle = NULL; ///< Serial reception task handle
 static bool serial_running = false;            ///< Task running state flag
 static uint32_t last_data_time = 0;            ///< Last data reception timestamp
-static uint32_t connection_timeout_ms = 5000;  ///< Connection timeout (5 seconds)
+
+// Static task resources for SPIRAM allocation
+static StaticTask_t serial_task_tcb;          ///< Task control block
+static StackType_t *serial_task_stack = NULL; ///< Task stack allocated from SPIRAM
+static uint32_t connection_timeout_ms = 5000; ///< Connection timeout (5 seconds)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE FUNCTION PROTOTYPES
@@ -399,8 +404,33 @@ void serial_data_start_task(void)
     serial_running = true;
     last_data_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
-    xTaskCreatePinnedToCore(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
-                            NULL, SERIAL_TASK_PRIORITY, &serial_task_handle, 0);
+    // Allocate task stack from SPIRAM for better internal RAM utilization
+    serial_task_stack = (StackType_t *)heap_caps_malloc(
+        SERIAL_TASK_STACK_SIZE, MALLOC_CAP_SPIRAM);
+
+    if (serial_task_stack == NULL)
+    {
+      ESP_LOGE(TAG, "Failed to allocate serial task stack from SPIRAM");
+      // Fallback to standard task creation
+      xTaskCreatePinnedToCore(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
+                              NULL, SERIAL_TASK_PRIORITY, &serial_task_handle, 0);
+      ESP_LOGW(TAG, "Serial task created with standard internal RAM stack");
+    }
+    else
+    {
+      // Create static task with SPIRAM stack
+      serial_task_handle = xTaskCreateStatic(
+          serial_data_task,                             // Task function
+          "serial_data",                                // Task name
+          SERIAL_TASK_STACK_SIZE / sizeof(StackType_t), // Stack size in words
+          NULL,                                         // Parameters
+          SERIAL_TASK_PRIORITY,                         // Priority
+          serial_task_stack,                            // Stack buffer
+          &serial_task_tcb                              // Task control block
+      );
+
+      ESP_LOGI(TAG, "Serial task created with SPIRAM stack at %p", serial_task_stack);
+    }
 
     ESP_LOGI(TAG, "Serial data reception started on core 0");
   }
@@ -415,6 +445,14 @@ void serial_data_stop(void)
     {
       vTaskDelete(serial_task_handle);
       serial_task_handle = NULL;
+
+      // Free SPIRAM stack if it was allocated
+      if (serial_task_stack)
+      {
+        heap_caps_free(serial_task_stack);
+        serial_task_stack = NULL;
+        ESP_LOGI(TAG, "Serial task SPIRAM stack freed");
+      }
     }
     ESP_LOGI(TAG, "Serial data reception stopped");
   }
