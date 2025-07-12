@@ -211,7 +211,7 @@ esp_err_t ha_api_init(void)
   ha_api_initialized = true;
 
   ESP_LOGI(TAG, "Home Assistant API client initialized (Server: %s:%d)",
-           HA_SERVER_IP, HA_SERVER_PORT);
+           HA_SERVER_HOST_NAME, HA_SERVER_PORT);
 
   return ESP_OK;
 }
@@ -267,6 +267,117 @@ esp_err_t ha_api_get_entity_state(const char *entity_id, ha_entity_state_t *stat
   if (err == ESP_OK && response.success)
   {
     err = ha_api_parse_entity_state(response.response_data, state);
+  }
+
+  ha_api_free_response(&response);
+  return err;
+}
+
+esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_count, ha_entity_state_t *states)
+{
+  if (!entity_ids || !states || entity_count <= 0)
+  {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  ESP_LOGI(TAG, "Fetching %d entity states in bulk", entity_count);
+
+  // Use the bulk states API endpoint
+  char url[128];
+  snprintf(url, sizeof(url), "%s", HA_API_STATES_URL);
+
+  ha_api_response_t response;
+  esp_err_t err = perform_http_request(url, "GET", NULL, &response);
+
+  if (err == ESP_OK && response.success)
+  {
+    // Parse JSON response to extract our entities
+    cJSON *json = cJSON_Parse(response.response_data);
+    if (json)
+    {
+      // Clear all states first
+      memset(states, 0, sizeof(ha_entity_state_t) * entity_count);
+
+      int found_count = 0;
+      int processed_count = 0;
+      const int MAX_ENTITIES_TO_PROCESS = 100; // Safety limit to prevent memory issues
+
+      // Iterate through the response array to find our entities
+      cJSON *entity_json = NULL;
+      cJSON_ArrayForEach(entity_json, json)
+      {
+        // Safety check to prevent processing too many entities
+        if (++processed_count > MAX_ENTITIES_TO_PROCESS)
+        {
+          ESP_LOGW(TAG, "Reached maximum entity processing limit (%d), stopping search", MAX_ENTITIES_TO_PROCESS);
+          break;
+        }
+        cJSON *entity_id_json = cJSON_GetObjectItem(entity_json, "entity_id");
+        if (cJSON_IsString(entity_id_json))
+        {
+          const char *entity_id = entity_id_json->valuestring;
+
+          // Check if this entity is in our requested list
+          for (int i = 0; i < entity_count; i++)
+          {
+            if (strcmp(entity_id, entity_ids[i]) == 0)
+            {
+              // Parse entity state directly from JSON object to avoid memory allocation
+              cJSON *state_json = cJSON_GetObjectItem(entity_json, "state");
+              if (cJSON_IsString(state_json))
+              {
+                // Clear the state structure
+                memset(&states[i], 0, sizeof(ha_entity_state_t));
+
+                // Copy entity ID and state
+                strncpy(states[i].entity_id, entity_id, HA_MAX_ENTITY_ID_LEN - 1);
+                strncpy(states[i].state, state_json->valuestring, HA_MAX_STATE_LEN - 1);
+                states[i].entity_id[HA_MAX_ENTITY_ID_LEN - 1] = '\0';
+                states[i].state[HA_MAX_STATE_LEN - 1] = '\0';
+
+                found_count++;
+                ESP_LOGD(TAG, "Found state for %s: %s", entity_id, states[i].state);
+              }
+              else
+              {
+                ESP_LOGW(TAG, "Entity %s has no valid state", entity_id);
+              }
+              break;
+            }
+          }
+
+          // Early exit if we found all entities
+          if (found_count >= entity_count)
+          {
+            ESP_LOGI(TAG, "Found all %d entities, stopping search early", entity_count);
+            break;
+          }
+        }
+      }
+
+      cJSON_Delete(json);
+
+      if (found_count == entity_count)
+      {
+        ESP_LOGI(TAG, "Successfully fetched all %d entity states", entity_count);
+        err = ESP_OK;
+      }
+      else if (found_count > 0)
+      {
+        ESP_LOGW(TAG, "Found only %d/%d entity states", found_count, entity_count);
+        err = ESP_ERR_NOT_FOUND;
+      }
+      else
+      {
+        ESP_LOGE(TAG, "No matching entities found");
+        err = ESP_ERR_NOT_FOUND;
+      }
+    }
+    else
+    {
+      ESP_LOGE(TAG, "Failed to parse bulk states response");
+      err = ESP_ERR_INVALID_RESPONSE;
+    }
   }
 
   ha_api_free_response(&response);

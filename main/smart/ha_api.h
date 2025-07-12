@@ -140,6 +140,18 @@ extern "C"
   esp_err_t ha_api_get_entity_state(const char *entity_id, ha_entity_state_t *state);
 
   /**
+   * @brief Get states of multiple entities in bulk
+   *
+   * Retrieves current states for multiple entities efficiently using the bulk states API.
+   *
+   * @param entity_ids Array of entity IDs to query
+   * @param entity_count Number of entities to query
+   * @param states Array of state structures to fill (must be same size as entity_ids)
+   * @return ESP_OK on success, error code on failure
+   */
+  esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_count, ha_entity_state_t *states);
+
+  /**
    * @brief Call a Home Assistant service
    *
    * Executes a service call (like turning on/off a switch).
@@ -251,4 +263,4 @@ extern "C"
 }
 #endif
 
-#endif // HA_API_H
+#endif
