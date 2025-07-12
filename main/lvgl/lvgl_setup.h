@@ -64,7 +64,7 @@
 #endif
 
 // LVGL configuration
-#define LVGL_DRAW_BUF_LINES 20 // Reduced from 50 to 20 lines for better memory efficiency
+#define LVGL_DRAW_BUF_LINES 480 // MAXIMUM: Full screen height (480 lines) - 10Hz refresh allows massive buffering
 #define LVGL_TICK_PERIOD_MS 2
 #define LVGL_TASK_STACK_SIZE (12 * 1024) // Increased from 8KB to 12KB for stability
 #define LVGL_TASK_PRIORITY 2

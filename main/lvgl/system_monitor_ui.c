@@ -20,6 +20,8 @@
 #include "esp_log.h"
 #include "lvgl_setup.h"
 #include "smart/ha_api.h"
+#include "smart/smart_home.h"
+#include "smart/smart_config.h"
 #include <stdio.h>
 #include <time.h>
 
@@ -35,10 +37,11 @@ static lv_obj_t *connection_status_label = NULL;
 static lv_obj_t *wifi_status_label = NULL;
 
 // Smart Panel Elements
-static lv_obj_t *water_pump_switch = NULL;
-static lv_obj_t *wave_maker_switch = NULL;
-static lv_obj_t *light_switch = NULL;
-static lv_obj_t *feed_button = NULL;
+static lv_obj_t *switch_a = NULL;
+static lv_obj_t *switch_b = NULL;
+static lv_obj_t *switch_c = NULL;
+static lv_obj_t *scene_button = NULL;
+static lv_obj_t *ha_status_label = NULL;
 
 // CPU Section Elements
 static lv_obj_t *cpu_name_label = NULL;
@@ -85,78 +88,141 @@ static const lv_font_t *font_big_numbers = &lv_font_montserrat_14; // Fallback t
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Water pump switch event handler
+ * @brief Generic touch debug handler for all switches
  */
-static void water_pump_event_handler(lv_event_t *e)
+static void debug_touch_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
   lv_obj_t *obj = lv_event_get_target(e);
 
-  ESP_LOGI(TAG, "Water pump event handler called with code %d", code);
+  // Get object position and size for debugging
+  lv_area_t coords;
+  lv_obj_get_coords(obj, &coords);
 
-  if (code == LV_EVENT_VALUE_CHANGED)
-  {
-    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "Water pump switch: %s", state ? "ON" : "OFF");
+  const char *obj_name = "Unknown";
+  if (obj == switch_a)
+    obj_name = UI_LABEL_A;
+  else if (obj == switch_b)
+    obj_name = UI_LABEL_B;
+  else if (obj == switch_c)
+    obj_name = UI_LABEL_C;
+  else if (obj == scene_button)
+    obj_name = UI_LABEL_D;
 
-    // TODO: Add Home Assistant API integration here
-    // For now, just log the action
-    ESP_LOGI(TAG, "Would set water pump to %s via Home Assistant API", state ? "ON" : "OFF");
-  }
+  ESP_LOGI(TAG, "Touch debug - %s switch: code=%d, coords=(%d,%d)-(%d,%d)",
+           obj_name, code, coords.x1, coords.y1, coords.x2, coords.y2);
 }
 
 /**
- * @brief Wave maker switch event handler
+ * @brief Switch A event handler
  */
-static void wave_maker_event_handler(lv_event_t *e)
+static void switch_a_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
   lv_obj_t *obj = lv_event_get_target(e);
 
+  ESP_LOGI(TAG, "� SWITCH A (%s): Event handler called with code %d", UI_LABEL_A, code);
+
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "Wave maker switch: %s", state ? "ON" : "OFF");
+    ESP_LOGI(TAG, "� SWITCH A (%s) TOUCH EVENT: User selected %s", UI_LABEL_A, state ? "ON" : "OFF");
 
-    // TODO: Add Home Assistant API integration here
-    // For now, just log the action
-    ESP_LOGI(TAG, "Would set wave maker to %s via Home Assistant API", state ? "ON" : "OFF");
+    // Control the actual device via Home Assistant
+    esp_err_t ret = smart_home_control_switch(HA_ENTITY_A, state);
+    if (ret != ESP_OK)
+    {
+      ESP_LOGE(TAG, "� SWITCH A (%s) FAILED: %s", UI_LABEL_A, esp_err_to_name(ret));
+      // TODO: Consider reverting the switch state on failure
+    }
+    else
+    {
+      ESP_LOGI(TAG, "� SWITCH A (%s) SUCCESS: Device state changed to %s", UI_LABEL_A, state ? "ON" : "OFF");
+    }
   }
 }
 
 /**
- * @brief Light switch event handler
+ * @brief Switch B event handler
  */
-static void light_event_handler(lv_event_t *e)
+static void switch_b_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
   lv_obj_t *obj = lv_event_get_target(e);
 
+  ESP_LOGI(TAG, "🔌 SWITCH B (%s): Event handler called with code %d", UI_LABEL_B, code);
+
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "Light switch: %s", state ? "ON" : "OFF");
+    ESP_LOGI(TAG, "🔌 SWITCH B (%s) TOUCH EVENT: User selected %s", UI_LABEL_B, state ? "ON" : "OFF");
 
-    // TODO: Add Home Assistant API integration here
-    // For now, just log the action
-    ESP_LOGI(TAG, "Would set light to %s via Home Assistant API", state ? "ON" : "OFF");
+    // Control the actual device via Home Assistant
+    esp_err_t ret = smart_home_control_switch(HA_ENTITY_B, state);
+    if (ret != ESP_OK)
+    {
+      ESP_LOGE(TAG, "🔌 SWITCH B (%s) FAILED: %s", UI_LABEL_B, esp_err_to_name(ret));
+      // TODO: Consider reverting the switch state on failure
+    }
+    else
+    {
+      ESP_LOGI(TAG, "🔌 SWITCH B (%s) SUCCESS: Device state changed to %s", UI_LABEL_B, state ? "ON" : "OFF");
+    }
   }
 }
 
 /**
- * @brief Feed button event handler
+ * @brief Switch C event handler
  */
-static void feed_button_event_handler(lv_event_t *e)
+static void switch_c_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
+  lv_obj_t *obj = lv_event_get_target(e);
+
+  ESP_LOGI(TAG, "� SWITCH C (%s): Event handler called with code %d", UI_LABEL_C, code);
+
+  if (code == LV_EVENT_VALUE_CHANGED)
+  {
+    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
+    ESP_LOGI(TAG, "� SWITCH C (%s) TOUCH EVENT: User selected %s", UI_LABEL_C, state ? "ON" : "OFF");
+
+    // Control the actual device via Home Assistant
+    esp_err_t ret = smart_home_control_switch(HA_ENTITY_C, state);
+    if (ret != ESP_OK)
+    {
+      ESP_LOGE(TAG, "� SWITCH C (%s) FAILED: %s", UI_LABEL_C, esp_err_to_name(ret));
+      // TODO: Consider reverting the switch state on failure
+    }
+    else
+    {
+      ESP_LOGI(TAG, "� SWITCH C (%s) SUCCESS: Device state changed to %s", UI_LABEL_C, state ? "ON" : "OFF");
+    }
+  }
+}
+
+/**
+ * @brief Scene button event handler
+ */
+static void scene_button_event_handler(lv_event_t *e)
+{
+  lv_event_code_t code = lv_event_get_code(e);
+
+  ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s): Event handler called with code %d", UI_LABEL_D, code);
 
   if (code == LV_EVENT_CLICKED)
   {
-    ESP_LOGI(TAG, "Feed button pressed");
+    ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s) PRESSED", UI_LABEL_D);
 
-    // TODO: Add Home Assistant API integration here
-    // For now, just log the action
-    ESP_LOGI(TAG, "Would trigger feed via Home Assistant API");
+    // Trigger the scene via Home Assistant
+    esp_err_t ret = smart_home_trigger_scene();
+    if (ret != ESP_OK)
+    {
+      ESP_LOGE(TAG, "🎬 SCENE BUTTON (%s) FAILED: %s", UI_LABEL_D, esp_err_to_name(ret));
+    }
+    else
+    {
+      ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s) SUCCESS: Scene triggered", UI_LABEL_D);
+    }
   }
 }
 
@@ -380,50 +446,67 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
 {
   lv_obj_t *control_panel = create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
 
-  // Controls title (centered vertically using align API)
+  // Controls title (moved up)
   lv_obj_t *controls_title = lv_label_create(control_panel);
   lv_label_set_text(controls_title, "Controls");
   lv_obj_set_style_text_font(controls_title, font_title, 0);
   lv_obj_set_style_text_color(controls_title, lv_color_hex(0x4fc3f7), 0);
-  lv_obj_align(controls_title, LV_ALIGN_LEFT_MID, 0, 0);
+  lv_obj_align(controls_title, LV_ALIGN_TOP_LEFT, 0, 5);
+
+  // HA status text below title
+  ha_status_label = lv_label_create(control_panel);
+  lv_label_set_text(ha_status_label, "HA: Connecting...");
+  lv_obj_set_style_text_font(ha_status_label, font_small, 0);
+  lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0x888888), 0);
+  lv_obj_align(ha_status_label, LV_ALIGN_TOP_LEFT, 0, 40);
 
   // Vertical separator after controls title (centered using align API)
   create_centered_vertical_separator(control_panel, 140, 60, 0x4fc3f7);
 
-  // Water pump switch field
-  water_pump_switch = create_switch_field(control_panel, "Water Pump", 180);
-  lv_obj_add_event_cb(water_pump_switch, water_pump_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  // Switch A field
+  switch_a = create_switch_field(control_panel, UI_LABEL_A, 180);
+  lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
+  lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_CLICKED, NULL);
+  ESP_LOGI(TAG, "Switch A (%s) created at x=180, size=60x30", UI_LABEL_A);
 
-  // Vertical separator after water pump (centered using align API)
+  // Vertical separator after switch A (centered using align API)
   create_centered_vertical_separator(control_panel, 300, 60, 0x555555);
 
-  // Wave maker switch field
-  wave_maker_switch = create_switch_field(control_panel, "Wave Maker", 340);
-  lv_obj_add_event_cb(wave_maker_switch, wave_maker_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  // Switch B field
+  switch_b = create_switch_field(control_panel, UI_LABEL_B, 340);
+  lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
+  lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_CLICKED, NULL);
+  ESP_LOGI(TAG, "Switch B (%s) created at x=340, size=60x30", UI_LABEL_B);
 
-  // Vertical separator after wave maker (centered using align API)
+  // Vertical separator after switch B (centered using align API)
   create_centered_vertical_separator(control_panel, 460, 60, 0x555555);
 
-  // Light switch field
-  light_switch = create_switch_field(control_panel, "Light", 500);
-  lv_obj_add_event_cb(light_switch, light_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  // Switch C field
+  switch_c = create_switch_field(control_panel, UI_LABEL_C, 500);
+  lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
+  lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_CLICKED, NULL);
+  ESP_LOGI(TAG, "Switch C (%s) created at x=500, size=60x30", UI_LABEL_C);
 
-  // Vertical separator before feed button (centered using align API)
+  // Vertical separator before scene button (centered using align API)
   create_centered_vertical_separator(control_panel, 580, 60, 0x555555);
 
-  // Feed button (right with proper padding, centered using align API)
-  feed_button = lv_btn_create(control_panel);
-  lv_obj_set_size(feed_button, 120, 50);
-  lv_obj_align(feed_button, LV_ALIGN_RIGHT_MID, 0, 0);
-  lv_obj_set_style_bg_color(feed_button, lv_color_hex(0x4caf50), 0);
-  lv_obj_set_style_radius(feed_button, 10, 0);
-  lv_obj_add_event_cb(feed_button, feed_button_event_handler, LV_EVENT_CLICKED, NULL);
+  // Scene button (right with proper padding, centered using align API)
+  scene_button = lv_btn_create(control_panel);
+  lv_obj_set_size(scene_button, 120, 50);
+  lv_obj_align(scene_button, LV_ALIGN_RIGHT_MID, 0, 0);
+  lv_obj_set_style_bg_color(scene_button, lv_color_hex(0x4caf50), 0);
+  lv_obj_set_style_radius(scene_button, 10, 0);
+  lv_obj_add_event_cb(scene_button, debug_touch_handler, LV_EVENT_ALL, NULL);
+  lv_obj_add_event_cb(scene_button, scene_button_event_handler, LV_EVENT_CLICKED, NULL);
 
-  lv_obj_t *feed_label = lv_label_create(feed_button);
-  lv_label_set_text(feed_label, "FEED");
-  lv_obj_set_style_text_font(feed_label, font_normal, 0);
-  lv_obj_set_style_text_color(feed_label, lv_color_hex(0xffffff), 0);
-  lv_obj_center(feed_label);
+  lv_obj_t *scene_label = lv_label_create(scene_button);
+  lv_label_set_text(scene_label, UI_LABEL_D);
+  lv_obj_set_style_text_font(scene_label, font_normal, 0);
+  lv_obj_set_style_text_color(scene_label, lv_color_hex(0xffffff), 0);
+  lv_obj_center(scene_label);
   return control_panel;
 }
 
@@ -821,105 +904,136 @@ void system_monitor_ui_update_wifi_status(const char *status_text, bool connecte
   lvgl_lock_release();
 }
 
+/**
+ * @brief Update Home Assistant connection status in the controls panel
+ * @param status_text HA status message to display
+ * @param connected True if HA is connected, false otherwise
+ */
+void system_monitor_ui_update_ha_status(const char *status_text, bool connected)
+{
+  if (!ha_status_label || !status_text)
+    return;
+
+  lvgl_lock_acquire();
+
+  // Create formatted status message (keep it short)
+  char ha_msg[32];
+  snprintf(ha_msg, sizeof(ha_msg), "HA: %s", status_text);
+
+  lv_label_set_text(ha_status_label, ha_msg);
+
+  // Set color based on connection status
+  if (connected)
+  {
+    lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0x00ff88), 0); // Green
+  }
+  else
+  {
+    lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0xff4444), 0); // Red
+  }
+
+  lvgl_lock_release();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SMART HOME CONTROL FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * @brief Set the state of the water pump switch
+ * @brief Set the state of switch A
  * @param state True to turn on, false to turn off
  */
-void system_monitor_ui_set_water_pump(bool state)
+void system_monitor_ui_set_switch_a(bool state)
 {
-  if (!water_pump_switch)
+  if (!switch_a)
     return;
 
   lvgl_lock_acquire();
   if (state)
-    lv_obj_add_state(water_pump_switch, LV_STATE_CHECKED);
+    lv_obj_add_state(switch_a, LV_STATE_CHECKED);
   else
-    lv_obj_clear_state(water_pump_switch, LV_STATE_CHECKED);
+    lv_obj_clear_state(switch_a, LV_STATE_CHECKED);
   lvgl_lock_release();
 }
 
 /**
- * @brief Set the state of the wave maker switch
+ * @brief Set the state of switch B
  * @param state True to turn on, false to turn off
  */
-void system_monitor_ui_set_wave_maker(bool state)
+void system_monitor_ui_set_switch_b(bool state)
 {
-  if (!wave_maker_switch)
+  if (!switch_b)
     return;
 
   lvgl_lock_acquire();
   if (state)
-    lv_obj_add_state(wave_maker_switch, LV_STATE_CHECKED);
+    lv_obj_add_state(switch_b, LV_STATE_CHECKED);
   else
-    lv_obj_clear_state(wave_maker_switch, LV_STATE_CHECKED);
+    lv_obj_clear_state(switch_b, LV_STATE_CHECKED);
   lvgl_lock_release();
 }
 
 /**
- * @brief Set the state of the light switch
+ * @brief Set the state of switch C
  * @param state True to turn on, false to turn off
  */
-void system_monitor_ui_set_light(bool state)
+void system_monitor_ui_set_switch_c(bool state)
 {
-  if (!light_switch)
+  if (!switch_c)
     return;
 
   lvgl_lock_acquire();
   if (state)
-    lv_obj_add_state(light_switch, LV_STATE_CHECKED);
+    lv_obj_add_state(switch_c, LV_STATE_CHECKED);
   else
-    lv_obj_clear_state(light_switch, LV_STATE_CHECKED);
+    lv_obj_clear_state(switch_c, LV_STATE_CHECKED);
   lvgl_lock_release();
 }
 
 /**
- * @brief Get the state of the water pump switch
+ * @brief Get the state of switch A
  * @return True if on, false if off
  */
-bool system_monitor_ui_get_water_pump(void)
+bool system_monitor_ui_get_switch_a(void)
 {
-  if (!water_pump_switch)
+  if (!switch_a)
     return false;
 
   bool state = false;
   lvgl_lock_acquire();
-  state = lv_obj_has_state(water_pump_switch, LV_STATE_CHECKED);
+  state = lv_obj_has_state(switch_a, LV_STATE_CHECKED);
   lvgl_lock_release();
   return state;
 }
 
 /**
- * @brief Get the state of the wave maker switch
+ * @brief Get the state of switch B
  * @return True if on, false if off
  */
-bool system_monitor_ui_get_wave_maker(void)
+bool system_monitor_ui_get_switch_b(void)
 {
-  if (!wave_maker_switch)
+  if (!switch_b)
     return false;
 
   bool state = false;
   lvgl_lock_acquire();
-  state = lv_obj_has_state(wave_maker_switch, LV_STATE_CHECKED);
+  state = lv_obj_has_state(switch_b, LV_STATE_CHECKED);
   lvgl_lock_release();
   return state;
 }
 
 /**
- * @brief Get the state of the light switch
+ * @brief Get the state of switch C
  * @return True if on, false if off
  */
-bool system_monitor_ui_get_light(void)
+bool system_monitor_ui_get_switch_c(void)
 {
-  if (!light_switch)
+  if (!switch_c)
     return false;
 
   bool state = false;
   lvgl_lock_acquire();
-  state = lv_obj_has_state(light_switch, LV_STATE_CHECKED);
+  state = lv_obj_has_state(switch_c, LV_STATE_CHECKED);
   lvgl_lock_release();
   return state;
 }
