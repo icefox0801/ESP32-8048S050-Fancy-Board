@@ -15,7 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Home Assistant Server Settings
-#define HA_SERVER_IP "192.168.1.100"                     // Your Home Assistant server IP
+#define HA_SERVER_HOST_NAME "homeassistant"              // Your Home Assistant hostname (or IP)
 #define HA_SERVER_PORT 8123                              // Home Assistant port (usually 8123)
 #define HA_API_TOKEN "YOUR_LONG_LIVED_ACCESS_TOKEN_HERE" // Your HA long-lived access token
 
@@ -24,7 +24,7 @@
 #define TOSTRING(x) STRINGIFY(x)
 
 // Home Assistant API Endpoints
-#define HA_API_BASE_URL "http://" HA_SERVER_IP ":" TOSTRING(HA_SERVER_PORT) "/api"
+#define HA_API_BASE_URL "http://" HA_SERVER_HOST_NAME ":" TOSTRING(HA_SERVER_PORT) "/api"
 #define HA_API_STATES_URL HA_API_BASE_URL "/states"
 #define HA_API_SERVICES_URL HA_API_BASE_URL "/services"
 
