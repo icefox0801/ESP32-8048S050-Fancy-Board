@@ -3,10 +3,92 @@
  * @brief Home Assistant Device State Synchronization Implementation
  *
  * This module provides the implementation for synchronizing device states
- * with Home Assistant and handling sync failures.
+ * with Home Assistant bool ha_sync_pump_sync(void)
+{
+  if (!pump_sync.is_enabled)
+  {
+    ESP_LOGW(TAG, "Cannot sync disabled pump");
+    return false;
+  }
+
+  ESP_LOGI(TAG, "Synchronizing pump: local=%s",
+           ha_device_state_to_string(pump_sync.local_state));
+
+  // Prepare service call structure
+  ha_service_call_t service_call = {0};
+  strcpy(service_call.domain, "switch");
+  strcpy(service_call.entity_id, pump_sync.entity_id);
+
+  if (pump_sync.local_state == HA_DEVICE_STATE_ON)
+  {
+    strcpy(service_call.service, "turn_on");
+  }
+  else if (pump_sync.local_state == HA_DEVICE_STATE_OFF)
+  {
+    strcpy(service_call.service, "turn_off");
+  }
+  else
+  {
+    ESP_LOGW(TAG, "Cannot sync pump with unknown state");
+    return false;
+  }
+
+  // Make service call to Home Assistant
+  ha_api_response_t response;
+  esp_err_t ret = ha_api_call_service(&service_call, &response);
+
+  if (ret == ESP_OK && response.success)
+  {
+    ESP_LOGI(TAG, "Successfully sent pump command to Home Assistant");
+
+    // Wait a moment for the device to respond
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    // Verify the state change took effect
+    ha_device_state_t new_remote_state;
+    if (ha_sync_pump_get_remote_state(&new_remote_state))
+    {
+      pump_sync.remote_state = new_remote_state;
+      pump_sync.last_sync_time = get_timestamp_ms();
+
+      if (pump_sync.local_state == new_remote_state)
+      {
+        pump_sync.sync_status = HA_SYNC_STATUS_SYNCED;
+        pump_sync.failed_attempts = 0;
+        ESP_LOGI(TAG, "Pump sync successful: %s", ha_device_state_to_string(new_remote_state));
+
+        // Clean up response data
+        if (response.response_data) {
+          free(response.response_data);
+        }
+        return true;
+      }
+      else
+      {
+        pump_sync.sync_status = HA_SYNC_STATUS_OUT_OF_SYNC;
+        ESP_LOGW(TAG, "Pump sync failed - state mismatch: local=%s, remote=%s",
+                 ha_device_state_to_string(pump_sync.local_state),
+                 ha_device_state_to_string(new_remote_state));
+      }
+    }
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to send pump command: %s", response.error_message);
+    pump_sync.failed_attempts++;
+    pump_sync.sync_status = HA_SYNC_STATUS_FAILED;
+  }
+
+  // Clean up response data
+  if (response.response_data) {
+    free(response.response_data);
+  }
+
+  return false;failures.
  */
 
 #include "ha_sync.h"
+#include "ha_api.h"
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <string.h>
@@ -39,7 +121,7 @@ static uint32_t get_timestamp_ms(void)
   return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
-static ha_device_state_t parse_ha_state(const char *state_str)
+static __attribute__((unused)) ha_device_state_t parse_ha_state(const char *state_str)
 {
   if (state_str == NULL)
   {
@@ -318,5 +400,51 @@ const char *ha_device_state_to_string(ha_device_state_t state)
     return "UNAVAILABLE";
   default:
     return "INVALID";
+  }
+}
+
+esp_err_t ha_sync_immediate_switches(void)
+{
+  ESP_LOGI(TAG, "Performing immediate switch sync using bulk API");
+
+  // Entity IDs from smart config
+  const char *switch_entity_ids[] = {
+      HA_ENTITY_A, // Water pump
+      HA_ENTITY_B, // Wave maker
+      HA_ENTITY_C  // Light switch
+  };
+  const int switch_count = sizeof(switch_entity_ids) / sizeof(switch_entity_ids[0]);
+
+  // Fetch all switch states in one bulk request
+  ha_entity_state_t switch_states[switch_count];
+  esp_err_t ret = ha_api_get_multiple_entity_states(switch_entity_ids, switch_count, switch_states);
+
+  if (ret == ESP_OK)
+  {
+    // Update UI with switch states
+    bool pump_on = (strcmp(switch_states[0].state, "on") == 0);
+    bool wave_on = (strcmp(switch_states[1].state, "on") == 0);
+    bool light_on = (strcmp(switch_states[2].state, "on") == 0);
+
+    // Update the UI (we need to include the UI header)
+    extern void system_monitor_ui_set_water_pump(bool on);
+    extern void system_monitor_ui_set_wave_maker(bool on);
+    extern void system_monitor_ui_set_light(bool on);
+
+    system_monitor_ui_set_water_pump(pump_on);
+    system_monitor_ui_set_wave_maker(wave_on);
+    system_monitor_ui_set_light(light_on);
+
+    ESP_LOGI(TAG, "Immediate sync completed: %s=%s, %s=%s, %s=%s",
+             UI_LABEL_A, switch_states[0].state,
+             UI_LABEL_B, switch_states[1].state,
+             UI_LABEL_C, switch_states[2].state);
+
+    return ESP_OK;
+  }
+  else
+  {
+    ESP_LOGW(TAG, "Immediate sync failed: %s", esp_err_to_name(ret));
+    return ret;
   }
 }

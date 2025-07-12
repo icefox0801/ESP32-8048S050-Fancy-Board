@@ -11,6 +11,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "esp_err.h"
 #include "smart_config.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -135,5 +136,12 @@ const char *ha_sync_status_to_string(ha_sync_status_t status);
  * @return Human-readable state string
  */
 const char *ha_device_state_to_string(ha_device_state_t state);
+
+/**
+ * @brief Immediately sync all switch states from Home Assistant using bulk API
+ * This function is called when WiFi connects to get immediate state updates
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t ha_sync_immediate_switches(void);
 
 #endif // HA_SYNC_H
