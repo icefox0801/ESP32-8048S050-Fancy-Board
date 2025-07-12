@@ -1,4 +1,5 @@
 #include "esp_log.h"
+#include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
@@ -8,6 +9,7 @@
 #include "serial/serial_data_handler.h"
 #include "wifi/wifi_manager.h"
 #include "smart/ha_api.h"
+#include "smart/ha_sync.h"
 #include "smart/smart_config.h"
 #include <stdio.h>
 
@@ -20,6 +22,8 @@ static esp_lcd_panel_handle_t global_panel_handle = NULL;
 // Home Assistant integration
 static TaskHandle_t ha_task_handle = NULL;
 static bool ha_initialized = false;
+static bool immediate_sync_requested = false;
+static bool ha_init_requested = false;
 
 /**
  * @brief Simple stack monitoring function
@@ -44,24 +48,97 @@ static void check_stack_health(void)
 }
 
 /**
- * @brief Home Assistant task to fetch device states periodically
+ * @brief Home Assistant task to sync switch states every 30 seconds using bulk API
  */
 static void home_assistant_task(void *pvParameters)
 {
-  ESP_LOGI(TAG, "Home Assistant task started with 6KB stack");
+  ESP_LOGI(TAG, "Home Assistant task started with 8KB stack");
+
+  // Subscribe to task watchdog
+  ESP_ERROR_CHECK(esp_task_wdt_add(NULL));
+  ESP_LOGI(TAG, "Home Assistant task subscribed to watchdog");
 
   int cycle_count = 0;
+  const int SYNC_INTERVAL_MS = 30000; // 30 seconds for switch sync
+  bool initial_sync_done = false;
+
+  // Entity IDs from smart config
+  const char *switch_entity_ids[] = {
+      HA_ENTITY_A, // Water pump
+      HA_ENTITY_B, // Wave maker
+      HA_ENTITY_C  // Light switch
+  };
+  const int switch_count = sizeof(switch_entity_ids) / sizeof(switch_entity_ids[0]);
 
   while (1)
   {
-    // Wait for 30 seconds between updates
-    vTaskDelay(30000 / portTICK_PERIOD_MS);
+    // Check for HA initialization request first
+    if (ha_init_requested && !ha_initialized)
+    {
+      ESP_LOGI(TAG, "Processing HA API initialization request");
+      ha_init_requested = false;
 
-    // Check stack health every 10 cycles (5 minutes)
+      // Feed watchdog before potentially long operation
+      esp_task_wdt_reset();
+
+      esp_err_t ret = ha_api_init();
+      if (ret == ESP_OK)
+      {
+        ha_initialized = true;
+        ESP_LOGI(TAG, "Home Assistant API initialized successfully in task");
+
+        // Request immediate sync after successful initialization
+        immediate_sync_requested = true;
+      }
+      else
+      {
+        ESP_LOGE(TAG, "Failed to initialize Home Assistant API in task: %s", esp_err_to_name(ret));
+      }
+
+      // Feed watchdog after operation
+      esp_task_wdt_reset();
+    }
+
+    // Check for immediate sync request first (non-blocking)
+    if (immediate_sync_requested && ha_initialized)
+    {
+      ESP_LOGI(TAG, "Processing immediate sync request");
+      immediate_sync_requested = false;
+
+      // Feed watchdog before potentially long operation
+      esp_task_wdt_reset();
+
+      // Perform immediate sync with error handling
+      esp_err_t ret = ha_sync_immediate_switches();
+      if (ret != ESP_OK)
+      {
+        ESP_LOGW(TAG, "Immediate sync failed: %s", esp_err_to_name(ret));
+      }
+
+      // Feed watchdog after operation
+      esp_task_wdt_reset();
+
+      // Small delay after immediate sync
+      vTaskDelay(pdMS_TO_TICKS(1000));
+    } // Wait for 30 seconds between sync cycles
+    vTaskDelay(SYNC_INTERVAL_MS / portTICK_PERIOD_MS);
+
+    // Check stack and memory health every 10 cycles (5 minutes)
     cycle_count++;
     if (cycle_count % 10 == 0)
     {
       check_stack_health();
+
+      // Log free heap memory to monitor for memory leaks
+      size_t free_heap = esp_get_free_heap_size();
+      size_t min_free_heap = esp_get_minimum_free_heap_size();
+      ESP_LOGI(TAG, "Memory status: Free=%zu bytes, Min=%zu bytes", free_heap, min_free_heap);
+
+      // Reset cycle count to prevent overflow
+      if (cycle_count >= 1000)
+      {
+        cycle_count = 0;
+      }
     }
 
     if (!ha_initialized)
@@ -70,79 +147,118 @@ static void home_assistant_task(void *pvParameters)
       continue;
     }
 
-    ESP_LOGI(TAG, "Fetching device states from Home Assistant");
+    ESP_LOGI(TAG, "Syncing switch states from Home Assistant (cycle %d)", cycle_count);
 
-    // Fetch water pump state (switch.tuya_smart_switch_1_switch_1)
-    ha_entity_state_t pump_state;
-    esp_err_t ret = ha_api_get_entity_state("switch.tuya_smart_switch_1_switch_1", &pump_state);
+    // Feed watchdog before bulk operation
+    esp_task_wdt_reset();
+
+    // Fetch all switch states in one bulk request
+    ha_entity_state_t switch_states[switch_count];
+    esp_err_t ret = ha_api_get_multiple_entity_states(switch_entity_ids, switch_count, switch_states);
+
+    // Feed watchdog after bulk operation
+    esp_task_wdt_reset();
+
     if (ret == ESP_OK)
     {
-      bool pump_on = (strcmp(pump_state.state, "on") == 0);
+      // Update UI with switch states
+      bool pump_on = (strcmp(switch_states[0].state, "on") == 0);
+      bool wave_on = (strcmp(switch_states[1].state, "on") == 0);
+      bool light_on = (strcmp(switch_states[2].state, "on") == 0);
+
       system_monitor_ui_set_water_pump(pump_on);
-      ESP_LOGI(TAG, "Water pump state: %s", pump_state.state);
-    }
-    else
-    {
-      ESP_LOGW(TAG, "Failed to get water pump state: %s", esp_err_to_name(ret));
-    }
-
-    // Fetch wave maker state (switch.tuya_smart_switch_2_switch_1)
-    ha_entity_state_t wave_state;
-    ret = ha_api_get_entity_state("switch.tuya_smart_switch_2_switch_1", &wave_state);
-    if (ret == ESP_OK)
-    {
-      bool wave_on = (strcmp(wave_state.state, "on") == 0);
       system_monitor_ui_set_wave_maker(wave_on);
-      ESP_LOGI(TAG, "Wave maker state: %s", wave_state.state);
-    }
-    else
-    {
-      ESP_LOGW(TAG, "Failed to get wave maker state: %s", esp_err_to_name(ret));
-    }
-
-    // Fetch aquarium light state (light.aquarium_led_strip)
-    ha_entity_state_t light_state;
-    ret = ha_api_get_entity_state("light.aquarium_led_strip", &light_state);
-    if (ret == ESP_OK)
-    {
-      bool light_on = (strcmp(light_state.state, "on") == 0);
       system_monitor_ui_set_light(light_on);
-      ESP_LOGI(TAG, "Aquarium light state: %s", light_state.state);
+
+      ESP_LOGI(TAG, "Switch states synced: Pump=%s, Wave=%s, Light=%s",
+               switch_states[0].state, switch_states[1].state, switch_states[2].state);
+
+      if (!initial_sync_done)
+      {
+        initial_sync_done = true;
+        ESP_LOGI(TAG, "Initial switch sync completed successfully");
+      }
     }
     else
     {
-      ESP_LOGW(TAG, "Failed to get aquarium light state: %s", esp_err_to_name(ret));
+      ESP_LOGW(TAG, "Failed to sync switch states: %s", esp_err_to_name(ret));
+
+      // Fallback to individual requests if bulk fails
+      ESP_LOGI(TAG, "Attempting individual entity requests as fallback");
+
+      // Water pump
+      ha_entity_state_t pump_state;
+      memset(&pump_state, 0, sizeof(pump_state));
+      if (ha_api_get_entity_state(switch_entity_ids[0], &pump_state) == ESP_OK)
+      {
+        bool pump_on = (strcmp(pump_state.state, "on") == 0);
+        system_monitor_ui_set_water_pump(pump_on);
+        ESP_LOGD(TAG, "Water pump: %s", pump_state.state);
+      }
+
+      vTaskDelay(pdMS_TO_TICKS(200));
+
+      // Wave maker
+      ha_entity_state_t wave_state;
+      memset(&wave_state, 0, sizeof(wave_state));
+      if (ha_api_get_entity_state(switch_entity_ids[1], &wave_state) == ESP_OK)
+      {
+        bool wave_on = (strcmp(wave_state.state, "on") == 0);
+        system_monitor_ui_set_wave_maker(wave_on);
+        ESP_LOGD(TAG, "Wave maker: %s", wave_state.state);
+      }
+
+      vTaskDelay(pdMS_TO_TICKS(200));
+
+      // Aquarium light
+      ha_entity_state_t light_state;
+      memset(&light_state, 0, sizeof(light_state));
+      if (ha_api_get_entity_state(switch_entity_ids[2], &light_state) == ESP_OK)
+      {
+        bool light_on = (strcmp(light_state.state, "on") == 0);
+        system_monitor_ui_set_light(light_on);
+        ESP_LOGD(TAG, "Aquarium light: %s", light_state.state);
+      }
     }
 
-    // Fetch temperature sensor (sensor.aquarium_temperature) - Log only for now
-    ha_entity_state_t temp_state;
-    ret = ha_api_get_entity_state("sensor.aquarium_temperature", &temp_state);
-    if (ret == ESP_OK)
+    // Fetch sensors every other cycle to reduce load
+    if (cycle_count % 2 == 0)
     {
-      float temperature = atof(temp_state.state);
-      ESP_LOGI(TAG, "Aquarium temperature: %.1f°C", temperature);
-      // TODO: Implement system_monitor_ui_set_temperature(temperature) function to update UI
-    }
-    else
-    {
-      ESP_LOGW(TAG, "Failed to get temperature: %s", esp_err_to_name(ret));
+      // Small delay before sensor requests
+      vTaskDelay(pdMS_TO_TICKS(500));
+
+      // Fetch temperature sensor
+      ha_entity_state_t temp_state;
+      memset(&temp_state, 0, sizeof(temp_state));
+      ret = ha_api_get_entity_state("sensor.aquarium_temperature", &temp_state);
+      if (ret == ESP_OK)
+      {
+        float temperature = atof(temp_state.state);
+        ESP_LOGD(TAG, "Temperature: %.1f°C", temperature);
+        // TODO: system_monitor_ui_set_temperature(temperature);
+      }
+
+      vTaskDelay(pdMS_TO_TICKS(300));
+
+      // Fetch humidity sensor
+      ha_entity_state_t humidity_state;
+      memset(&humidity_state, 0, sizeof(humidity_state));
+      ret = ha_api_get_entity_state("sensor.aquarium_humidity", &humidity_state);
+      if (ret == ESP_OK)
+      {
+        float humidity = atof(humidity_state.state);
+        ESP_LOGD(TAG, "Humidity: %.1f%%", humidity);
+        // TODO: system_monitor_ui_set_humidity(humidity);
+      }
     }
 
-    // Fetch humidity sensor (sensor.aquarium_humidity) - Log only for now
-    ha_entity_state_t humidity_state;
-    ret = ha_api_get_entity_state("sensor.aquarium_humidity", &humidity_state);
-    if (ret == ESP_OK)
-    {
-      float humidity = atof(humidity_state.state);
-      ESP_LOGI(TAG, "Aquarium humidity: %.1f%%", humidity);
-      // TODO: Implement system_monitor_ui_set_humidity(humidity) function to update UI
-    }
-    else
-    {
-      ESP_LOGW(TAG, "Failed to get humidity: %s", esp_err_to_name(ret));
-    }
+    ESP_LOGI(TAG, "Device state sync completed (cycle %d)", cycle_count);
 
-    ESP_LOGI(TAG, "Device state update completed");
+    // Feed task watchdog to prevent reset
+    esp_task_wdt_reset();
+
+    // Small garbage collection pause
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
@@ -207,9 +323,13 @@ static void wifi_status_callback(wifi_status_t status, const wifi_info_t *info)
     // Stop Home Assistant task when WiFi disconnects
     if (ha_task_handle != NULL)
     {
+      // Unsubscribe from watchdog before deleting
+      esp_task_wdt_delete(ha_task_handle);
       vTaskDelete(ha_task_handle);
       ha_task_handle = NULL;
       ha_initialized = false;
+      ha_init_requested = false;
+      immediate_sync_requested = false;
       ESP_LOGI(TAG, "Home Assistant task stopped due to WiFi disconnection");
     }
     break;
@@ -235,23 +355,22 @@ static void wifi_status_callback(wifi_status_t status, const wifi_info_t *info)
       // Initialize Home Assistant API after WiFi connection
       if (!ha_initialized)
       {
-        esp_err_t ret = ha_api_init();
-        if (ret == ESP_OK)
+        // Create Home Assistant task first
+        if (ha_task_handle == NULL)
         {
-          ha_initialized = true;
-          ESP_LOGI(TAG, "Home Assistant API initialized successfully");
+          xTaskCreate(home_assistant_task, "ha_task", 8192, NULL, 5, &ha_task_handle);
+          ESP_LOGI(TAG, "Home Assistant task created with 8KB stack");
+        }
 
-          // Create Home Assistant task
-          if (ha_task_handle == NULL)
-          {
-            xTaskCreate(home_assistant_task, "ha_task", 6144, NULL, 5, &ha_task_handle);
-            ESP_LOGI(TAG, "Home Assistant task created with 6KB stack");
-          }
-        }
-        else
-        {
-          ESP_LOGE(TAG, "Failed to initialize Home Assistant API: %s", esp_err_to_name(ret));
-        }
+        // Request HA initialization in task context (safer)
+        ha_init_requested = true;
+        ESP_LOGI(TAG, "HA initialization requested in task context");
+      }
+      else
+      {
+        // HA already initialized, just request immediate sync on reconnect
+        ESP_LOGI(TAG, "WiFi reconnected - requesting immediate switch sync");
+        immediate_sync_requested = true;
       }
     }
     else
