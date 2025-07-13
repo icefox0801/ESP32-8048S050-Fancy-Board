@@ -25,6 +25,24 @@ extern lv_obj_t *scene_button;
 extern lv_obj_t *ha_status_label;
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SWITCH ENUMERATION AND HELPER TYPES
+// ══════════════════════════════════════════════════════════════════════════════
+
+typedef struct
+{
+  lv_obj_t **switch_obj;
+  const char *label;
+  const char *entity;
+  const char *icon;
+} switch_config_t;
+
+// Switch configuration table
+static const switch_config_t switch_configs[3] = {
+    {&switch_a, UI_LABEL_A, HA_ENTITY_A, "💡"},
+    {&switch_b, UI_LABEL_B, HA_ENTITY_B, "🔌"},
+    {&switch_c, UI_LABEL_C, HA_ENTITY_C, "💡"}};
+
+// ══════════════════════════════════════════════════════════════════════════════
 // LOCAL EVENT HANDLERS
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -55,88 +73,48 @@ static void debug_touch_handler(lv_event_t *e)
 }
 
 /**
- * @brief Switch A event handler
+ * @brief Generic switch event handler
+ * @param e LVGL event object
  */
-static void switch_a_event_handler(lv_event_t *e)
+static void switch_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
   lv_obj_t *obj = lv_event_get_target(e);
 
-  ESP_LOGI(TAG, "💡SWITCH A (%s): Event handler called with code %d", UI_LABEL_A, code);
-
-  if (code == LV_EVENT_VALUE_CHANGED)
+  // Find which switch was triggered
+  switch_id_t switch_id = SWITCH_A;
+  for (int i = 0; i < 3; i++)
   {
-    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "💡SWITCH A (%s) TOUCH EVENT: User selected %s", UI_LABEL_A, state ? "ON" : "OFF");
-
-    // Control the actual device via Home Assistant
-    esp_err_t ret = smart_home_control_switch(HA_ENTITY_A, state);
-    if (ret != ESP_OK)
+    if (obj == *switch_configs[i].switch_obj)
     {
-      ESP_LOGE(TAG, "💡SWITCH A (%s) FAILED: %s", UI_LABEL_A, esp_err_to_name(ret));
-      // TODO: Consider reverting the switch state on failure
-    }
-    else
-    {
-      ESP_LOGI(TAG, "💡SWITCH A (%s) SUCCESS: Device state changed to %s", UI_LABEL_A, state ? "ON" : "OFF");
+      switch_id = i;
+      break;
     }
   }
-}
 
-/**
- * @brief Switch B event handler
- */
-static void switch_b_event_handler(lv_event_t *e)
-{
-  lv_event_code_t code = lv_event_get_code(e);
-  lv_obj_t *obj = lv_event_get_target(e);
+  const switch_config_t *config = &switch_configs[switch_id];
 
-  ESP_LOGI(TAG, "🔌 SWITCH B (%s): Event handler called with code %d", UI_LABEL_B, code);
+  ESP_LOGI(TAG, "%s SWITCH %s (%s): Event handler called with code %d",
+           config->icon, config->label, config->label, code);
 
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "🔌 SWITCH B (%s) TOUCH EVENT: User selected %s", UI_LABEL_B, state ? "ON" : "OFF");
+    ESP_LOGI(TAG, "%s SWITCH %s (%s) TOUCH EVENT: User selected %s",
+             config->icon, config->label, config->label, state ? "ON" : "OFF");
 
     // Control the actual device via Home Assistant
-    esp_err_t ret = smart_home_control_switch(HA_ENTITY_B, state);
+    esp_err_t ret = smart_home_control_switch(config->entity, state);
     if (ret != ESP_OK)
     {
-      ESP_LOGE(TAG, "🔌 SWITCH B (%s) FAILED: %s", UI_LABEL_B, esp_err_to_name(ret));
+      ESP_LOGE(TAG, "%s SWITCH %s (%s) FAILED: %s",
+               config->icon, config->label, config->label, esp_err_to_name(ret));
       // TODO: Consider reverting the switch state on failure
     }
     else
     {
-      ESP_LOGI(TAG, "🔌 SWITCH B (%s) SUCCESS: Device state changed to %s", UI_LABEL_B, state ? "ON" : "OFF");
-    }
-  }
-}
-
-/**
- * @brief Switch C event handler
- */
-static void switch_c_event_handler(lv_event_t *e)
-{
-  lv_event_code_t code = lv_event_get_code(e);
-  lv_obj_t *obj = lv_event_get_target(e);
-
-  ESP_LOGI(TAG, "💡SWITCH C (%s): Event handler called with code %d", UI_LABEL_C, code);
-
-  if (code == LV_EVENT_VALUE_CHANGED)
-  {
-    bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "💡SWITCH C (%s) TOUCH EVENT: User selected %s", UI_LABEL_C, state ? "ON" : "OFF");
-
-    // Control the actual device via Home Assistant
-    esp_err_t ret = smart_home_control_switch(HA_ENTITY_C, state);
-    if (ret != ESP_OK)
-    {
-      ESP_LOGE(TAG, "💡SWITCH C (%s) FAILED: %s", UI_LABEL_C, esp_err_to_name(ret));
-      // TODO: Consider reverting the switch state on failure
-    }
-    else
-    {
-      ESP_LOGI(TAG, "💡SWITCH C (%s) SUCCESS: Device state changed to %s", UI_LABEL_C, state ? "ON" : "OFF");
+      ESP_LOGI(TAG, "%s SWITCH %s (%s) SUCCESS: Device state changed to %s",
+               config->icon, config->label, config->label, state ? "ON" : "OFF");
     }
   }
 }
@@ -199,8 +177,8 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   // Switch A field - positioned with better spacing
   switch_a = ui_create_switch_field(control_panel, UI_LABEL_A, 160);
   lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
-  lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-  lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_CLICKED, NULL);
   ESP_LOGI(TAG, "Switch A (%s) created at x=160, better spacing", UI_LABEL_A);
 
   // Vertical separator after switch A
@@ -209,8 +187,8 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   // Switch B field - proper spacing from separator
   switch_b = ui_create_switch_field(control_panel, UI_LABEL_B, 300);
   lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
-  lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-  lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_CLICKED, NULL);
   ESP_LOGI(TAG, "Switch B (%s) created at x=300, better spacing", UI_LABEL_B);
 
   // Vertical separator after switch B
@@ -219,8 +197,8 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   // Switch C field - proper spacing from separator
   switch_c = ui_create_switch_field(control_panel, UI_LABEL_C, 440);
   lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
-  lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-  lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_CLICKED, NULL);
   ESP_LOGI(TAG, "Switch C (%s) created at x=440, better spacing", UI_LABEL_C);
 
   // Vertical separator before scene button
@@ -244,100 +222,36 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
 }
 
 /**
- * @brief Set the state of switch A
+ * @brief Generic function to set switch state
+ * @param switch_id Which switch to control (SWITCH_A, SWITCH_B, SWITCH_C)
  * @param state True to turn on, false to turn off
  */
-void controls_panel_set_switch_a(bool state)
+void controls_panel_set_switch(int switch_id, bool state)
 {
-  if (!switch_a)
+  if (switch_id < 0 || switch_id >= SWITCH_COUNT || !*switch_configs[switch_id].switch_obj)
     return;
 
   lvgl_lock_acquire();
   if (state)
-    lv_obj_add_state(switch_a, LV_STATE_CHECKED);
+    lv_obj_add_state(*switch_configs[switch_id].switch_obj, LV_STATE_CHECKED);
   else
-    lv_obj_clear_state(switch_a, LV_STATE_CHECKED);
+    lv_obj_clear_state(*switch_configs[switch_id].switch_obj, LV_STATE_CHECKED);
   lvgl_lock_release();
 }
 
 /**
- * @brief Set the state of switch B
- * @param state True to turn on, false to turn off
- */
-void controls_panel_set_switch_b(bool state)
-{
-  if (!switch_b)
-    return;
-
-  lvgl_lock_acquire();
-  if (state)
-    lv_obj_add_state(switch_b, LV_STATE_CHECKED);
-  else
-    lv_obj_clear_state(switch_b, LV_STATE_CHECKED);
-  lvgl_lock_release();
-}
-
-/**
- * @brief Set the state of switch C
- * @param state True to turn on, false to turn off
- */
-void controls_panel_set_switch_c(bool state)
-{
-  if (!switch_c)
-    return;
-
-  lvgl_lock_acquire();
-  if (state)
-    lv_obj_add_state(switch_c, LV_STATE_CHECKED);
-  else
-    lv_obj_clear_state(switch_c, LV_STATE_CHECKED);
-  lvgl_lock_release();
-}
-
-/**
- * @brief Get the state of switch A
+ * @brief Generic function to get switch state
+ * @param switch_id Which switch to query (SWITCH_A, SWITCH_B, SWITCH_C)
  * @return True if on, false if off
  */
-bool controls_panel_get_switch_a(void)
+bool controls_panel_get_switch(int switch_id)
 {
-  if (!switch_a)
+  if (switch_id < 0 || switch_id >= SWITCH_COUNT || !*switch_configs[switch_id].switch_obj)
     return false;
 
   bool state = false;
   lvgl_lock_acquire();
-  state = lv_obj_has_state(switch_a, LV_STATE_CHECKED);
-  lvgl_lock_release();
-  return state;
-}
-
-/**
- * @brief Get the state of switch B
- * @return True if on, false if off
- */
-bool controls_panel_get_switch_b(void)
-{
-  if (!switch_b)
-    return false;
-
-  bool state = false;
-  lvgl_lock_acquire();
-  state = lv_obj_has_state(switch_b, LV_STATE_CHECKED);
-  lvgl_lock_release();
-  return state;
-}
-
-/**
- * @brief Get the state of switch C
- * @return True if on, false if off
- */
-bool controls_panel_get_switch_c(void)
-{
-  if (!switch_c)
-    return false;
-
-  bool state = false;
-  lvgl_lock_acquire();
-  state = lv_obj_has_state(switch_c, LV_STATE_CHECKED);
+  state = lv_obj_has_state(*switch_configs[switch_id].switch_obj, LV_STATE_CHECKED);
   lvgl_lock_release();
   return state;
 }

@@ -26,6 +26,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "system_monitor.h"
+#include "ui/ui_status_info.h"
 #include <string.h>
 #include <time.h>
 
@@ -324,6 +325,7 @@ static void check_connection_timeout(uint32_t current_time)
     if (!timeout_logged)
     {
       ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
+      status_info_update_serial_status("Connection Lost", false);
       timeout_logged = true;
     }
   }

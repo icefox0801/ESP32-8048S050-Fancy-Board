@@ -214,9 +214,9 @@ static void home_assistant_task(void *pvParameters)
       bool switch_b_on = (strcmp(switch_states[1].state, "on") == 0);
       bool switch_c_on = (strcmp(switch_states[2].state, "on") == 0);
 
-      controls_panel_set_switch_a(switch_a_on);
-      controls_panel_set_switch_b(switch_b_on);
-      controls_panel_set_switch_c(switch_c_on);
+      controls_panel_set_switch(SWITCH_A, switch_a_on);
+      controls_panel_set_switch(SWITCH_B, switch_b_on);
+      controls_panel_set_switch(SWITCH_C, switch_c_on);
 
       ESP_LOGI(TAG, "Switch states synced: A=%s, B=%s, C=%s",
                switch_states[0].state, switch_states[1].state, switch_states[2].state);
@@ -247,7 +247,7 @@ static void home_assistant_task(void *pvParameters)
       if (ha_api_get_entity_state(switch_entity_ids[0], &switch_a_state) == ESP_OK)
       {
         bool switch_a_on = (strcmp(switch_a_state.state, "on") == 0);
-        controls_panel_set_switch_a(switch_a_on);
+        controls_panel_set_switch(SWITCH_A, switch_a_on);
         ESP_LOGD(TAG, "Switch A: %s", switch_a_state.state);
       }
 
@@ -260,7 +260,7 @@ static void home_assistant_task(void *pvParameters)
       if (ha_api_get_entity_state(switch_entity_ids[1], &switch_b_state) == ESP_OK)
       {
         bool switch_b_on = (strcmp(switch_b_state.state, "on") == 0);
-        controls_panel_set_switch_b(switch_b_on);
+        controls_panel_set_switch(SWITCH_B, switch_b_on);
         ESP_LOGD(TAG, "Switch B: %s", switch_b_state.state);
       }
 
@@ -273,7 +273,7 @@ static void home_assistant_task(void *pvParameters)
       if (ha_api_get_entity_state(switch_entity_ids[2], &switch_c_state) == ESP_OK)
       {
         bool switch_c_on = (strcmp(switch_c_state.state, "on") == 0);
-        controls_panel_set_switch_c(switch_c_on);
+        controls_panel_set_switch(SWITCH_C, switch_c_on);
         ESP_LOGD(TAG, "Switch C: %s", switch_c_state.state);
       }
 

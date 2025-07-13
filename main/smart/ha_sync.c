@@ -3,88 +3,7 @@
  * @brief Home Assistant Device State Synchronization Implementation
  *
  * This module provides the implementation for synchronizing device states
- * with Home Assistant bool ha_sync_switch_a_sync(void)
-{
-  if (!switch_a_sync.is_enabled)
-  {
-    ESP_LOGW(TAG, "Cannot sync disabled switch_a");
-    return false;
-  }
-
-  ESP_LOGI(TAG, "Synchronizing switch_a: local=%s",
-           ha_device_state_to_string(switch_a_sync.local_state));
-
-  // Prepare service call structure
-  ha_service_call_t service_call = {0};
-  strcpy(service_call.domain, "switch");
-  strcpy(service_call.entity_id, switch_a_sync.entity_id);
-
-  if (switch_a_sync.local_state == HA_DEVICE_STATE_ON)
-  {
-    strcpy(service_call.service, "turn_on");
-  }
-  else if (switch_a_sync.local_state == HA_DEVICE_STATE_OFF)
-  {
-    strcpy(service_call.service, "turn_off");
-  }
-  else
-  {
-    ESP_LOGW(TAG, "Cannot sync switch_a with unknown state");
-    return false;
-  }
-
-  // Make service call to Home Assistant
-  ha_api_response_t response;
-  esp_err_t ret = ha_api_call_service(&service_call, &response);
-
-  if (ret == ESP_OK && response.success)
-  {
-    ESP_LOGI(TAG, "Successfully sent switch_a command to Home Assistant");
-
-    // Wait a moment for the device to respond
-    vTaskDelay(pdMS_TO_TICKS(1000));
-
-    // Verify the state change took effect
-    ha_device_state_t new_remote_state;
-    if (ha_sync_switch_a_get_remote_state(&new_remote_state))
-    {
-      switch_a_sync.remote_state = new_remote_state;
-      switch_a_sync.last_sync_time = get_timestamp_ms();
-
-      if (switch_a_sync.local_state == new_remote_state)
-      {
-        switch_a_sync.sync_status = HA_SYNC_STATUS_SYNCED;
-        switch_a_sync.failed_attempts = 0;
-        ESP_LOGI(TAG, "switch_a sync successful: %s", ha_device_state_to_string(new_remote_state));
-
-        // Clean up response data
-        if (response.response_data) {
-          free(response.response_data);
-        }
-        return true;
-      }
-      else
-      {
-        switch_a_sync.sync_status = HA_SYNC_STATUS_OUT_OF_SYNC;
-        ESP_LOGW(TAG, "switch_a sync failed - state mismatch: local=%s, remote=%s",
-                 ha_device_state_to_string(switch_a_sync.local_state),
-                 ha_device_state_to_string(new_remote_state));
-      }
-    }
-  }
-  else
-  {
-    ESP_LOGE(TAG, "Failed to send switch_a command: %s", response.error_message);
-    switch_a_sync.failed_attempts++;
-    switch_a_sync.sync_status = HA_SYNC_STATUS_FAILED;
-  }
-
-  // Clean up response data
-  if (response.response_data) {
-    free(response.response_data);
-  }
-
-  return false;failures.
+ * with Home Assistant
  */
 
 #include "ha_sync.h"
@@ -435,9 +354,9 @@ esp_err_t ha_sync_immediate_switches(void)
     bool switch_c_on = (strcmp(switch_states[2].state, "on") == 0);
 
     // Update the UI with switch states
-    controls_panel_set_switch_a(switch_a_on);
-    controls_panel_set_switch_b(switch_b_on);
-    controls_panel_set_switch_c(switch_c_on);
+    controls_panel_set_switch(SWITCH_A, switch_a_on);
+    controls_panel_set_switch(SWITCH_B, switch_b_on);
+    controls_panel_set_switch(SWITCH_C, switch_c_on);
 
     ESP_LOGI(TAG, "Immediate sync completed: %s=%s, %s=%s, %s=%s",
              "Water Pump", switch_states[0].state,
