@@ -19,6 +19,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// Include panel headers for data structure definitions
+#include "ui_cpu_panel.h"
+#include "ui_gpu_panel.h"
+#include "ui_memory_panel.h"
+#include "ui_status_info.h"
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATA STRUCTURES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -37,33 +43,14 @@ typedef struct
   // Timestamp (milliseconds since epoch)
   uint64_t timestamp;
 
-  // CPU Information Section
-  struct
-  {
-    uint8_t usage; ///< CPU usage percentage (0-100)
-    uint8_t temp;  ///< CPU temperature in Celsius
-    uint16_t fan;  ///< CPU fan speed in RPM
-    char name[32]; ///< CPU name/model string
-  } cpu;
+  // CPU Information Section - uses struct from ui_cpu_panel.h
+  struct cpu_info cpu;
 
-  // GPU Information Section
-  struct
-  {
-    uint8_t usage;      ///< GPU usage percentage (0-100)
-    uint8_t temp;       ///< GPU temperature in Celsius
-    char name[32];      ///< GPU name/model string
-    uint32_t mem_used;  ///< GPU memory used (MB)
-    uint32_t mem_total; ///< GPU memory total (MB)
-  } gpu;
+  // GPU Information Section - uses struct from ui_gpu_panel.h
+  struct gpu_info gpu;
 
-  // System Memory Information Section
-  struct
-  {
-    uint8_t usage; ///< Memory usage percentage (0-100)
-    float used;    ///< Memory used (GB)
-    float total;   ///< Memory total (GB)
-    float avail;   ///< Memory available (GB)
-  } mem;
+  // System Memory Information Section - uses struct from ui_memory_panel.h
+  struct memory_info mem;
 } system_data_t;
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -21,6 +21,10 @@
 #include "lvgl_setup.h"
 #include "ui_config.h"
 #include "ui_helpers.h"
+#include "ui_cpu_panel.h"
+#include "ui_gpu_panel.h"
+#include "ui_memory_panel.h"
+#include "ui_status_info.h"
 #include "smart/ha_api.h"
 #include "smart/smart_home.h"
 #include "smart/smart_config.h"
@@ -34,9 +38,26 @@ static const char *TAG = "system_monitor";
 // ══════════════════════════════════════════════════════════════════════════════�?
 
 // Status and Info Elements
-static lv_obj_t *timestamp_label = NULL;
-static lv_obj_t *connection_status_label = NULL;
-static lv_obj_t *wifi_status_label = NULL;
+lv_obj_t *timestamp_label = NULL;
+lv_obj_t *connection_status_label = NULL;
+lv_obj_t *wifi_status_label = NULL;
+
+// CPU Panel Elements
+lv_obj_t *cpu_name_label = NULL;
+lv_obj_t *cpu_usage_label = NULL;
+lv_obj_t *cpu_temp_label = NULL;
+lv_obj_t *cpu_fan_label = NULL;
+
+// GPU Panel Elements
+lv_obj_t *gpu_name_label = NULL;
+lv_obj_t *gpu_usage_label = NULL;
+lv_obj_t *gpu_temp_label = NULL;
+lv_obj_t *gpu_mem_label = NULL;
+
+// Memory Panel Elements
+lv_obj_t *mem_usage_bar = NULL;
+lv_obj_t *mem_usage_label = NULL;
+lv_obj_t *mem_info_label = NULL;
 
 // Smart Panel Elements
 static lv_obj_t *switch_a = NULL;
@@ -44,23 +65,6 @@ static lv_obj_t *switch_b = NULL;
 static lv_obj_t *switch_c = NULL;
 static lv_obj_t *scene_button = NULL;
 static lv_obj_t *ha_status_label = NULL;
-
-// CPU Section Elements
-static lv_obj_t *cpu_name_label = NULL;
-static lv_obj_t *cpu_usage_label = NULL;
-static lv_obj_t *cpu_temp_label = NULL;
-static lv_obj_t *cpu_fan_label = NULL; // Added fan field
-
-// GPU Section Elements
-static lv_obj_t *gpu_name_label = NULL;
-static lv_obj_t *gpu_usage_label = NULL;
-static lv_obj_t *gpu_temp_label = NULL;
-static lv_obj_t *gpu_mem_label = NULL;
-
-// Memory Section Elements
-static lv_obj_t *mem_usage_bar = NULL;
-static lv_obj_t *mem_usage_label = NULL;
-static lv_obj_t *mem_info_label = NULL;
 
 // ══════════════════════════════════════════════════════════════════════════════�?
 // EVENT HANDLERS - USING SYSTEM MANAGER TO PREVENT LVGL BLOCKING
@@ -285,134 +289,6 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
   return control_panel;
 }
 
-/**
- * @brief Create the CPU monitoring panel
- * @param parent Parent screen object
- * @return Created CPU panel
- */
-static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
-{
-  lv_obj_t *cpu_panel = ui_create_panel(parent, 385, 150, 10, 120, 0x1a1a2e, 0x16213e);
-
-  // CPU Title with separator
-  ui_create_title_with_separator(cpu_panel, "CPU", 0x4fc3f7, 355);
-
-  // CPU Name (positioned to the right of title, baseline aligned)
-  cpu_name_label = lv_label_create(cpu_panel);
-  lv_label_set_text(cpu_name_label, "Unknown CPU");
-  lv_obj_set_style_text_font(cpu_name_label, font_small, 0);
-  lv_obj_set_style_text_color(cpu_name_label, lv_color_hex(0x888888), 0);
-  lv_obj_set_pos(cpu_name_label, 80, 8);
-
-  // Create CPU fields - Temperature first
-  cpu_temp_label = ui_create_field(cpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  cpu_usage_label = ui_create_field(cpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
-  cpu_fan_label = ui_create_field(cpu_panel, "Fan (RPM)", "--", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
-
-  // Create vertical separators between fields
-  ui_create_vertical_separator(cpu_panel, 118, 50, 60, 0x555555);
-  ui_create_vertical_separator(cpu_panel, 236, 50, 60, 0x555555);
-
-  return cpu_panel;
-}
-
-/**
- * @brief Create the GPU monitoring panel
- * @param parent Parent screen object
- * @return Created GPU panel
- */
-static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
-{
-  lv_obj_t *gpu_panel = ui_create_panel(parent, 385, 150, 405, 120, 0x1a2e1a, 0x2e4f2e);
-
-  // GPU Title with separator
-  ui_create_title_with_separator(gpu_panel, "GPU", 0x4caf50, 355);
-
-  // GPU Name (positioned to the right of title, baseline aligned)
-  gpu_name_label = lv_label_create(gpu_panel);
-  lv_label_set_text(gpu_name_label, "Unknown GPU");
-  lv_obj_set_style_text_font(gpu_name_label, font_small, 0);
-  lv_obj_set_style_text_color(gpu_name_label, lv_color_hex(0x888888), 0);
-  lv_obj_set_pos(gpu_name_label, 80, 8);
-
-  // Create GPU fields - Temperature first
-  gpu_temp_label = ui_create_field(gpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  gpu_usage_label = ui_create_field(gpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
-  gpu_mem_label = ui_create_field(gpu_panel, "Memory", "0%", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
-
-  // Create vertical separators between GPU fields
-  ui_create_vertical_separator(gpu_panel, 118, 50, 60, 0x555555);
-  ui_create_vertical_separator(gpu_panel, 236, 50, 60, 0x555555);
-
-  return gpu_panel;
-}
-
-/**
- * @brief Create the memory monitoring panel
- * @param parent Parent screen object
- * @return Created memory panel
- */
-static lv_obj_t *create_memory_panel(lv_obj_t *parent)
-{
-  lv_obj_t *mem_panel = ui_create_panel(parent, 780, 120, 10, 280, 0x2e1a1a, 0x4f2e2e);
-
-  // Memory title with separator
-  ui_create_title_with_separator(mem_panel, "Memory", 0xff7043, 750);
-
-  // Memory info positioned to the right of title (baseline aligned)
-  mem_info_label = lv_label_create(mem_panel);
-  lv_label_set_text(mem_info_label, "(-.- GB / -.- GB)");
-  lv_obj_set_style_text_font(mem_info_label, font_small, 0);
-  lv_obj_set_style_text_color(mem_info_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(mem_info_label, 240, 8);
-
-  // Create memory usage value (without label)
-  mem_usage_label = lv_label_create(mem_panel);
-  lv_label_set_text(mem_usage_label, "0%");
-  lv_obj_set_style_text_font(mem_usage_label, font_big_numbers, 0);
-  lv_obj_set_style_text_color(mem_usage_label, lv_color_hex(0xff7043), 0);
-  lv_obj_align(mem_usage_label, LV_ALIGN_BOTTOM_LEFT, 10, -5);
-
-  // Dimmed vertical separator between usage field and progress bar
-  ui_create_vertical_separator(mem_panel, 150, 45, 45, 0x555555);
-
-  // Progress bar (positioned to the right of the separator)
-  mem_usage_bar = ui_create_progress_bar(mem_panel, 500, 25, 170, 65, 0x1a1a2e, 0xff7043, 12);
-
-  return mem_panel;
-}
-
-/**
- * @brief Create the status panel with connection info
- * @param parent Parent screen object
- * @return Created status panel
- */
-static lv_obj_t *create_status_info_panel(lv_obj_t *parent)
-{
-  lv_obj_t *status_panel = ui_create_status_panel(parent, 780, 50, 10, 410, 0x0f0f0f, 0x222222);
-
-  // Serial connection status with last update time (left side)
-  connection_status_label = lv_label_create(status_panel);
-  lv_label_set_text(connection_status_label, "[SERIAL] Waiting... | Last: Never");
-  lv_obj_set_style_text_font(connection_status_label, font_small, 0);
-  lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xffaa00), 0);
-  lv_obj_set_pos(connection_status_label, 10, 11);
-
-  // WiFi status (right side)
-  wifi_status_label = lv_label_create(status_panel);
-  lv_label_set_text(wifi_status_label, "[WIFI] Connecting...");
-  lv_obj_set_style_text_font(wifi_status_label, font_small, 0);
-  lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00aaff), 0);
-  lv_obj_align(wifi_status_label, LV_ALIGN_TOP_RIGHT, -10, 11);
-
-  // Hidden timestamp label for internal timestamp tracking
-  timestamp_label = lv_label_create(status_panel);
-  lv_label_set_text(timestamp_label, "Last: Never");
-  lv_obj_add_flag(timestamp_label, LV_OBJ_FLAG_HIDDEN); // Hide this element
-
-  return status_panel;
-}
-
 // ══════════════════════════════════════════════════════════════════════════════�?
 // PUBLIC FUNCTIONS - MAIN UI INTERFACE
 // ══════════════════════════════════════════════════════════════════════════════�?
@@ -485,91 +361,9 @@ void system_monitor_ui_update(const system_data_t *data)
     lv_label_set_text(connection_status_label, combined_status);
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Update CPU Section
-  // ─────────────────────────────────────────────────────────────────
-
-  if (cpu_name_label)
-  {
-    lv_label_set_text(cpu_name_label, data->cpu.name);
-  }
-
-  if (cpu_usage_label)
-  {
-    char usage_str[16];
-    snprintf(usage_str, sizeof(usage_str), "%d%%", data->cpu.usage);
-    lv_label_set_text(cpu_usage_label, usage_str);
-  }
-
-  if (cpu_temp_label)
-  {
-    char temp_str[16];
-    snprintf(temp_str, sizeof(temp_str), "%d°C", data->cpu.temp); // Shortened format
-    lv_label_set_text(cpu_temp_label, temp_str);
-  }
-
-  if (cpu_fan_label)
-  {
-    char fan_str[16];
-    snprintf(fan_str, sizeof(fan_str), "%d", data->cpu.fan);
-    lv_label_set_text(cpu_fan_label, fan_str);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Update GPU Section
-  // ─────────────────────────────────────────────────────────────────
-
-  if (gpu_name_label)
-  {
-    lv_label_set_text(gpu_name_label, data->gpu.name);
-  }
-
-  if (gpu_usage_label)
-  {
-    char usage_str[16];
-    snprintf(usage_str, sizeof(usage_str), "%d%%", data->gpu.usage);
-    lv_label_set_text(gpu_usage_label, usage_str);
-  }
-
-  if (gpu_temp_label)
-  {
-    char temp_str[16];
-    snprintf(temp_str, sizeof(temp_str), "%d°C", data->gpu.temp); // Shortened format
-    lv_label_set_text(gpu_temp_label, temp_str);
-  }
-
-  if (gpu_mem_label)
-  {
-    uint8_t mem_usage_pct = (data->gpu.mem_used * 100) / data->gpu.mem_total;
-    char mem_str[32];
-    snprintf(mem_str, sizeof(mem_str), "%d%%", mem_usage_pct);
-    lv_label_set_text(gpu_mem_label, mem_str);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Update Memory Section
-  // ─────────────────────────────────────────────────────────────────
-
-  if (mem_usage_bar && mem_usage_label)
-  {
-    lv_bar_set_value(mem_usage_bar, data->mem.usage, LV_ANIM_OFF); // Disable animation for instant updates
-    char usage_str[16];
-    snprintf(usage_str, sizeof(usage_str), "%d%%", data->mem.usage);
-    lv_label_set_text(mem_usage_label, usage_str);
-  }
-
-  if (mem_info_label)
-  {
-    char mem_str[32];
-    snprintf(mem_str, sizeof(mem_str), "(%.1f GB / %.1f GB)", // Updated format to match new compact layout
-             data->mem.used, data->mem.total);
-    lv_label_set_text(mem_info_label, mem_str);
-  }
-
-  // ─────────────────────────────────────────────────────────────────
-  // Release LVGL Mutex and Log Update
-  // ─────────────────────────────────────────────────────────────────
-
+  update_cpu_panel(&data->cpu);
+  update_gpu_panel(&data->gpu);
+  update_memory_panel(&data->mem);
   lvgl_lock_release();
 
   // Log less frequently to avoid blocking UI updates
@@ -579,104 +373,6 @@ void system_monitor_ui_update(const system_data_t *data)
     ESP_LOGI(TAG, "UI updated - CPU: %d%%, GPU: %d%%, MEM: %d%%",
              data->cpu.usage, data->gpu.usage, data->mem.usage);
   }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════�?
-// CONNECTION STATUS MANAGEMENT
-// ══════════════════════════════════════════════════════════════════════════════�?
-
-/**
- * @brief Update connection status indicator
- * @param connected True if connection is active, false if lost
- * @note Changes color and text of status indicator based on connection state
- */
-void system_monitor_ui_set_connection_status(bool connected)
-{
-  if (!connection_status_label)
-    return;
-
-  lvgl_lock_acquire();
-
-  // Get current timestamp from the hidden timestamp label
-  const char *current_timestamp = "Last: Never";
-  if (timestamp_label)
-  {
-    current_timestamp = lv_label_get_text(timestamp_label);
-  }
-
-  char combined_status[128];
-  if (connected)
-  {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected | %s", current_timestamp);
-    lv_label_set_text(connection_status_label, combined_status);
-    lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0x00ff88), 0); // Green
-  }
-  else
-  {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost | %s", current_timestamp);
-    lv_label_set_text(connection_status_label, combined_status);
-    lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
-  }
-
-  lvgl_lock_release();
-}
-
-/**
- * @brief Update WiFi connection status in the status panel
- * @param status_text WiFi status message to display
- * @param connected True if WiFi is connected, false otherwise
- */
-void system_monitor_ui_update_wifi_status(const char *status_text, bool connected)
-{
-  if (!wifi_status_label || !status_text)
-    return;
-
-  lvgl_lock_acquire();
-
-  // Create formatted status message
-  char wifi_msg[128];
-
-  if (connected && strstr(status_text, "Connected:") != NULL)
-  {
-    // Extract SSID from "Connected: SSID (IP)" format
-    const char *ssid_start = strstr(status_text, "Connected: ") + 11; // Skip "Connected: "
-    const char *ssid_end = strchr(ssid_start, ' ');                   // Find space before (IP)
-
-    if (ssid_end != NULL)
-    {
-      // Extract SSID
-      size_t ssid_len = ssid_end - ssid_start;
-      char ssid[64];
-      strncpy(ssid, ssid_start, ssid_len);
-      ssid[ssid_len] = '\0';
-
-      snprintf(wifi_msg, sizeof(wifi_msg), "[WIFI:%s] Connected", ssid);
-    }
-    else
-    {
-      // Fallback if format is unexpected
-      snprintf(wifi_msg, sizeof(wifi_msg), "[WIFI] %s", status_text);
-    }
-  }
-  else
-  {
-    // For non-connected states, use normal format
-    snprintf(wifi_msg, sizeof(wifi_msg), "[WIFI] %s", status_text);
-  }
-
-  lv_label_set_text(wifi_status_label, wifi_msg);
-
-  // Set color based on connection status
-  if (connected)
-  {
-    lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00ff88), 0); // Green
-  }
-  else
-  {
-    lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff4444), 0); // Red
-  }
-
-  lvgl_lock_release();
 }
 
 /**
