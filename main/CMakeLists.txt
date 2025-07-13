@@ -6,5 +6,7 @@ idf_component_register(SRCS "dashboard_main.c"
                            "wifi/wifi_manager.c"
                            "smart/ha_api.c"
                            "smart/ha_sync.c"
+                           "smart/ha_task_manager.c"
+                           "smart/smart_home.c"
                        INCLUDE_DIRS "." "lvgl" "serial" "touch" "wifi" "smart"
                        REQUIRES lvgl__lvgl esp_lcd driver json esp_wifi esp_netif esp_http_client nvs_flash)
