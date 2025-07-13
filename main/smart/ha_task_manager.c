@@ -10,7 +10,7 @@
 #include "ha_api.h"
 #include "ha_sync.h"
 #include "smart_config.h"
-#include "../lvgl/system_monitor_ui.h"
+#include "system_monitor.h"
 #include "esp_log.h"
 #include "esp_task_wdt.h"
 #include "esp_heap_caps.h"
@@ -435,13 +435,13 @@ esp_err_t ha_task_manager_start_task(void)
 
   // Create task with internal RAM stack (networking requirement)
   BaseType_t result = xTaskCreatePinnedToCore(
-      home_assistant_task, // Task function
-      "ha_task",           // Task name
+      home_assistant_task,              // Task function
+      "ha_task",                        // Task name
       stack_size / sizeof(StackType_t), // Stack size in words
-      NULL,                // Parameters
-      1,                   // Priority (lowest priority for LVGL rendering priority)
-      &ha_task_handle,     // Task handle
-      tskNO_AFFINITY       // Allow any core (or use 0 for core 0, 1 for core 1)
+      NULL,                             // Parameters
+      1,                                // Priority (lowest priority for LVGL rendering priority)
+      &ha_task_handle,                  // Task handle
+      tskNO_AFFINITY                    // Allow any core (or use 0 for core 0, 1 for core 1)
   );
 
   if (result != pdPASS)

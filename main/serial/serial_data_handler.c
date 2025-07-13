@@ -25,7 +25,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include "system_monitor_ui.h"
+#include "system_monitor.h"
 #include <string.h>
 #include <time.h>
 

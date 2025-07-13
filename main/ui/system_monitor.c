@@ -15,7 +15,7 @@
  * - Clean design without emoji icons
  */
 
-#include "system_monitor_ui.h"
+#include "system_monitor.h"
 
 #include "esp_log.h"
 #include "lvgl_setup.h"

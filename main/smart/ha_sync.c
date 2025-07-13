@@ -89,7 +89,7 @@
 
 #include "ha_sync.h"
 #include "ha_api.h"
-#include "../lvgl/system_monitor_ui.h"
+#include "system_monitor.h"
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <string.h>

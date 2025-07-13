@@ -5,12 +5,12 @@
 #include "freertos/timers.h"
 #include "lvgl.h"
 #include "lvgl/lvgl_setup.h"
-#include "lvgl/system_monitor_ui.h"
 #include "serial/serial_data_handler.h"
 #include "wifi/wifi_manager.h"
 #include "smart/ha_task_manager.h"
 #include "smart/smart_config.h"
 #include "smart/smart_home.h"
+#include "system_monitor.h"
 #include <stdio.h>
 
 static const char *TAG = "dashboard";
