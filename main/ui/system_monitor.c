@@ -19,6 +19,8 @@
 
 #include "esp_log.h"
 #include "lvgl_setup.h"
+#include "ui_config.h"
+#include "ui_helpers.h"
 #include "smart/ha_api.h"
 #include "smart/smart_home.h"
 #include "smart/smart_config.h"
@@ -27,9 +29,9 @@
 
 static const char *TAG = "system_monitor";
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // UI ELEMENT HANDLES FOR REAL-TIME UPDATES
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 // Status and Info Elements
 static lv_obj_t *timestamp_label = NULL;
@@ -60,32 +62,9 @@ static lv_obj_t *mem_usage_bar = NULL;
 static lv_obj_t *mem_usage_label = NULL;
 static lv_obj_t *mem_info_label = NULL;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// FONT DEFINITIONS WITH FALLBACK
-// ═══════════════════════════════════════════════════════════════════════════════
-#ifdef CONFIG_LV_FONT_MONTSERRAT_28
-static const lv_font_t *font_title = &lv_font_montserrat_28; // Large title font (28px)
-#else
-static const lv_font_t *font_title = &lv_font_montserrat_14; // Fallback to 14px
-#endif
-
-#ifdef CONFIG_LV_FONT_MONTSERRAT_16
-static const lv_font_t *font_normal = &lv_font_montserrat_16; // Normal text
-#else
-static const lv_font_t *font_normal = &lv_font_montserrat_14; // Fallback to 14px
-#endif
-
-static const lv_font_t *font_small = &lv_font_montserrat_14; // Small text
-
-#ifdef CONFIG_LV_FONT_MONTSERRAT_32
-static const lv_font_t *font_big_numbers = &lv_font_montserrat_32; // Large numbers (32px)
-#else
-static const lv_font_t *font_big_numbers = &lv_font_montserrat_14; // Fallback to 14px
-#endif
-
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // EVENT HANDLERS - USING SYSTEM MANAGER TO PREVENT LVGL BLOCKING
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Generic touch debug handler for all switches
@@ -121,23 +100,23 @@ static void switch_a_event_handler(lv_event_t *e)
   lv_event_code_t code = lv_event_get_code(e);
   lv_obj_t *obj = lv_event_get_target(e);
 
-  ESP_LOGI(TAG, "� SWITCH A (%s): Event handler called with code %d", UI_LABEL_A, code);
+  ESP_LOGI(TAG, "�?SWITCH A (%s): Event handler called with code %d", UI_LABEL_A, code);
 
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "� SWITCH A (%s) TOUCH EVENT: User selected %s", UI_LABEL_A, state ? "ON" : "OFF");
+    ESP_LOGI(TAG, "�?SWITCH A (%s) TOUCH EVENT: User selected %s", UI_LABEL_A, state ? "ON" : "OFF");
 
     // Control the actual device via Home Assistant
     esp_err_t ret = smart_home_control_switch(HA_ENTITY_A, state);
     if (ret != ESP_OK)
     {
-      ESP_LOGE(TAG, "� SWITCH A (%s) FAILED: %s", UI_LABEL_A, esp_err_to_name(ret));
+      ESP_LOGE(TAG, "�?SWITCH A (%s) FAILED: %s", UI_LABEL_A, esp_err_to_name(ret));
       // TODO: Consider reverting the switch state on failure
     }
     else
     {
-      ESP_LOGI(TAG, "� SWITCH A (%s) SUCCESS: Device state changed to %s", UI_LABEL_A, state ? "ON" : "OFF");
+      ESP_LOGI(TAG, "�?SWITCH A (%s) SUCCESS: Device state changed to %s", UI_LABEL_A, state ? "ON" : "OFF");
     }
   }
 }
@@ -179,23 +158,23 @@ static void switch_c_event_handler(lv_event_t *e)
   lv_event_code_t code = lv_event_get_code(e);
   lv_obj_t *obj = lv_event_get_target(e);
 
-  ESP_LOGI(TAG, "� SWITCH C (%s): Event handler called with code %d", UI_LABEL_C, code);
+  ESP_LOGI(TAG, "�?SWITCH C (%s): Event handler called with code %d", UI_LABEL_C, code);
 
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "� SWITCH C (%s) TOUCH EVENT: User selected %s", UI_LABEL_C, state ? "ON" : "OFF");
+    ESP_LOGI(TAG, "�?SWITCH C (%s) TOUCH EVENT: User selected %s", UI_LABEL_C, state ? "ON" : "OFF");
 
     // Control the actual device via Home Assistant
     esp_err_t ret = smart_home_control_switch(HA_ENTITY_C, state);
     if (ret != ESP_OK)
     {
-      ESP_LOGE(TAG, "� SWITCH C (%s) FAILED: %s", UI_LABEL_C, esp_err_to_name(ret));
+      ESP_LOGE(TAG, "�?SWITCH C (%s) FAILED: %s", UI_LABEL_C, esp_err_to_name(ret));
       // TODO: Consider reverting the switch state on failure
     }
     else
     {
-      ESP_LOGI(TAG, "� SWITCH C (%s) SUCCESS: Device state changed to %s", UI_LABEL_C, state ? "ON" : "OFF");
+      ESP_LOGI(TAG, "�?SWITCH C (%s) SUCCESS: Device state changed to %s", UI_LABEL_C, state ? "ON" : "OFF");
     }
   }
 }
@@ -226,216 +205,9 @@ static void scene_button_event_handler(lv_event_t *e)
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// HELPER FUNCTIONS FOR UI CREATION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Create a standard panel with common styling
- * @param parent Parent object
- * @param width Panel width
- * @param height Panel height
- * @param x X position
- * @param y Y position
- * @param bg_color Background color (hex)
- * @param border_color Border color (hex)
- * @return Created panel object
- */
-static lv_obj_t *create_panel(lv_obj_t *parent, int width, int height, int x, int y,
-                              uint32_t bg_color, uint32_t border_color)
-{
-  lv_obj_t *panel = lv_obj_create(parent);
-  lv_obj_set_size(panel, width, height);
-  lv_obj_set_pos(panel, x, y);
-  lv_obj_set_style_bg_color(panel, lv_color_hex(bg_color), 0);
-  lv_obj_set_style_border_color(panel, lv_color_hex(border_color), 0);
-  lv_obj_set_style_border_width(panel, 2, 0);
-  lv_obj_set_style_radius(panel, 8, 0);
-  lv_obj_set_style_pad_all(panel, 15, 0);
-  lv_obj_set_scrollbar_mode(panel, LV_SCROLLBAR_MODE_OFF);
-  return panel;
-}
-
-/**
- * @brief Create a title label with separator line
- * @param parent Parent panel
- * @param title Title text
- * @param title_color Title color (hex)
- * @param separator_width Width of separator line
- * @return Created title label object
- */
-static lv_obj_t *create_title_with_separator(lv_obj_t *parent, const char *title,
-                                             uint32_t title_color, int separator_width)
-{
-  // Title label
-  lv_obj_t *title_label = lv_label_create(parent);
-  lv_label_set_text(title_label, title);
-  lv_obj_set_style_text_font(title_label, font_title, 0);
-  lv_obj_set_style_text_color(title_label, lv_color_hex(title_color), 0);
-  lv_obj_set_pos(title_label, 0, 0);
-
-  // Separator line
-  lv_obj_t *separator = lv_obj_create(parent);
-  lv_obj_set_size(separator, separator_width, 2);
-  lv_obj_set_pos(separator, 0, 35);
-  lv_obj_set_style_bg_color(separator, lv_color_hex(title_color), 0);
-  lv_obj_set_style_border_width(separator, 0, 0);
-  lv_obj_set_style_radius(separator, 1, 0);
-
-  return title_label;
-}
-
-/**
- * @brief Create a field (label + value) pair
- * @param parent Parent panel
- * @param field_name Field name text
- * @param default_value Default value text
- * @param x X position
- * @param label_font Font for field label
- * @param value_font Font for field value
- * @param label_color Color for field label
- * @param value_color Color for field value
- * @return Pointer to the value label (for updating)
- */
-static lv_obj_t *create_field(lv_obj_t *parent, const char *field_name, const char *default_value,
-                              int x, const lv_font_t *label_font, const lv_font_t *value_font,
-                              uint32_t label_color, uint32_t value_color)
-{
-  // Field label
-  lv_obj_t *label = lv_label_create(parent);
-  lv_label_set_text(label, field_name);
-  lv_obj_set_style_text_font(label, label_font, 0);
-  lv_obj_set_style_text_color(label, lv_color_hex(label_color), 0);
-  lv_obj_set_pos(label, x, 55);
-
-  // Field value - using left-bottom anchor for consistent baseline alignment
-  lv_obj_t *value = lv_label_create(parent);
-  lv_label_set_text(value, default_value);
-  lv_obj_set_style_text_font(value, value_font, 0);
-  lv_obj_set_style_text_color(value, lv_color_hex(value_color), 0);
-  // Use align to position value text with left-bottom anchor at consistent Y baseline
-  lv_obj_align(value, LV_ALIGN_BOTTOM_LEFT, x, -5); // Bottom-left anchor, very close to bottom for maximum spacing
-
-  return value;
-}
-
-/**
- * @brief Create a vertical separator line
- * @param parent Parent panel
- * @param x X position
- * @param y Y position
- * @param height Height of separator
- * @param color Color (hex)
- * @return Created separator object
- */
-static lv_obj_t *create_vertical_separator(lv_obj_t *parent, int x, int y, int height, uint32_t color)
-{
-  lv_obj_t *separator = lv_obj_create(parent);
-  lv_obj_set_size(separator, 1, height);
-  lv_obj_set_pos(separator, x, y);
-  lv_obj_set_style_bg_color(separator, lv_color_hex(color), 0);
-  lv_obj_set_style_border_width(separator, 0, 0);
-  lv_obj_set_style_radius(separator, 0, 0);
-  return separator;
-}
-
-/**
- * @brief Create a vertically centered separator using alignment API
- * @param parent Parent panel
- * @param x X position
- * @param height Separator height
- * @param color Separator color (hex)
- * @return Created separator object
- */
-static lv_obj_t *create_centered_vertical_separator(lv_obj_t *parent, int x, int height, uint32_t color)
-{
-  lv_obj_t *separator = lv_obj_create(parent);
-  lv_obj_set_size(separator, 1, height);
-  lv_obj_set_style_bg_color(separator, lv_color_hex(color), 0);
-  lv_obj_set_style_border_width(separator, 0, 0);
-  lv_obj_set_style_radius(separator, 0, 0);
-  lv_obj_align(separator, LV_ALIGN_LEFT_MID, x, 0);
-  return separator;
-}
-
-/**
- * @brief Create a switch field with label above it, positioned and aligned together
- * @param parent Parent panel
- * @param label_text Text for the label above the switch
- * @param x_offset X position offset from left edge
- * @return Created switch object
- */
-static lv_obj_t *create_switch_field(lv_obj_t *parent, const char *label_text, int x_offset)
-{
-  // Create the label first (positioned above where the switch will be)
-  lv_obj_t *label = lv_label_create(parent);
-  lv_label_set_text(label, label_text);
-  lv_obj_set_style_text_font(label, font_small, 0);
-  lv_obj_set_style_text_color(label, lv_color_hex(0xcccccc), 0);
-  lv_obj_align(label, LV_ALIGN_LEFT_MID, x_offset, -25); // Position 25px above center
-
-  // Create the switch (moved down 10px from center)
-  lv_obj_t *switch_obj = lv_switch_create(parent);
-  lv_obj_set_size(switch_obj, 60, 30);
-  lv_obj_align(switch_obj, LV_ALIGN_LEFT_MID, x_offset, 10);
-
-  return switch_obj;
-}
-
-/**
- * @brief Create a progress bar
- * @param parent Parent panel
- * @param width Bar width
- * @param height Bar height
- * @param x X position
- * @param y Y position
- * @param bg_color Background color (hex)
- * @param indicator_color Indicator color (hex)
- * @param radius Corner radius
- * @return Created progress bar object
- */
-static lv_obj_t *create_progress_bar(lv_obj_t *parent, int width, int height, int x, int y,
-                                     uint32_t bg_color, uint32_t indicator_color, int radius)
-{
-  lv_obj_t *bar = lv_bar_create(parent);
-  lv_obj_set_size(bar, width, height);
-  lv_obj_set_pos(bar, x, y);
-  lv_obj_set_style_bg_color(bar, lv_color_hex(bg_color), LV_PART_MAIN);
-  lv_obj_set_style_bg_color(bar, lv_color_hex(indicator_color), LV_PART_INDICATOR);
-  lv_obj_set_style_radius(bar, radius, 0);
-  lv_bar_set_value(bar, 0, LV_ANIM_OFF);
-  return bar;
-}
-
-/**
- * @brief Create a status panel with minimal styling
- * @param parent Parent object
- * @param width Panel width
- * @param height Panel height
- * @param x X position
- * @param y Y position
- * @param bg_color Background color (hex)
- * @param border_color Border color (hex)
- * @return Created panel object
- */
-static lv_obj_t *create_status_panel(lv_obj_t *parent, int width, int height, int x, int y,
-                                     uint32_t bg_color, uint32_t border_color)
-{
-  lv_obj_t *panel = lv_obj_create(parent);
-  lv_obj_set_size(panel, width, height);
-  lv_obj_set_pos(panel, x, y);
-  lv_obj_set_style_bg_color(panel, lv_color_hex(bg_color), 0);
-  lv_obj_set_style_border_color(panel, lv_color_hex(border_color), 0);
-  lv_obj_set_style_border_width(panel, 1, 0);
-  lv_obj_set_style_radius(panel, 6, 0);
-  lv_obj_set_style_pad_all(panel, 6, 0);
-  lv_obj_set_scrollbar_mode(panel, LV_SCROLLBAR_MODE_OFF);
-  return panel;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PANEL CREATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Create the control panel
@@ -444,7 +216,7 @@ static lv_obj_t *create_status_panel(lv_obj_t *parent, int width, int height, in
  */
 static lv_obj_t *create_control_panel(lv_obj_t *parent)
 {
-  lv_obj_t *control_panel = create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
+  lv_obj_t *control_panel = ui_create_panel(parent, 780, 100, 10, 10, 0x1a1a2e, 0x2e2e4a);
 
   // Controls title (moved up)
   lv_obj_t *controls_title = lv_label_create(control_panel);
@@ -464,37 +236,37 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
   // Total: 140 + 120*3 + 4*10 + 120 = 140 + 360 + 40 + 120 = 660px (fits in 780px panel)
 
   // Vertical separator after controls title
-  create_centered_vertical_separator(control_panel, 140, 60, 0x4fc3f7);
+  ui_create_centered_vertical_separator(control_panel, 140, 60, 0x4fc3f7);
 
   // Switch A field - positioned with better spacing
-  switch_a = create_switch_field(control_panel, UI_LABEL_A, 160);
+  switch_a = ui_create_switch_field(control_panel, UI_LABEL_A, 160);
   lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_CLICKED, NULL);
   ESP_LOGI(TAG, "Switch A (%s) created at x=160, better spacing", UI_LABEL_A);
 
   // Vertical separator after switch A
-  create_centered_vertical_separator(control_panel, 280, 60, 0x555555);
+  ui_create_centered_vertical_separator(control_panel, 280, 60, 0x555555);
 
   // Switch B field - proper spacing from separator
-  switch_b = create_switch_field(control_panel, UI_LABEL_B, 300);
+  switch_b = ui_create_switch_field(control_panel, UI_LABEL_B, 300);
   lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_CLICKED, NULL);
   ESP_LOGI(TAG, "Switch B (%s) created at x=300, better spacing", UI_LABEL_B);
 
   // Vertical separator after switch B
-  create_centered_vertical_separator(control_panel, 420, 60, 0x555555);
+  ui_create_centered_vertical_separator(control_panel, 420, 60, 0x555555);
 
   // Switch C field - proper spacing from separator
-  switch_c = create_switch_field(control_panel, UI_LABEL_C, 440);
+  switch_c = ui_create_switch_field(control_panel, UI_LABEL_C, 440);
   lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_CLICKED, NULL);
   ESP_LOGI(TAG, "Switch C (%s) created at x=440, better spacing", UI_LABEL_C);
 
   // Vertical separator before scene button
-  create_centered_vertical_separator(control_panel, 560, 60, 0x555555);
+  ui_create_centered_vertical_separator(control_panel, 560, 60, 0x555555);
 
   // Scene button (right with proper padding, centered using align API)
   scene_button = lv_btn_create(control_panel);
@@ -520,10 +292,10 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
  */
 static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
 {
-  lv_obj_t *cpu_panel = create_panel(parent, 385, 150, 10, 120, 0x1a1a2e, 0x16213e);
+  lv_obj_t *cpu_panel = ui_create_panel(parent, 385, 150, 10, 120, 0x1a1a2e, 0x16213e);
 
   // CPU Title with separator
-  create_title_with_separator(cpu_panel, "CPU", 0x4fc3f7, 355);
+  ui_create_title_with_separator(cpu_panel, "CPU", 0x4fc3f7, 355);
 
   // CPU Name (positioned to the right of title, baseline aligned)
   cpu_name_label = lv_label_create(cpu_panel);
@@ -533,13 +305,13 @@ static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
   lv_obj_set_pos(cpu_name_label, 80, 8);
 
   // Create CPU fields - Temperature first
-  cpu_temp_label = create_field(cpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  cpu_usage_label = create_field(cpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
-  cpu_fan_label = create_field(cpu_panel, "Fan (RPM)", "--", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
+  cpu_temp_label = ui_create_field(cpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
+  cpu_usage_label = ui_create_field(cpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
+  cpu_fan_label = ui_create_field(cpu_panel, "Fan (RPM)", "--", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
 
   // Create vertical separators between fields
-  create_vertical_separator(cpu_panel, 118, 50, 60, 0x555555);
-  create_vertical_separator(cpu_panel, 236, 50, 60, 0x555555);
+  ui_create_vertical_separator(cpu_panel, 118, 50, 60, 0x555555);
+  ui_create_vertical_separator(cpu_panel, 236, 50, 60, 0x555555);
 
   return cpu_panel;
 }
@@ -551,10 +323,10 @@ static lv_obj_t *create_cpu_panel(lv_obj_t *parent)
  */
 static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
 {
-  lv_obj_t *gpu_panel = create_panel(parent, 385, 150, 405, 120, 0x1a2e1a, 0x2e4f2e);
+  lv_obj_t *gpu_panel = ui_create_panel(parent, 385, 150, 405, 120, 0x1a2e1a, 0x2e4f2e);
 
   // GPU Title with separator
-  create_title_with_separator(gpu_panel, "GPU", 0x4caf50, 355);
+  ui_create_title_with_separator(gpu_panel, "GPU", 0x4caf50, 355);
 
   // GPU Name (positioned to the right of title, baseline aligned)
   gpu_name_label = lv_label_create(gpu_panel);
@@ -564,13 +336,13 @@ static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
   lv_obj_set_pos(gpu_name_label, 80, 8);
 
   // Create GPU fields - Temperature first
-  gpu_temp_label = create_field(gpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  gpu_usage_label = create_field(gpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
-  gpu_mem_label = create_field(gpu_panel, "Memory", "0%", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
+  gpu_temp_label = ui_create_field(gpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
+  gpu_usage_label = ui_create_field(gpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
+  gpu_mem_label = ui_create_field(gpu_panel, "Memory", "0%", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
 
   // Create vertical separators between GPU fields
-  create_vertical_separator(gpu_panel, 118, 50, 60, 0x555555);
-  create_vertical_separator(gpu_panel, 236, 50, 60, 0x555555);
+  ui_create_vertical_separator(gpu_panel, 118, 50, 60, 0x555555);
+  ui_create_vertical_separator(gpu_panel, 236, 50, 60, 0x555555);
 
   return gpu_panel;
 }
@@ -582,10 +354,10 @@ static lv_obj_t *create_gpu_panel(lv_obj_t *parent)
  */
 static lv_obj_t *create_memory_panel(lv_obj_t *parent)
 {
-  lv_obj_t *mem_panel = create_panel(parent, 780, 120, 10, 280, 0x2e1a1a, 0x4f2e2e);
+  lv_obj_t *mem_panel = ui_create_panel(parent, 780, 120, 10, 280, 0x2e1a1a, 0x4f2e2e);
 
   // Memory title with separator
-  create_title_with_separator(mem_panel, "Memory", 0xff7043, 750);
+  ui_create_title_with_separator(mem_panel, "Memory", 0xff7043, 750);
 
   // Memory info positioned to the right of title (baseline aligned)
   mem_info_label = lv_label_create(mem_panel);
@@ -602,10 +374,10 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
   lv_obj_align(mem_usage_label, LV_ALIGN_BOTTOM_LEFT, 10, -5);
 
   // Dimmed vertical separator between usage field and progress bar
-  create_vertical_separator(mem_panel, 150, 45, 45, 0x555555);
+  ui_create_vertical_separator(mem_panel, 150, 45, 45, 0x555555);
 
   // Progress bar (positioned to the right of the separator)
-  mem_usage_bar = create_progress_bar(mem_panel, 500, 25, 170, 65, 0x1a1a2e, 0xff7043, 12);
+  mem_usage_bar = ui_create_progress_bar(mem_panel, 500, 25, 170, 65, 0x1a1a2e, 0xff7043, 12);
 
   return mem_panel;
 }
@@ -617,7 +389,7 @@ static lv_obj_t *create_memory_panel(lv_obj_t *parent)
  */
 static lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 {
-  lv_obj_t *status_panel = create_status_panel(parent, 780, 50, 10, 410, 0x0f0f0f, 0x222222);
+  lv_obj_t *status_panel = ui_create_status_panel(parent, 780, 50, 10, 410, 0x0f0f0f, 0x222222);
 
   // Serial connection status with last update time (left side)
   connection_status_label = lv_label_create(status_panel);
@@ -641,9 +413,9 @@ static lv_obj_t *create_status_info_panel(lv_obj_t *parent)
   return status_panel;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PUBLIC FUNCTIONS - MAIN UI INTERFACE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Create the complete system monitor dashboard UI
@@ -667,9 +439,9 @@ void system_monitor_ui_create(lv_display_t *disp)
   ESP_LOGI(TAG, "System Monitor UI created successfully");
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // SYSTEM MONITOR UPDATE FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Update all system monitor display elements with new data
@@ -809,9 +581,9 @@ void system_monitor_ui_update(const system_data_t *data)
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // CONNECTION STATUS MANAGEMENT
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Update connection status indicator
@@ -938,9 +710,9 @@ void system_monitor_ui_update_ha_status(const char *status_text, bool connected)
   lvgl_lock_release();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // SMART HOME CONTROL FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Set the state of switch A

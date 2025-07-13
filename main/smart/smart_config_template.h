@@ -41,21 +41,6 @@
 #define HA_ENTITY_D "scene.your_feed_scene" // Scene trigger button
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// UI LABELS AND BUTTON TEXT CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Switch Labels for UI Display
-#define UI_LABEL_A "Switch A"
-#define UI_LABEL_B "Switch B"
-#define UI_LABEL_C "Switch C"
-#define UI_LABEL_D "Button"
-
-// Button Text Configuration
-#define UI_BUTTON_ON "ON"
-#define UI_BUTTON_OFF "OFF"
-#define UI_BUTTON_FEED "FEED"
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // HTTP CLIENT CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 

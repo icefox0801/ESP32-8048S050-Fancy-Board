@@ -128,16 +128,16 @@ esp_err_t smart_home_pump_on(void)
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_LOGI(TAG, "🔵 USER ACTION: Turning on %s (Switch A: %s)", UI_LABEL_A, HA_ENTITY_A);
+  ESP_LOGI(TAG, "🔵 USER ACTION: Turning on %s (Switch A: %s)", "Water Pump", HA_ENTITY_A);
   esp_err_t result = ha_api_turn_on_switch(HA_ENTITY_A);
 
   if (result == ESP_OK)
   {
-    ESP_LOGI(TAG, "✅ %s turned ON successfully", UI_LABEL_A);
+    ESP_LOGI(TAG, "✅ %s turned ON successfully", "Water Pump");
   }
   else
   {
-    ESP_LOGE(TAG, "❌ Failed to turn ON %s: %s", UI_LABEL_A, esp_err_to_name(result));
+    ESP_LOGE(TAG, "❌ Failed to turn ON %s: %s", "Water Pump", esp_err_to_name(result));
   }
 
   return result;
@@ -151,16 +151,16 @@ esp_err_t smart_home_pump_off(void)
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_LOGI(TAG, "🔴 USER ACTION: Turning off %s (Switch A: %s)", UI_LABEL_A, HA_ENTITY_A);
+  ESP_LOGI(TAG, "🔴 USER ACTION: Turning off %s (Switch A: %s)", "Water Pump", HA_ENTITY_A);
   esp_err_t result = ha_api_turn_off_switch(HA_ENTITY_A);
 
   if (result == ESP_OK)
   {
-    ESP_LOGI(TAG, "✅ %s turned OFF successfully", UI_LABEL_A);
+    ESP_LOGI(TAG, "✅ %s turned OFF successfully", "Water Pump");
   }
   else
   {
-    ESP_LOGE(TAG, "❌ Failed to turn OFF %s: %s", UI_LABEL_A, esp_err_to_name(result));
+    ESP_LOGE(TAG, "❌ Failed to turn OFF %s: %s", "Water Pump", esp_err_to_name(result));
   }
 
   return result;
@@ -241,17 +241,17 @@ esp_err_t smart_home_get_device_status(const char *entity_id, smart_device_statu
   if (strcmp(entity_id, HA_ENTITY_A) == 0)
   {
     device_status->type = SMART_DEVICE_SWITCH;
-    strncpy(device_status->friendly_name, UI_LABEL_A, sizeof(device_status->friendly_name) - 1);
+    strncpy(device_status->friendly_name, "Water Pump", sizeof(device_status->friendly_name) - 1);
   }
   else if (strcmp(entity_id, HA_ENTITY_B) == 0)
   {
     device_status->type = SMART_DEVICE_SWITCH;
-    strncpy(device_status->friendly_name, UI_LABEL_B, sizeof(device_status->friendly_name) - 1);
+    strncpy(device_status->friendly_name, "Wave Maker", sizeof(device_status->friendly_name) - 1);
   }
   else if (strcmp(entity_id, HA_ENTITY_C) == 0)
   {
     device_status->type = SMART_DEVICE_SWITCH;
-    strncpy(device_status->friendly_name, UI_LABEL_C, sizeof(device_status->friendly_name) - 1);
+    strncpy(device_status->friendly_name, "Light Switch", sizeof(device_status->friendly_name) - 1);
   }
   else
   {

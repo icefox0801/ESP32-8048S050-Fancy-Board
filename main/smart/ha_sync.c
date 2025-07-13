@@ -439,9 +439,9 @@ esp_err_t ha_sync_immediate_switches(void)
     system_monitor_ui_set_switch_c(switch_c_on);
 
     ESP_LOGI(TAG, "Immediate sync completed: %s=%s, %s=%s, %s=%s",
-             UI_LABEL_A, switch_states[0].state,
-             UI_LABEL_B, switch_states[1].state,
-             UI_LABEL_C, switch_states[2].state);
+             "Water Pump", switch_states[0].state,
+             "Wave Maker", switch_states[1].state,
+             "Light Switch", switch_states[2].state);
 
     return ESP_OK;
   }
