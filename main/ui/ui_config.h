@@ -10,6 +10,7 @@
 #pragma once
 
 #include "lvgl.h"
+#include "smart_config.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FONT DECLARATIONS - DEFINED IN ui_helpers.c
@@ -25,13 +26,7 @@ extern const lv_font_t *font_big_numbers; ///< Large numbers font (32px or fallb
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // UI Control Labels
-#define UI_CONTROLS_LABEL_A "Water Pump"
-#define UI_CONTROLS_LABEL_B "Wave Maker"
-#define UI_CONTROLS_LABEL_C "Light Switch"
-#define UI_CONTROLS_LABEL_D "FEED"
-
-// Backwards compatibility macros (deprecated)
-#define UI_LABEL_A UI_CONTROLS_LABEL_A
-#define UI_LABEL_B UI_CONTROLS_LABEL_B
-#define UI_LABEL_C UI_CONTROLS_LABEL_C
-#define UI_LABEL_D UI_CONTROLS_LABEL_D
+#define UI_CONTROLS_LABEL_A HA_ENTITY_A_LABEL
+#define UI_CONTROLS_LABEL_B HA_ENTITY_B_LABEL
+#define UI_CONTROLS_LABEL_C HA_ENTITY_C_LABEL
+#define UI_CONTROLS_LABEL_D HA_ENTITY_D_LABEL

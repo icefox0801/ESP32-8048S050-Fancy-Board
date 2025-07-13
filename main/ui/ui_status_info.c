@@ -13,11 +13,12 @@
 #include "lvgl_setup.h"
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
-// External references to global UI elements
-extern lv_obj_t *timestamp_label;
-extern lv_obj_t *connection_status_label;
-extern lv_obj_t *wifi_status_label;
+// Status and Info Elements
+static lv_obj_t *timestamp_label = NULL;
+static lv_obj_t *connection_status_label = NULL;
+static lv_obj_t *wifi_status_label = NULL;
 
 /**
  * @brief Create the status panel with connection info
@@ -182,4 +183,16 @@ void status_info_update_serial_status(const char *status_text, bool connected)
   }
 
   lvgl_lock_release();
+}
+
+void status_info_update_timestamp(uint64_t timestamp)
+{
+  if (timestamp_label)
+  {
+    time_t timestamp_sec = timestamp / 1000;
+    struct tm *timeinfo = localtime(&timestamp_sec);
+    char time_str[64];
+    strftime(time_str, sizeof(time_str), "Last: %H:%M:%S", timeinfo);
+    lv_label_set_text(timestamp_label, time_str);
+  }
 }

@@ -38,3 +38,9 @@ void status_info_update_wifi_status(const char *status_text, bool connected);
  * @param connected True if serial is connected, false otherwise
  */
 void status_info_update_serial_status(const char *status_text, bool connected);
+
+/**
+ * @brief Update timestamp in the status panel
+ * @param timestamp Timestamp in milliseconds since epoch
+ */
+void status_info_update_timestamp(uint64_t timestamp);

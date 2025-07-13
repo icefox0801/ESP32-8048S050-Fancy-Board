@@ -12,10 +12,9 @@
 #include "ui_helpers.h"
 #include <stdio.h>
 
-// External references to global UI elements
-extern lv_obj_t *mem_usage_bar;
-extern lv_obj_t *mem_usage_label;
-extern lv_obj_t *mem_info_label;
+static lv_obj_t *mem_usage_bar = NULL;
+static lv_obj_t *mem_usage_label = NULL;
+static lv_obj_t *mem_info_label = NULL;
 
 /**
  * @brief Create the memory monitoring panel

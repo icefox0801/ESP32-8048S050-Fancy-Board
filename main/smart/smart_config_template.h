@@ -33,27 +33,32 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Smart Switches (Replace with your actual entity IDs)
-#define HA_ENTITY_A "switch.your_switch_a_switch" // Switch A Control
-#define HA_ENTITY_B "switch.your_switch_b_switch" // Switch B Maker Control
-#define HA_ENTITY_C "switch.your_switch_c_switch" // Switch C Light Control
+#define HA_ENTITY_A "switch.your_switch_a_entity_id" // Switch A Control
+#define HA_ENTITY_B "switch.your_switch_b_entity_id" // Switch B Control
+#define HA_ENTITY_C "switch.your_switch_c_entity_id" // Switch C Control
 
 // Scene Control
-#define HA_ENTITY_D "scene.your_feed_scene" // Scene trigger button
+#define HA_ENTITY_D "scene.your_scene_entity_id" // Scene trigger button
+
+#define HA_ENTITY_A_LABEL "Switch A"
+#define HA_ENTITY_B_LABEL "Switch B"
+#define HA_ENTITY_C_LABEL "Switch C"
+#define HA_ENTITY_D_LABEL "Scene"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HTTP CLIENT CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // HTTP Request Configuration
-#define HA_HTTP_TIMEOUT_MS 10000
-#define HA_MAX_RESPONSE_SIZE 4096
+#define HA_HTTP_TIMEOUT_MS 15000
+#define HA_MAX_RESPONSE_SIZE 131072
 
 // API Call Intervals
 #define HA_STATUS_UPDATE_INTERVAL_MS 5000 // Status check every 5 seconds
 
 // Sync Configuration
 #define HA_SYNC_RETRY_COUNT 3          // Number of sync attempts before disabling
-#define HA_SYNC_TIMEOUT_MS 5000        // Timeout for sync operations
+#define HA_SYNC_TIMEOUT_MS 15000       // Timeout for sync operations
 #define HA_SYNC_CHECK_INTERVAL_MS 2000 // How often to check sync status
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -12,11 +12,10 @@
 #include "ui_helpers.h"
 #include <stdio.h>
 
-// External references to global UI elements
-extern lv_obj_t *gpu_name_label;
-extern lv_obj_t *gpu_usage_label;
-extern lv_obj_t *gpu_temp_label;
-extern lv_obj_t *gpu_mem_label;
+static lv_obj_t *gpu_name_label = NULL;
+static lv_obj_t *gpu_usage_label = NULL;
+static lv_obj_t *gpu_temp_label = NULL;
+static lv_obj_t *gpu_mem_label = NULL;
 
 /**
  * @brief Create the GPU monitoring panel

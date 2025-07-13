@@ -21,7 +21,7 @@ static const char *TAG = "HA_SYNC";
 // ══════════════════════════════════════════════════════════════════════════════�?
 
 static ha_device_sync_t switch_a_sync = {
-    .entity_id = HA_ENTITY_A,
+    .entity_id = HA_ENTITY_A_ID,
     .friendly_name = "Switch A",
     .local_state = HA_DEVICE_STATE_UNKNOWN,
     .remote_state = HA_DEVICE_STATE_UNKNOWN,
@@ -336,9 +336,9 @@ esp_err_t ha_sync_immediate_switches(void)
 
   // Entity IDs from smart config
   const char *switch_entity_ids[] = {
-      HA_ENTITY_A, // Switch A
-      HA_ENTITY_B, // Switch B
-      HA_ENTITY_C  // Switch C
+      HA_ENTITY_A_ID, // Switch A
+      HA_ENTITY_B_ID, // Switch B
+      HA_ENTITY_C_ID  // Switch C
   };
   const int switch_count = sizeof(switch_entity_ids) / sizeof(switch_entity_ids[0]);
 

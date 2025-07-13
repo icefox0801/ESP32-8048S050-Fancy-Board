@@ -17,12 +17,11 @@
 
 static const char *TAG = "ui_controls_panel";
 
-// External references to global UI elements
-extern lv_obj_t *switch_a;
-extern lv_obj_t *switch_b;
-extern lv_obj_t *switch_c;
-extern lv_obj_t *scene_button;
-extern lv_obj_t *ha_status_label;
+static lv_obj_t *switch_a = NULL;
+static lv_obj_t *switch_b = NULL;
+static lv_obj_t *switch_c = NULL;
+static lv_obj_t *scene_button = NULL;
+static lv_obj_t *ha_status_label = NULL;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SWITCH ENUMERATION AND HELPER TYPES
@@ -33,14 +32,13 @@ typedef struct
   lv_obj_t **switch_obj;
   const char *label;
   const char *entity;
-  const char *icon;
 } switch_config_t;
 
 // Switch configuration table
 static const switch_config_t switch_configs[3] = {
-    {&switch_a, UI_LABEL_A, HA_ENTITY_A, "💡"},
-    {&switch_b, UI_LABEL_B, HA_ENTITY_B, "🔌"},
-    {&switch_c, UI_LABEL_C, HA_ENTITY_C, "💡"}};
+    {&switch_a, UI_CONTROLS_LABEL_A, HA_ENTITY_A_ID},
+    {&switch_b, UI_CONTROLS_LABEL_B, HA_ENTITY_B_ID},
+    {&switch_c, UI_CONTROLS_LABEL_C, HA_ENTITY_C_ID}};
 
 // ══════════════════════════════════════════════════════════════════════════════
 // LOCAL EVENT HANDLERS
@@ -60,13 +58,13 @@ static void debug_touch_handler(lv_event_t *e)
 
   const char *obj_name = "Unknown";
   if (obj == switch_a)
-    obj_name = UI_LABEL_A;
+    obj_name = UI_CONTROLS_LABEL_A;
   else if (obj == switch_b)
-    obj_name = UI_LABEL_B;
+    obj_name = UI_CONTROLS_LABEL_B;
   else if (obj == switch_c)
-    obj_name = UI_LABEL_C;
+    obj_name = UI_CONTROLS_LABEL_C;
   else if (obj == scene_button)
-    obj_name = UI_LABEL_D;
+    obj_name = UI_CONTROLS_LABEL_D;
 
   ESP_LOGI(TAG, "Touch debug - %s switch: code=%d, coords=(%d,%d)-(%d,%d)",
            obj_name, code, coords.x1, coords.y1, coords.x2, coords.y2);
@@ -94,27 +92,27 @@ static void switch_event_handler(lv_event_t *e)
 
   const switch_config_t *config = &switch_configs[switch_id];
 
-  ESP_LOGI(TAG, "%s SWITCH %s (%s): Event handler called with code %d",
-           config->icon, config->label, config->label, code);
+  ESP_LOGI(TAG, "SWITCH %s (%s): Event handler called with code %d",
+           config->label, config->label, code);
 
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    ESP_LOGI(TAG, "%s SWITCH %s (%s) TOUCH EVENT: User selected %s",
-             config->icon, config->label, config->label, state ? "ON" : "OFF");
+    ESP_LOGI(TAG, "SWITCH %s (%s) TOUCH EVENT: User selected %s",
+             config->label, config->label, state ? "ON" : "OFF");
 
     // Control the actual device via Home Assistant
     esp_err_t ret = smart_home_control_switch(config->entity, state);
     if (ret != ESP_OK)
     {
-      ESP_LOGE(TAG, "%s SWITCH %s (%s) FAILED: %s",
-               config->icon, config->label, config->label, esp_err_to_name(ret));
+      ESP_LOGE(TAG, "SWITCH %s (%s) FAILED: %s",
+               config->label, config->label, esp_err_to_name(ret));
       // TODO: Consider reverting the switch state on failure
     }
     else
     {
-      ESP_LOGI(TAG, "%s SWITCH %s (%s) SUCCESS: Device state changed to %s",
-               config->icon, config->label, config->label, state ? "ON" : "OFF");
+      ESP_LOGI(TAG, "SWITCH %s (%s) SUCCESS: Device state changed to %s",
+               config->label, config->label, state ? "ON" : "OFF");
     }
   }
 }
@@ -126,21 +124,21 @@ static void scene_button_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
 
-  ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s): Event handler called with code %d", UI_LABEL_D, code);
+  ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s): Event handler called with code %d", UI_CONTROLS_LABEL_D, code);
 
   if (code == LV_EVENT_CLICKED)
   {
-    ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s) PRESSED", UI_LABEL_D);
+    ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s) PRESSED", UI_CONTROLS_LABEL_D);
 
     // Trigger the scene via Home Assistant
     esp_err_t ret = smart_home_trigger_scene();
     if (ret != ESP_OK)
     {
-      ESP_LOGE(TAG, "🎬 SCENE BUTTON (%s) FAILED: %s", UI_LABEL_D, esp_err_to_name(ret));
+      ESP_LOGE(TAG, "🎬 SCENE BUTTON (%s) FAILED: %s", UI_CONTROLS_LABEL_D, esp_err_to_name(ret));
     }
     else
     {
-      ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s) SUCCESS: Scene triggered", UI_LABEL_D);
+      ESP_LOGI(TAG, "🎬 SCENE BUTTON (%s) SUCCESS: Scene triggered", UI_CONTROLS_LABEL_D);
     }
   }
 }
@@ -175,31 +173,31 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   ui_create_centered_vertical_separator(control_panel, 140, 60, 0x4fc3f7);
 
   // Switch A field - positioned with better spacing
-  switch_a = ui_create_switch_field(control_panel, UI_LABEL_A, 160);
+  switch_a = ui_create_switch_field(control_panel, UI_CONTROLS_LABEL_A, 160);
   lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  ESP_LOGI(TAG, "Switch A (%s) created at x=160, better spacing", UI_LABEL_A);
+  ESP_LOGI(TAG, "Switch A (%s) created at x=160, better spacing", UI_CONTROLS_LABEL_A);
 
   // Vertical separator after switch A
   ui_create_centered_vertical_separator(control_panel, 280, 60, 0x555555);
 
   // Switch B field - proper spacing from separator
-  switch_b = ui_create_switch_field(control_panel, UI_LABEL_B, 300);
+  switch_b = ui_create_switch_field(control_panel, UI_CONTROLS_LABEL_B, 300);
   lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  ESP_LOGI(TAG, "Switch B (%s) created at x=300, better spacing", UI_LABEL_B);
+  ESP_LOGI(TAG, "Switch B (%s) created at x=300, better spacing", UI_CONTROLS_LABEL_B);
 
   // Vertical separator after switch B
   ui_create_centered_vertical_separator(control_panel, 420, 60, 0x555555);
 
   // Switch C field - proper spacing from separator
-  switch_c = ui_create_switch_field(control_panel, UI_LABEL_C, 440);
+  switch_c = ui_create_switch_field(control_panel, UI_CONTROLS_LABEL_C, 440);
   lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  ESP_LOGI(TAG, "Switch C (%s) created at x=440, better spacing", UI_LABEL_C);
+  ESP_LOGI(TAG, "Switch C (%s) created at x=440, better spacing", UI_CONTROLS_LABEL_C);
 
   // Vertical separator before scene button
   ui_create_centered_vertical_separator(control_panel, 560, 60, 0x555555);
@@ -214,7 +212,7 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(scene_button, scene_button_event_handler, LV_EVENT_CLICKED, NULL);
 
   lv_obj_t *scene_label = lv_label_create(scene_button);
-  lv_label_set_text(scene_label, UI_LABEL_D);
+  lv_label_set_text(scene_label, UI_CONTROLS_LABEL_D);
   lv_obj_set_style_text_font(scene_label, font_normal, 0);
   lv_obj_set_style_text_color(scene_label, lv_color_hex(0xffffff), 0);
   lv_obj_center(scene_label);

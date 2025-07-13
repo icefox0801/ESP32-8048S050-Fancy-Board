@@ -117,7 +117,7 @@ esp_err_t smart_home_toggle_pump(void)
   }
 
   ESP_LOGI(TAG, "Toggling switch A");
-  return ha_api_toggle_switch(HA_ENTITY_A);
+  return ha_api_toggle_switch(HA_ENTITY_A_ID);
 }
 
 esp_err_t smart_home_pump_on(void)
@@ -128,8 +128,8 @@ esp_err_t smart_home_pump_on(void)
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_LOGI(TAG, "🔵 USER ACTION: Turning on %s (Switch A: %s)", "Water Pump", HA_ENTITY_A);
-  esp_err_t result = ha_api_turn_on_switch(HA_ENTITY_A);
+  ESP_LOGI(TAG, "🔵 USER ACTION: Turning on %s (Switch A: %s)", "Water Pump", HA_ENTITY_A_ID);
+  esp_err_t result = ha_api_turn_on_switch(HA_ENTITY_A_ID);
 
   if (result == ESP_OK)
   {
@@ -151,8 +151,8 @@ esp_err_t smart_home_pump_off(void)
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_LOGI(TAG, "🔴 USER ACTION: Turning off %s (Switch A: %s)", "Water Pump", HA_ENTITY_A);
-  esp_err_t result = ha_api_turn_off_switch(HA_ENTITY_A);
+  ESP_LOGI(TAG, "🔴 USER ACTION: Turning off %s (Switch A: %s)", "Water Pump", HA_ENTITY_A_ID);
+  esp_err_t result = ha_api_turn_off_switch(HA_ENTITY_A_ID);
 
   if (result == ESP_OK)
   {
@@ -174,7 +174,7 @@ esp_err_t smart_home_get_pump_status(bool *is_on)
   }
 
   ha_entity_state_t state;
-  esp_err_t ret = ha_api_get_entity_state(HA_ENTITY_A, &state);
+  esp_err_t ret = ha_api_get_entity_state(HA_ENTITY_A_ID, &state);
   if (ret != ESP_OK)
   {
     ESP_LOGE(TAG, "Failed to get switch A status: %s", esp_err_to_name(ret));
@@ -238,17 +238,17 @@ esp_err_t smart_home_get_device_status(const char *entity_id, smart_device_statu
   device_status->last_updated = esp_timer_get_time() / 1000;
 
   // Set device type and friendly name based on entity
-  if (strcmp(entity_id, HA_ENTITY_A) == 0)
+  if (strcmp(entity_id, HA_ENTITY_A_ID) == 0)
   {
     device_status->type = SMART_DEVICE_SWITCH;
     strncpy(device_status->friendly_name, "Water Pump", sizeof(device_status->friendly_name) - 1);
   }
-  else if (strcmp(entity_id, HA_ENTITY_B) == 0)
+  else if (strcmp(entity_id, HA_ENTITY_B_ID) == 0)
   {
     device_status->type = SMART_DEVICE_SWITCH;
     strncpy(device_status->friendly_name, "Wave Maker", sizeof(device_status->friendly_name) - 1);
   }
-  else if (strcmp(entity_id, HA_ENTITY_C) == 0)
+  else if (strcmp(entity_id, HA_ENTITY_C_ID) == 0)
   {
     device_status->type = SMART_DEVICE_SWITCH;
     strncpy(device_status->friendly_name, "Light Switch", sizeof(device_status->friendly_name) - 1);
@@ -269,7 +269,7 @@ esp_err_t smart_home_get_all_devices(smart_device_status_t *devices, uint32_t ma
     return ESP_ERR_INVALID_ARG;
   }
 
-  const char *entity_ids[] = {HA_ENTITY_A, HA_ENTITY_B, HA_ENTITY_C};
+  const char *entity_ids[] = {HA_ENTITY_A_ID, HA_ENTITY_B_ID, HA_ENTITY_C_ID};
   const uint32_t total_devices = sizeof(entity_ids) / sizeof(entity_ids[0]);
 
   uint32_t count = (max_devices < total_devices) ? max_devices : total_devices;
@@ -333,7 +333,7 @@ esp_err_t smart_home_test_connection(void)
 
   // Test connection by getting state of a known entity
   ha_entity_state_t test_state;
-  esp_err_t ret = ha_api_get_entity_state(HA_ENTITY_A, &test_state);
+  esp_err_t ret = ha_api_get_entity_state(HA_ENTITY_A_ID, &test_state);
 
   if (ret == ESP_OK)
   {
@@ -403,12 +403,12 @@ esp_err_t smart_home_update_ui(void)
 
 esp_err_t smart_home_wave_maker_on(void)
 {
-  return smart_home_control_switch(HA_ENTITY_B, true);
+  return smart_home_control_switch(HA_ENTITY_B_ID, true);
 }
 
 esp_err_t smart_home_wave_maker_off(void)
 {
-  return smart_home_control_switch(HA_ENTITY_B, false);
+  return smart_home_control_switch(HA_ENTITY_B_ID, false);
 }
 
 esp_err_t smart_home_wave_maker_toggle(void)
@@ -419,17 +419,17 @@ esp_err_t smart_home_wave_maker_toggle(void)
   }
 
   ESP_LOGI(TAG, "Toggling switch B");
-  return ha_api_toggle_switch(HA_ENTITY_B);
+  return ha_api_toggle_switch(HA_ENTITY_B_ID);
 }
 
 esp_err_t smart_home_light_on(void)
 {
-  return smart_home_control_switch(HA_ENTITY_C, true);
+  return smart_home_control_switch(HA_ENTITY_C_ID, true);
 }
 
 esp_err_t smart_home_light_off(void)
 {
-  return smart_home_control_switch(HA_ENTITY_C, false);
+  return smart_home_control_switch(HA_ENTITY_C_ID, false);
 }
 
 esp_err_t smart_home_light_toggle(void)
@@ -440,7 +440,7 @@ esp_err_t smart_home_light_toggle(void)
   }
 
   ESP_LOGI(TAG, "Toggling switch C");
-  return ha_api_toggle_switch(HA_ENTITY_C);
+  return ha_api_toggle_switch(HA_ENTITY_C_ID);
 }
 
 esp_err_t smart_home_trigger_scene(void)
@@ -456,7 +456,7 @@ esp_err_t smart_home_trigger_scene(void)
   ha_service_call_t scene_call = {
       .domain = "scene",
       .service = "turn_on",
-      .entity_id = HA_ENTITY_D};
+      .entity_id = HA_ENTITY_D_ID};
 
   ha_api_response_t response;
   esp_err_t ret = ha_api_call_service(&scene_call, &response);

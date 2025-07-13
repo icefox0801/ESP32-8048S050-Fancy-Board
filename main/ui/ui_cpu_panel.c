@@ -12,11 +12,10 @@
 #include "ui_helpers.h"
 #include <stdio.h>
 
-// External references to global UI elements
-extern lv_obj_t *cpu_name_label;
-extern lv_obj_t *cpu_usage_label;
-extern lv_obj_t *cpu_temp_label;
-extern lv_obj_t *cpu_fan_label;
+static lv_obj_t *cpu_name_label = NULL;
+static lv_obj_t *cpu_usage_label = NULL;
+static lv_obj_t *cpu_temp_label = NULL;
+static lv_obj_t *cpu_fan_label = NULL;
 
 /**
  * @brief Create the CPU monitoring panel
