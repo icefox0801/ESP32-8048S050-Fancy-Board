@@ -12,13 +12,28 @@
 #include "lvgl.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// FONT DECLARATIONS - DEFINED IN ui_config.c
+// FONT DEFINITIONS WITH FALLBACK
 // ═══════════════════════════════════════════════════════════════════════════════
 
-extern const lv_font_t *font_title;       ///< Large title font (28px or fallback to 14px)
-extern const lv_font_t *font_normal;      ///< Normal text font (16px or fallback to 14px)
-extern const lv_font_t *font_small;       ///< Small text font (14px)
-extern const lv_font_t *font_big_numbers; ///< Large numbers font (32px or fallback to 14px)
+#ifdef CONFIG_LV_FONT_MONTSERRAT_28
+static const lv_font_t *font_title = &lv_font_montserrat_28; ///< Large title font (28px)
+#else
+static const lv_font_t *font_title = &lv_font_montserrat_14; ///< Fallback to 14px
+#endif
+
+#ifdef CONFIG_LV_FONT_MONTSERRAT_16
+static const lv_font_t *font_normal = &lv_font_montserrat_16; ///< Normal text font (16px)
+#else
+static const lv_font_t *font_normal = &lv_font_montserrat_14; ///< Fallback to 14px
+#endif
+
+static const lv_font_t *font_small = &lv_font_montserrat_14; ///< Small text font (14px)
+
+#ifdef CONFIG_LV_FONT_MONTSERRAT_32
+static const lv_font_t *font_big_numbers = &lv_font_montserrat_32; ///< Large numbers font (32px)
+#else
+static const lv_font_t *font_big_numbers = &lv_font_montserrat_14; ///< Fallback to 14px
+#endif
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UI CONSTANTS
