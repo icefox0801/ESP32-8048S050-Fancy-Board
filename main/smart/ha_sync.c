@@ -90,15 +90,16 @@
 #include "ha_sync.h"
 #include "ha_api.h"
 #include "system_monitor.h"
+#include "ui_controls_panel.h"
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <string.h>
 
 static const char *TAG = "HA_SYNC";
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // GLOBAL SYNC STATE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static ha_device_sync_t switch_a_sync = {
     .entity_id = HA_ENTITY_A,
@@ -113,9 +114,9 @@ static ha_device_sync_t switch_a_sync = {
 
 static bool sync_system_initialized = false;
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // INTERNAL HELPER FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static uint32_t get_timestamp_ms(void)
 {
@@ -145,15 +146,15 @@ static ha_device_state_t __attribute__((unused)) parse_ha_state(const char *stat
   return HA_DEVICE_STATE_UNKNOWN;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // FORWARD DECLARATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static bool ha_sync_switch_a_get_remote_state(ha_device_state_t *state);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // SWITCH A SYNC IMPLEMENTATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 bool ha_sync_switch_a_init(void)
 {
@@ -335,9 +336,9 @@ const ha_device_sync_t *ha_sync_switch_a_get_info(void)
   return &switch_a_sync;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // GENERAL SYNC FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 bool ha_sync_init(void)
 {
@@ -434,9 +435,9 @@ esp_err_t ha_sync_immediate_switches(void)
     bool switch_c_on = (strcmp(switch_states[2].state, "on") == 0);
 
     // Update the UI with switch states
-    system_monitor_ui_set_switch_a(switch_a_on);
-    system_monitor_ui_set_switch_b(switch_b_on);
-    system_monitor_ui_set_switch_c(switch_c_on);
+    controls_panel_set_switch_a(switch_a_on);
+    controls_panel_set_switch_b(switch_b_on);
+    controls_panel_set_switch_c(switch_c_on);
 
     ESP_LOGI(TAG, "Immediate sync completed: %s=%s, %s=%s, %s=%s",
              "Water Pump", switch_states[0].state,

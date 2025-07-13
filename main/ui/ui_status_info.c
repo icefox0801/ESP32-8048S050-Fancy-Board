@@ -147,3 +147,39 @@ void system_monitor_ui_update_wifi_status(const char *status_text, bool connecte
 
   lvgl_lock_release();
 }
+
+/**
+ * @brief Update serial connection status display
+ * @param status_text Serial status message to display
+ * @param connected True if serial is connected, false otherwise
+ */
+void status_info_update_serial_status(const char *status_text, bool connected)
+{
+  if (!connection_status_label || !status_text)
+    return;
+
+  lvgl_lock_acquire();
+
+  // Get current timestamp from the hidden timestamp label
+  const char *current_timestamp = "Last: Never";
+  if (timestamp_label)
+  {
+    current_timestamp = lv_label_get_text(timestamp_label);
+  }
+
+  char combined_status[128];
+  if (connected)
+  {
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected | %s", current_timestamp);
+    lv_label_set_text(connection_status_label, combined_status);
+    lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0x00ff88), 0); // Green
+  }
+  else
+  {
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost | %s", current_timestamp);
+    lv_label_set_text(connection_status_label, combined_status);
+    lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
+  }
+
+  lvgl_lock_release();
+}

@@ -18,6 +18,7 @@
 #include "lvgl.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "ui_controls_panel.h"
 
 // Include panel headers for data structure definitions
 #include "ui_cpu_panel.h"
@@ -81,50 +82,3 @@ void system_monitor_ui_set_connection_status(bool connected);
  * @param connected True if WiFi is connected, false otherwise
  */
 void system_monitor_ui_update_wifi_status(const char *status_text, bool connected);
-
-/**
- * @brief Update Home Assistant connection status display
- * @param status_text HA status message to display
- * @param connected True if HA is connected, false otherwise
- */
-void system_monitor_ui_update_ha_status(const char *status_text, bool connected);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SMART HOME CONTROL FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Set the state of switch A
- * @param state True to turn on, false to turn off
- */
-void system_monitor_ui_set_switch_a(bool state);
-
-/**
- * @brief Set the state of switch B
- * @param state True to turn on, false to turn off
- */
-void system_monitor_ui_set_switch_b(bool state);
-
-/**
- * @brief Set the state of switch C
- * @param state True to turn on, false to turn off
- */
-void system_monitor_ui_set_switch_c(bool state);
-
-/**
- * @brief Get the state of switch A
- * @return True if on, false if off
- */
-bool system_monitor_ui_get_switch_a(void);
-
-/**
- * @brief Get the state of switch B
- * @return True if on, false if off
- */
-bool system_monitor_ui_get_switch_b(void);
-
-/**
- * @brief Get the state of switch C
- * @return True if on, false if off
- */
-bool system_monitor_ui_get_switch_c(void);

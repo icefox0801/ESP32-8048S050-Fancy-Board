@@ -58,6 +58,18 @@ lv_obj_t *ui_create_field(lv_obj_t *parent, const char *field_name, const char *
                           uint32_t label_color, uint32_t value_color);
 
 /**
+ * @brief Create a device name label (CPU/GPU name)
+ * @param parent Parent panel
+ * @param device_name Name of the device
+ * @param x X position
+ * @param font Font to use
+ * @param color Color (hex)
+ * @return Created label object
+ */
+lv_obj_t *ui_create_device_name(lv_obj_t *parent, const char *device_name, int x,
+                                const lv_font_t *font, uint32_t color);
+
+/**
  * @brief Create a vertical separator line
  * @param parent Parent panel
  * @param x X position

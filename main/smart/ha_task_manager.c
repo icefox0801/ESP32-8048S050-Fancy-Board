@@ -11,6 +11,7 @@
 #include "ha_sync.h"
 #include "smart_config.h"
 #include "system_monitor.h"
+#include "ui_controls_panel.h"
 #include "esp_log.h"
 #include "esp_task_wdt.h"
 #include "esp_heap_caps.h"
@@ -108,7 +109,7 @@ static void home_assistant_task(void *pvParameters)
       {
         ha_initialized = true;
         ESP_LOGI(TAG, "Home Assistant API initialized successfully in task");
-        system_monitor_ui_update_ha_status("Connected", true);
+        controls_panel_update_ha_status("Connected", true);
 
         // Request immediate sync after successful initialization
         immediate_sync_requested = true;
@@ -118,7 +119,7 @@ static void home_assistant_task(void *pvParameters)
       {
         ESP_LOGE(TAG, "Failed to initialize Home Assistant API in task: %s (code: %d)",
                  esp_err_to_name(ret), ret);
-        system_monitor_ui_update_ha_status("Failed", false);
+        controls_panel_update_ha_status("Failed", false);
 
         // Log memory state after failure
         size_t free_heap_after = esp_get_free_heap_size();
@@ -150,12 +151,12 @@ static void home_assistant_task(void *pvParameters)
       if (ret != ESP_OK)
       {
         ESP_LOGW(TAG, "Immediate sync failed: %s", esp_err_to_name(ret));
-        system_monitor_ui_update_ha_status("Sync Error", false);
+        controls_panel_update_ha_status("Sync Error", false);
       }
       else
       {
         ESP_LOGI(TAG, "Immediate sync completed successfully");
-        system_monitor_ui_update_ha_status("Connected", true);
+        controls_panel_update_ha_status("Connected", true);
       }
 
       // Small delay after immediate sync
@@ -195,7 +196,7 @@ static void home_assistant_task(void *pvParameters)
     esp_task_wdt_reset();
 
     // Show syncing status
-    system_monitor_ui_update_ha_status("Syncing", true);
+    controls_panel_update_ha_status("Syncing", true);
 
     // Fetch all switch states in one bulk request with timeout protection
     ESP_LOGI(TAG, "Starting bulk state fetch with 15s timeout");
@@ -213,15 +214,15 @@ static void home_assistant_task(void *pvParameters)
       bool switch_b_on = (strcmp(switch_states[1].state, "on") == 0);
       bool switch_c_on = (strcmp(switch_states[2].state, "on") == 0);
 
-      system_monitor_ui_set_switch_a(switch_a_on);
-      system_monitor_ui_set_switch_b(switch_b_on);
-      system_monitor_ui_set_switch_c(switch_c_on);
+      controls_panel_set_switch_a(switch_a_on);
+      controls_panel_set_switch_b(switch_b_on);
+      controls_panel_set_switch_c(switch_c_on);
 
       ESP_LOGI(TAG, "Switch states synced: A=%s, B=%s, C=%s",
                switch_states[0].state, switch_states[1].state, switch_states[2].state);
 
       // Update status back to connected after successful sync
-      system_monitor_ui_update_ha_status("Connected", true);
+      controls_panel_update_ha_status("Connected", true);
 
       if (!initial_sync_done)
       {
@@ -231,7 +232,7 @@ static void home_assistant_task(void *pvParameters)
     }
     else
     {
-      system_monitor_ui_update_ha_status("Sync Error", false);
+      controls_panel_update_ha_status("Sync Error", false);
       ESP_LOGW(TAG, "Failed to sync switch states: %s", esp_err_to_name(ret));
 
       // Fallback to individual requests if bulk fails
@@ -246,7 +247,7 @@ static void home_assistant_task(void *pvParameters)
       if (ha_api_get_entity_state(switch_entity_ids[0], &switch_a_state) == ESP_OK)
       {
         bool switch_a_on = (strcmp(switch_a_state.state, "on") == 0);
-        system_monitor_ui_set_switch_a(switch_a_on);
+        controls_panel_set_switch_a(switch_a_on);
         ESP_LOGD(TAG, "Switch A: %s", switch_a_state.state);
       }
 
@@ -259,7 +260,7 @@ static void home_assistant_task(void *pvParameters)
       if (ha_api_get_entity_state(switch_entity_ids[1], &switch_b_state) == ESP_OK)
       {
         bool switch_b_on = (strcmp(switch_b_state.state, "on") == 0);
-        system_monitor_ui_set_switch_b(switch_b_on);
+        controls_panel_set_switch_b(switch_b_on);
         ESP_LOGD(TAG, "Switch B: %s", switch_b_state.state);
       }
 
@@ -272,7 +273,7 @@ static void home_assistant_task(void *pvParameters)
       if (ha_api_get_entity_state(switch_entity_ids[2], &switch_c_state) == ESP_OK)
       {
         bool switch_c_on = (strcmp(switch_c_state.state, "on") == 0);
-        system_monitor_ui_set_switch_c(switch_c_on);
+        controls_panel_set_switch_c(switch_c_on);
         ESP_LOGD(TAG, "Switch C: %s", switch_c_state.state);
       }
 
@@ -334,7 +335,7 @@ esp_err_t ha_task_manager_init(void)
   ha_task_handle = NULL;
 
   // Update UI status
-  system_monitor_ui_update_ha_status("Offline", false);
+  controls_panel_update_ha_status("Offline", false);
 
   return ESP_OK;
 }
@@ -376,7 +377,7 @@ esp_err_t ha_task_manager_start_task(void)
   }
 
   ESP_LOGI(TAG, "Starting Home Assistant task");
-  system_monitor_ui_update_ha_status("Starting", false);
+  controls_panel_update_ha_status("Starting", false);
 
   // Log detailed memory information
   ESP_LOGI(TAG, "Free heap: %zu bytes", free_heap);
@@ -459,14 +460,14 @@ esp_err_t ha_task_manager_start_task(void)
     ESP_LOGE(TAG, "Available SPIRAM blocks: largest=%zu bytes",
              heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
     ha_task_handle = NULL;
-    system_monitor_ui_update_ha_status("Failed", false);
+    controls_panel_update_ha_status("Failed", false);
     return ESP_FAIL;
   }
 
   ESP_LOGI(TAG, "HA task created successfully with internal RAM stack (required for networking)");
 
   ESP_LOGI(TAG, "Home Assistant task started successfully");
-  system_monitor_ui_update_ha_status("Ready", false);
+  controls_panel_update_ha_status("Ready", false);
   return ESP_OK;
 }
 
@@ -479,7 +480,7 @@ esp_err_t ha_task_manager_stop_task(void)
   }
 
   ESP_LOGI(TAG, "Stopping Home Assistant task");
-  system_monitor_ui_update_ha_status("Stopping", false);
+  controls_panel_update_ha_status("Stopping", false);
 
   // Unsubscribe from watchdog before deleting
   esp_task_wdt_delete(ha_task_handle);
@@ -490,7 +491,7 @@ esp_err_t ha_task_manager_stop_task(void)
   immediate_sync_requested = false;
 
   ESP_LOGI(TAG, "Home Assistant task stopped");
-  system_monitor_ui_update_ha_status("Offline", false);
+  controls_panel_update_ha_status("Offline", false);
   return ESP_OK;
 }
 
