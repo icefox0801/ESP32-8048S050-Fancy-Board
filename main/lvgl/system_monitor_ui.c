@@ -460,43 +460,46 @@ static lv_obj_t *create_control_panel(lv_obj_t *parent)
   lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0x888888), 0);
   lv_obj_align(ha_status_label, LV_ALIGN_TOP_LEFT, 0, 40);
 
-  // Vertical separator after controls title (centered using align API)
+  // Better spacing layout: Title section (140px) + 3 switches (120px each) + separators + button section
+  // Total: 140 + 120*3 + 4*10 + 120 = 140 + 360 + 40 + 120 = 660px (fits in 780px panel)
+
+  // Vertical separator after controls title
   create_centered_vertical_separator(control_panel, 140, 60, 0x4fc3f7);
 
-  // Switch A field
-  switch_a = create_switch_field(control_panel, UI_LABEL_A, 180);
+  // Switch A field - positioned with better spacing
+  switch_a = create_switch_field(control_panel, UI_LABEL_A, 160);
   lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_a, switch_a_event_handler, LV_EVENT_CLICKED, NULL);
-  ESP_LOGI(TAG, "Switch A (%s) created at x=180, size=60x30", UI_LABEL_A);
+  ESP_LOGI(TAG, "Switch A (%s) created at x=160, better spacing", UI_LABEL_A);
 
-  // Vertical separator after switch A (centered using align API)
-  create_centered_vertical_separator(control_panel, 300, 60, 0x555555);
+  // Vertical separator after switch A
+  create_centered_vertical_separator(control_panel, 280, 60, 0x555555);
 
-  // Switch B field
-  switch_b = create_switch_field(control_panel, UI_LABEL_B, 340);
+  // Switch B field - proper spacing from separator
+  switch_b = create_switch_field(control_panel, UI_LABEL_B, 300);
   lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_b, switch_b_event_handler, LV_EVENT_CLICKED, NULL);
-  ESP_LOGI(TAG, "Switch B (%s) created at x=340, size=60x30", UI_LABEL_B);
+  ESP_LOGI(TAG, "Switch B (%s) created at x=300, better spacing", UI_LABEL_B);
 
-  // Vertical separator after switch B (centered using align API)
-  create_centered_vertical_separator(control_panel, 460, 60, 0x555555);
+  // Vertical separator after switch B
+  create_centered_vertical_separator(control_panel, 420, 60, 0x555555);
 
-  // Switch C field
-  switch_c = create_switch_field(control_panel, UI_LABEL_C, 500);
+  // Switch C field - proper spacing from separator
+  switch_c = create_switch_field(control_panel, UI_LABEL_C, 440);
   lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_c, switch_c_event_handler, LV_EVENT_CLICKED, NULL);
-  ESP_LOGI(TAG, "Switch C (%s) created at x=500, size=60x30", UI_LABEL_C);
+  ESP_LOGI(TAG, "Switch C (%s) created at x=440, better spacing", UI_LABEL_C);
 
-  // Vertical separator before scene button (centered using align API)
-  create_centered_vertical_separator(control_panel, 580, 60, 0x555555);
+  // Vertical separator before scene button
+  create_centered_vertical_separator(control_panel, 560, 60, 0x555555);
 
   // Scene button (right with proper padding, centered using align API)
   scene_button = lv_btn_create(control_panel);
   lv_obj_set_size(scene_button, 120, 50);
-  lv_obj_align(scene_button, LV_ALIGN_RIGHT_MID, 0, 0);
+  lv_obj_align(scene_button, LV_ALIGN_RIGHT_MID, -20, 0); // 20px margin from right edge
   lv_obj_set_style_bg_color(scene_button, lv_color_hex(0x4caf50), 0);
   lv_obj_set_style_radius(scene_button, 10, 0);
   lv_obj_add_event_cb(scene_button, debug_touch_handler, LV_EVENT_ALL, NULL);
