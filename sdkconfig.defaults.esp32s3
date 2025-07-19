@@ -159,19 +159,19 @@ CONFIG_LV_DRAW_LAYER_SIMPLE_BUF_SIZE=16384
 CONFIG_LV_USE_PERF_MONITOR=y
 CONFIG_LV_USE_MEM_MONITOR=y
 
-# LVGL Montserrat Font Configuration (optimized selection)
-CONFIG_LV_FONT_MONTSERRAT_12=y
-CONFIG_LV_FONT_MONTSERRAT_14=y
-CONFIG_LV_FONT_MONTSERRAT_16=y
-CONFIG_LV_FONT_MONTSERRAT_18=y
-CONFIG_LV_FONT_MONTSERRAT_20=y
-CONFIG_LV_FONT_MONTSERRAT_22=y
-CONFIG_LV_FONT_MONTSERRAT_24=y
-CONFIG_LV_FONT_MONTSERRAT_28=y
-CONFIG_LV_FONT_MONTSERRAT_32=y
-CONFIG_LV_FONT_MONTSERRAT_36=y
-CONFIG_LV_FONT_MONTSERRAT_40=y
-CONFIG_LV_FONT_MONTSERRAT_48=y
+# LVGL Montserrat Font Configuration (only used fonts enabled)
+# CONFIG_LV_FONT_MONTSERRAT_12=y  # Not used - commented out to save memory
+CONFIG_LV_FONT_MONTSERRAT_14=y    # Used for: font_small and fallbacks
+CONFIG_LV_FONT_MONTSERRAT_16=y    # Used for: font_normal
+# CONFIG_LV_FONT_MONTSERRAT_18=y  # Not used - commented out to save memory
+# CONFIG_LV_FONT_MONTSERRAT_20=y  # Not used - commented out to save memory
+# CONFIG_LV_FONT_MONTSERRAT_22=y  # Not used - commented out to save memory
+# CONFIG_LV_FONT_MONTSERRAT_24=y  # Not used - commented out to save memory
+CONFIG_LV_FONT_MONTSERRAT_28=y    # Used for: font_title
+CONFIG_LV_FONT_MONTSERRAT_32=y    # Used for: font_big_numbers
+# CONFIG_LV_FONT_MONTSERRAT_36=y  # Not used - commented out to save memory
+# CONFIG_LV_FONT_MONTSERRAT_40=y  # Not used - commented out to save memory
+# CONFIG_LV_FONT_MONTSERRAT_48=y  # Not used - commented out to save memory
 
 # Enable LVGL built-in fonts
 CONFIG_LV_FONT_DEFAULT_MONTSERRAT_14=y
