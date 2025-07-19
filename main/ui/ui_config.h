@@ -13,13 +13,12 @@
 #include "smart_config.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// FONT DECLARATIONS - DEFINED IN ui_helpers.c
+// FONT DECLARATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-extern const lv_font_t *font_title;       ///< Large title font (28px or fallback to 14px)
-extern const lv_font_t *font_normal;      ///< Normal text font (16px or fallback to 14px)
-extern const lv_font_t *font_small;       ///< Small text font (14px)
-extern const lv_font_t *font_big_numbers; ///< Large numbers font (32px or fallback to 14px)
+extern const lv_font_t *font_title;       // Large title font
+extern const lv_font_t *font_normal;      // Normal text
+extern const lv_font_t *font_small;       // Small text
+extern const lv_font_t *font_big_numbers; // Large numbers
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UI CONSTANTS
