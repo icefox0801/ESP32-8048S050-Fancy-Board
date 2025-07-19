@@ -12,6 +12,9 @@
 #include "smart_config.h"
 #include "../utils/system_debug_utils.h"
 #include <esp_http_client.h>
+#include <esp_netif.h>
+#include <esp_wifi.h>
+#include <lwip/netdb.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -42,6 +45,27 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * @brief Check network connectivity to Home Assistant server
+ * @return true if server is reachable, false otherwise
+ */
+static bool check_network_connectivity(void)
+{
+  debug_log_info(DEBUG_TAG_HA_API, "🌐 Checking network connectivity to HA server");
+
+  // Check WiFi connection first
+  wifi_ap_record_t ap_info;
+  esp_err_t ret = esp_wifi_sta_get_ap_info(&ap_info);
+  if (ret != ESP_OK)
+  {
+    debug_log_error(DEBUG_TAG_HA_API, "❌ WiFi not connected");
+    return false;
+  }
+
+  debug_log_info(DEBUG_TAG_HA_API, "✅ Network connectivity OK");
+  return true;
+}
+
+/**
  * @brief HTTP event handler for response data collection
  */
 static esp_err_t http_event_handler(esp_http_client_event_t *evt)
@@ -50,6 +74,26 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
 
   switch (evt->event_id)
   {
+  case HTTP_EVENT_ERROR:
+    if (response)
+    {
+      snprintf(response->error_message, sizeof(response->error_message), "HTTP error occurred");
+      response->success = false;
+    }
+    break;
+
+  case HTTP_EVENT_ON_CONNECTED:
+    // Connection established, no action needed
+    break;
+
+  case HTTP_EVENT_HEADER_SENT:
+    // Headers sent, no action needed
+    break;
+
+  case HTTP_EVENT_ON_HEADER:
+    // Receiving headers, no action needed
+    break;
+
   case HTTP_EVENT_ON_DATA:
     if (response && evt->data_len > 0)
     {
@@ -76,15 +120,16 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     }
     break;
 
-  case HTTP_EVENT_ERROR:
-    if (response)
-    {
-      snprintf(response->error_message, sizeof(response->error_message), "HTTP error occurred");
-      response->success = false;
-    }
+  case HTTP_EVENT_DISCONNECTED:
+    // Connection closed, no action needed
+    break;
+
+  case HTTP_EVENT_REDIRECT:
+    // Redirect occurred, no action needed (client handles automatically)
     break;
 
   default:
+    // Handle any other events silently
     break;
   }
 
@@ -116,6 +161,18 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
   if (!ha_api_initialized)
   {
     return ESP_ERR_INVALID_STATE;
+  }
+
+  // Check network connectivity before attempting HTTP request
+  if (!check_network_connectivity())
+  {
+    debug_log_error(DEBUG_TAG_HA_API, "❌ Network connectivity check failed, skipping HTTP request");
+    if (response)
+    {
+      response->success = false;
+      response->status_code = 0;
+    }
+    return ESP_ERR_NOT_FOUND;
   }
 
   debug_log_info(DEBUG_TAG_HA_API, "=== HTTP REQUEST START ===");

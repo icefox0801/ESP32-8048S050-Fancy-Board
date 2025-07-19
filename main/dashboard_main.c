@@ -9,6 +9,7 @@
 #include "ui/ui_controls_panel.h"
 #include "ui/ui_dashboard.h"
 #include "utils/system_debug_utils.h"
+#include "esp_log.h"
 #include <stdio.h>
 
 // static const char *TAG = "dashboard"; // Removed - unused after debug cleanup
@@ -84,6 +85,10 @@ static void smart_home_states_sync_callback(bool switch_states[3], int state_cou
 void app_main(void)
 {
   debug_log_startup(DEBUG_TAG_DASHBOARD, "Dashboard");
+
+  // Reduce HTTP client debug noise
+  esp_log_level_set("HTTP_CLIENT", ESP_LOG_WARN);
+  esp_log_level_set("event", ESP_LOG_WARN);
 
   lvgl_setup_init_backlight();
   lvgl_setup_set_backlight(LCD_BK_LIGHT_OFF_LEVEL);

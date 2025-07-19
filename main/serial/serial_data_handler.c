@@ -48,8 +48,8 @@
 #define JSON_BUFFER_SIZE 1024 ///< JSON parsing buffer size
 
 // Task Configuration
-#define SERIAL_TASK_STACK_SIZE 8192 ///< Task stack size in bytes (reduced for memory optimization)
-#define SERIAL_TASK_PRIORITY 2      ///< FreeRTOS task priority (lowered for LVGL priority)
+#define SERIAL_TASK_STACK_SIZE 12288 ///< Task stack size in bytes (increased for JSON parsing)
+#define SERIAL_TASK_PRIORITY 2       ///< FreeRTOS task priority (lowered for LVGL priority)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STATIC VARIABLES

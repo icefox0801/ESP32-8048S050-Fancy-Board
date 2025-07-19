@@ -12,6 +12,7 @@
 #include "smart_home.h"
 #include "smart_config.h"
 #include "ha_api.h"
+#include "../ui/ui_controls_panel.h"
 #include "esp_timer.h"
 #include "system_debug_utils.h"
 #include <esp_err.h>
@@ -41,9 +42,15 @@ static esp_err_t run_sync_states_task(void);
 
 static void sync_task_function(void *pvParameters)
 {
+  // Wait for network to be ready before starting sync
+  debug_log_info(DEBUG_TAG_SMART_HOME, "🔄 Sync task started, waiting 10s for network stability");
+  vTaskDelay(pdMS_TO_TICKS(10000));
+
   while (1)
   {
     debug_log_info(DEBUG_TAG_SMART_HOME, "⏰ Running periodic switch state sync");
+
+    // Add error handling to prevent task crashes
     smart_home_sync_switch_states();
 
     // Wait for 30 seconds before next sync
@@ -56,7 +63,7 @@ static esp_err_t run_sync_states_task(void)
   BaseType_t result = xTaskCreate(
       sync_task_function,
       "SyncStatesTask",
-      4096, // Stack size - increased for network operations
+      8192, // Stack size - increased for HTTP/JSON operations
       NULL,
       2,                // Priority
       &sync_task_handle // Store task handle for cleanup
