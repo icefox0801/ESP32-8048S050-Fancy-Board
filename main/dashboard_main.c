@@ -5,10 +5,9 @@
 #include "lvgl/lvgl_setup.h"
 #include "serial/serial_data_handler.h"
 #include "wifi/wifi_manager.h"
-#include "smart/ha_task_manager.h"
-#include "smart/smart_config.h"
 #include "smart/smart_home.h"
-#include "ui_dashboard.h"
+#include "ui/ui_controls_panel.h"
+#include "ui/ui_dashboard.h"
 #include "utils/system_debug_utils.h"
 #include <stdio.h>
 
@@ -48,7 +47,12 @@ static void init_display_watchdog(void)
 static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)
 {
   ui_dashboard_update_wifi_status(status_text, is_connected);
-  ha_task_manager_wifi_callback(is_connected);
+  smart_home_update_wifi_status(is_connected);
+}
+
+static void wifi_connected_callback(void)
+{
+  smart_home_init();
 }
 
 static void serial_connection_status_callback(bool connected)
@@ -59,6 +63,22 @@ static void serial_connection_status_callback(bool connected)
 static void serial_data_update_callback(const system_data_t *data)
 {
   ui_dashboard_update(data);
+}
+
+static void smart_home_status_callback(bool connected, const char *status_text)
+{
+  controls_panel_update_ha_status(connected, status_text);
+}
+
+static void smart_home_states_sync_callback(bool switch_states[3], int state_count)
+{
+  // Update UI controls based on sync states
+  if (state_count >= 3)
+  {
+    controls_panel_set_switch(0, switch_states[0]); // SWITCH_A = 0
+    controls_panel_set_switch(1, switch_states[1]); // SWITCH_B = 1
+    controls_panel_set_switch(2, switch_states[2]); // SWITCH_C = 2
+  }
 }
 
 void app_main(void)
@@ -87,20 +107,16 @@ void app_main(void)
 
   ESP_ERROR_CHECK(wifi_manager_init());
 
-  ESP_ERROR_CHECK(wifi_manager_register_status_callback(wifi_status_callback));
-
-  ESP_ERROR_CHECK(ha_task_manager_init());
+  wifi_manager_register_status_callback(wifi_status_callback);
+  wifi_manager_register_connected_callback(wifi_connected_callback);
 
   serial_data_register_connection_callback(serial_connection_status_callback);
   serial_data_register_data_callback(serial_data_update_callback);
 
   serial_data_start_task();
 
-  esp_err_t ret = smart_home_init();
-  if (ret != ESP_OK)
-  {
-    debug_log_error(DEBUG_TAG_SMART_HOME, "Failed to initialize");
-  }
+  smart_home_register_status_callback(smart_home_status_callback);
+  smart_home_register_states_sync_callback(smart_home_states_sync_callback);
 
   // Register smart home callbacks with UI dashboard for decoupled control
   smart_home_callbacks_t callbacks = {

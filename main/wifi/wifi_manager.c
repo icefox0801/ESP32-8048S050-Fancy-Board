@@ -501,30 +501,26 @@ esp_err_t wifi_manager_get_info(wifi_info_t *info)
   return ESP_OK;
 }
 
-esp_err_t wifi_manager_register_status_callback(wifi_status_callback_t callback)
+void wifi_manager_register_status_callback(wifi_status_callback_t callback)
 {
   s_wifi_manager.status_callback = callback;
-  return ESP_OK;
 }
 
-esp_err_t wifi_manager_unregister_callback(void)
+void wifi_manager_unregister_callback(void)
 {
   s_wifi_manager.status_callback = NULL;
-  return ESP_OK;
 }
 
-esp_err_t wifi_manager_register_connected_callback(wifi_connected_callback_t callback)
+void wifi_manager_register_connected_callback(wifi_connected_callback_t callback)
 {
   s_wifi_manager.connected_callback = callback;
   s_wifi_manager.connected_callback_called = false; // Reset flag when new callback is registered
-  return ESP_OK;
 }
 
-esp_err_t wifi_manager_unregister_connected_callback(void)
+void wifi_manager_unregister_connected_callback(void)
 {
   s_wifi_manager.connected_callback = NULL;
   s_wifi_manager.connected_callback_called = false; // Reset flag when callback is unregistered
-  return ESP_OK;
 }
 
 esp_err_t wifi_manager_deinit(void)

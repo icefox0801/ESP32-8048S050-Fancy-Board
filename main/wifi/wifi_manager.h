@@ -147,31 +147,25 @@ extern "C"
    * @brief Register callback for WiFi status changes
    *
    * @param callback Function to call when WiFi status changes
-   * @return ESP_OK on successful registration
    */
-  esp_err_t wifi_manager_register_status_callback(wifi_status_callback_t callback);
+  void wifi_manager_register_status_callback(wifi_status_callback_t callback);
 
   /**
    * @brief Unregister WiFi status change callback
-   *
-   * @return ESP_OK on successful unregistration
    */
-  esp_err_t wifi_manager_unregister_callback(void);
+  void wifi_manager_unregister_callback(void);
 
   /**
    * @brief Register callback for WiFi connected event, only called once
    *
    * @param callback Function to call when WiFi is connected
-   * @return ESP_OK on successful registration
    */
-  esp_err_t wifi_manager_register_connected_callback(wifi_connected_callback_t callback);
+  void wifi_manager_register_connected_callback(wifi_connected_callback_t callback);
 
   /**
    * @brief Unregister WiFi connected event callback
-   *
-   * @return ESP_OK on successful unregistration
    */
-  esp_err_t wifi_manager_unregister_connected_callback(void);
+  void wifi_manager_unregister_connected_callback(void);
 
   /**
    * @brief Deinitialize WiFi manager and cleanup resources

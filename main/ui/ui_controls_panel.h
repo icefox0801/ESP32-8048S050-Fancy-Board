@@ -29,10 +29,10 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent);
 
 /**
  * @brief Update Home Assistant connection status in the controls panel
- * @param status_text HA status message to display
  * @param connected True if HA is connected, false otherwise
+ * @param status_text HA status message to display
  */
-void controls_panel_update_ha_status(const char *status_text, bool connected);
+void controls_panel_update_ha_status(bool connected, const char *status_text);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SMART HOME CONTROL FUNCTIONS

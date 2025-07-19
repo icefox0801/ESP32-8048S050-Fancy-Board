@@ -57,23 +57,6 @@
 #define HA_STATUS_UPDATE_INTERVAL_MS 5000 // Status check every 5 seconds
 
 // Sync Configuration
-#define HA_SYNC_RETRY_COUNT 3          // Number of sync attempts before disabling
-#define HA_SYNC_TIMEOUT_MS 15000       // Timeout for sync operations
-#define HA_SYNC_CHECK_INTERVAL_MS 2000 // How often to check sync status
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SMART HOME AUTOMATION SETTINGS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-// Automation Features
-#define ENABLE_A_CONTROL 1 // Enable switch A control
-#define ENABLE_B_CONTROL 1 // Enable switch B control
-#define ENABLE_C_CONTROL 1 // Enable switch C control
-#define ENABLE_D_CONTROL 1 // Enable scene trigger button
-
-// Device Control Preferences
-#define A_AUTO_TURN_OFF_DELAY_MS 300000 // Auto turn off switch A after 5 minutes
-#define B_AUTO_TURN_OFF_DELAY_MS 600000 // Auto turn off switch B after 10 minutes
-#define D_TRIGGER_COOLDOWN_MS 5000      // Prevent rapid scene triggering
+#define HA_SYNC_RETRY_COUNT 3 // Number of sync attempts before disabling
 
 #endif // SMART_CONFIG_H
