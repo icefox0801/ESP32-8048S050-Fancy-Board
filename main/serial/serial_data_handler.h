@@ -20,7 +20,7 @@
 #include "esp_err.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "common_types.h"
+#include "dashboard_data.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CALLBACK FUNCTION TYPES

@@ -1,13 +1,13 @@
 /**
- * @file common_types.h
- * @brief Common data types shared across modules
+ * @file dashboard_data.h
+ * @brief Dashboard data types shared across modules
  *
  * This header contains data structures that are shared between modules
  * but doesn't include any module-specific headers to maintain decoupling.
  */
 
-#ifndef COMMON_TYPES_H
-#define COMMON_TYPES_H
+#ifndef DASHBOARD_DATA_H
+#define DASHBOARD_DATA_H
 
 #include <stdint.h>
 
@@ -83,4 +83,4 @@ extern "C"
 }
 #endif
 
-#endif // COMMON_TYPES_H
+#endif // DASHBOARD_DATA_H

@@ -9,7 +9,7 @@
 #pragma once
 
 #include "lvgl.h"
-#include "common_types.h"
+#include "dashboard_data.h"
 
 /**
  * @brief Create the memory monitoring panel

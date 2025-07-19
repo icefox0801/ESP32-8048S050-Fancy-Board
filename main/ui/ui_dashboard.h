@@ -18,7 +18,7 @@
 #include "lvgl.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "common_types.h"
+#include "dashboard_data.h"
 #include "ui_controls_panel.h"
 
 // Include panel headers for LVGL UI functions only
