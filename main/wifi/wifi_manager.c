@@ -371,7 +371,7 @@ static esp_err_t wifi_start_reconnect_task(void)
         wifi_reconnect_stack = NULL;
         return ESP_ERR_NO_MEM;
       }
-      
+
       // Free the SPIRAM allocation since we're not using it for static task
       heap_caps_free(wifi_reconnect_stack);
       wifi_reconnect_stack = NULL;

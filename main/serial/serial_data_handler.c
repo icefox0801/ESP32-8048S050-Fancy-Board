@@ -445,13 +445,13 @@ void serial_data_start_task(void)
     {
       // Create task with SPIRAM stack using PinnedToCore (will use internal RAM for TCB)
       xTaskCreatePinnedToCore(
-          serial_data_task,      // Task function
-          "serial_data",         // Task name
+          serial_data_task,       // Task function
+          "serial_data",          // Task name
           SERIAL_TASK_STACK_SIZE, // Stack size in bytes
-          NULL,                  // Parameters
-          SERIAL_TASK_PRIORITY,  // Priority
-          &serial_task_handle,   // Task handle
-          0                      // Core ID (0)
+          NULL,                   // Parameters
+          SERIAL_TASK_PRIORITY,   // Priority
+          &serial_task_handle,    // Task handle
+          0                       // Core ID (0)
       );
 
       ESP_LOGI(TAG, "Serial task created with standard stack allocation");
