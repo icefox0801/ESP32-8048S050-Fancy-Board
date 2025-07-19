@@ -50,6 +50,8 @@ static void wifi_reconnect_task(void *pvParameters);
 static esp_err_t wifi_start_reconnect_task(void);
 static void wifi_stop_reconnect_task(void);
 static const char *wifi_status_to_text(wifi_status_t status, const wifi_info_t *info);
+static bool wifi_has_stored_credentials(void);
+static esp_err_t wifi_connect_with_default_credentials(void);
 
 // Helper functions for default credential fallback
 static bool wifi_has_stored_credentials(void)
@@ -78,11 +80,27 @@ static esp_err_t wifi_connect_with_default_credentials(void)
 #ifdef WIFI_SSID
   debug_log_info(DEBUG_TAG_WIFI_MANAGER, "Connecting with default WiFi credentials from config");
 
+  // Configure WiFi credentials directly (don't use wifi_manager_connect during init)
+  wifi_config_t wifi_config = {0};
+  strlcpy((char *)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
 #ifdef WIFI_PASSWORD
-  return wifi_manager_connect(WIFI_SSID, WIFI_PASSWORD);
-#else
-  return wifi_manager_connect(WIFI_SSID, NULL);
+  strlcpy((char *)wifi_config.sta.password, WIFI_PASSWORD, sizeof(wifi_config.sta.password));
 #endif
+  wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+  wifi_config.sta.pmf_cfg.capable = true;
+  wifi_config.sta.pmf_cfg.required = false;
+
+  esp_err_t ret = esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+  if (ret != ESP_OK)
+  {
+    debug_log_error_f(DEBUG_TAG_WIFI_MANAGER, "Failed to set WiFi config: %s", esp_err_to_name(ret));
+    return ret;
+  }
+
+  // Reset retry count
+  s_wifi_manager.retry_count = 0;
+
+  return ESP_OK;
 
 #else
   debug_log_warning(DEBUG_TAG_WIFI_MANAGER, "No default WiFi credentials defined in config");

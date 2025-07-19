@@ -70,5 +70,6 @@
   "[markdown]": {
     "editor.tabSize": 2,
     "editor.insertSpaces": true
-  }
+  },
+  "idf.flashBaudRate": "921600"
 }
