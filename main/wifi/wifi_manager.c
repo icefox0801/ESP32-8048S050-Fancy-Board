@@ -155,6 +155,20 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     }
     else
     {
+      // On first boot, if we've exhausted retries and never connected, try default credentials
+      if (!s_wifi_manager.initial_connection_attempted)
+      {
+        s_wifi_manager.initial_connection_attempted = true;
+        debug_log_info(DEBUG_TAG_WIFI_MANAGER, "Initial connection failed, attempting with default credentials");
+        esp_err_t connect_ret = wifi_connect_with_default_credentials();
+        if (connect_ret == ESP_OK)
+        {
+          // Reset retry count for new connection attempt
+          s_wifi_manager.retry_count = 0;
+          return; // Don't start background task yet
+        }
+      }
+
       debug_log_error(DEBUG_TAG_WIFI_MANAGER, "Maximum retry attempts reached, starting background reconnection");
       wifi_start_reconnect_task(); // Start background reconnection
       xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
