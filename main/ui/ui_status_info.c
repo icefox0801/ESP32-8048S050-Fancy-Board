@@ -16,15 +16,9 @@
 #include <time.h>
 
 // Status and Info Elements
-static lv_obj_t *timestamp_label = NULL;
 static lv_obj_t *connection_status_label = NULL;
 static lv_obj_t *wifi_status_label = NULL;
 
-/**
- * @brief Create the status panel with connection info
- * @param parent Parent screen object
- * @return Created status panel
- */
 lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 {
   lv_obj_t *status_panel = ui_create_status_panel(parent, 780, 50, 10, 410, 0x0f0f0f, 0x222222);
@@ -43,65 +37,13 @@ lv_obj_t *create_status_info_panel(lv_obj_t *parent)
   lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0x00aaff), 0);
   lv_obj_align(wifi_status_label, LV_ALIGN_TOP_RIGHT, -10, 11);
 
-  // Hidden timestamp label for internal timestamp tracking
-  timestamp_label = lv_label_create(status_panel);
-  lv_label_set_text(timestamp_label, "Last: Never");
-  lv_obj_add_flag(timestamp_label, LV_OBJ_FLAG_HIDDEN); // Hide this element
-
   return status_panel;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════�?
-// CONNECTION STATUS MANAGEMENT
-// ══════════════════════════════════════════════════════════════════════════════�?
-
-/**
- * @brief Update connection status indicator
- * @param connected True if connection is active, false if lost
- * @note Changes color and text of status indicator based on connection state
- */
-void ui_dashboard_set_connection_status(bool connected)
+void status_info_update_wifi_status(const char *status_text, bool connected)
 {
-  if (!connection_status_label)
+  if (!status_text)
     return;
-
-  lvgl_lock_acquire();
-
-  // Get current timestamp from the hidden timestamp label
-  const char *current_timestamp = "Last: Never";
-  if (timestamp_label)
-  {
-    current_timestamp = lv_label_get_text(timestamp_label);
-  }
-
-  char combined_status[128];
-  if (connected)
-  {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected | %s", current_timestamp);
-    lv_label_set_text(connection_status_label, combined_status);
-    lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0x00ff88), 0); // Green
-  }
-  else
-  {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost | %s", current_timestamp);
-    lv_label_set_text(connection_status_label, combined_status);
-    lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
-  }
-
-  lvgl_lock_release();
-}
-
-/**
- * @brief Update WiFi connection status in the status panel
- * @param status_text WiFi status message to display
- * @param connected True if WiFi is connected, false otherwise
- */
-void ui_dashboard_update_wifi_status(const char *status_text, bool connected)
-{
-  if (!wifi_status_label || !status_text)
-    return;
-
-  lvgl_lock_acquire();
 
   // Create formatted status message
   char wifi_msg[128];
@@ -149,50 +91,24 @@ void ui_dashboard_update_wifi_status(const char *status_text, bool connected)
   lvgl_lock_release();
 }
 
-/**
- * @brief Update serial connection status display
- * @param status_text Serial status message to display
- * @param connected True if serial is connected, false otherwise
- */
-void status_info_update_serial_status(const char *status_text, bool connected)
+void status_info_update_serial_status(bool connected)
 {
-  if (!connection_status_label || !status_text)
+  if (!connection_status_label)
     return;
-
-  lvgl_lock_acquire();
-
-  // Get current timestamp from the hidden timestamp label
-  const char *current_timestamp = "Last: Never";
-  if (timestamp_label)
-  {
-    current_timestamp = lv_label_get_text(timestamp_label);
-  }
 
   char combined_status[128];
   if (connected)
   {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected | %s", current_timestamp);
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connected");
     lv_label_set_text(connection_status_label, combined_status);
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0x00ff88), 0); // Green
   }
   else
   {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost | %s", current_timestamp);
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost");
     lv_label_set_text(connection_status_label, combined_status);
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
   }
 
   lvgl_lock_release();
-}
-
-void status_info_update_timestamp(uint64_t timestamp)
-{
-  if (timestamp_label)
-  {
-    time_t timestamp_sec = timestamp / 1000;
-    struct tm *timeinfo = localtime(&timestamp_sec);
-    char time_str[64];
-    strftime(time_str, sizeof(time_str), "Last: %H:%M:%S", timeinfo);
-    lv_label_set_text(timestamp_label, time_str);
-  }
 }

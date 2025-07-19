@@ -47,7 +47,7 @@ static void init_display_watchdog(void)
 
 static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)
 {
-  ui_dashboard_update_wifi_status(status_text, is_connected);
+  status_info_update_wifi_status(status_text, is_connected);
   smart_home_update_wifi_status(is_connected);
 }
 
@@ -58,7 +58,7 @@ static void wifi_connected_callback(void)
 
 static void serial_connection_status_callback(bool connected)
 {
-  ui_dashboard_set_connection_status(connected);
+  status_info_update_serial_status(connected);
 }
 
 static void serial_data_update_callback(const system_data_t *data)

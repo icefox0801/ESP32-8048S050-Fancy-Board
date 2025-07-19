@@ -63,9 +63,6 @@ void ui_dashboard_update(const system_data_t *data)
     return;
 
   lvgl_lock_acquire();
-
-  status_info_update_timestamp(data->timestamp);
-  status_info_update_serial_status("Connected", true);
   update_cpu_panel(&data->cpu);
   update_gpu_panel(&data->gpu);
   update_memory_panel(&data->mem);
