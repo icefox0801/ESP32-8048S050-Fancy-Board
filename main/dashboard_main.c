@@ -91,18 +91,6 @@ void app_main(void)
 
   ESP_ERROR_CHECK(ha_task_manager_init());
 
-  // Connect to WiFi if configured
-#ifdef DEFAULT_WIFI_SSID
-  if (strlen(DEFAULT_WIFI_SSID) > 0)
-  {
-#ifdef DEFAULT_WIFI_PASSWORD
-    wifi_manager_connect(DEFAULT_WIFI_SSID, DEFAULT_WIFI_PASSWORD);
-#else
-    wifi_manager_connect(DEFAULT_WIFI_SSID, NULL);
-#endif
-  }
-#endif
-
   serial_data_register_connection_callback(serial_connection_status_callback);
   serial_data_register_data_callback(serial_data_update_callback);
 

@@ -1,4 +1,5 @@
 #include "wifi_manager.h"
+#include "wifi_config.h"
 #include "system_debug_utils.h"
 #include <string.h>
 #include <freertos/FreeRTOS.h>
@@ -14,14 +15,6 @@
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
 
-// Event group bits
-#define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT BIT1
-
-// Retry settings
-#define WIFI_MAXIMUM_RETRY_COUNT 5
-#define WIFI_RECONNECT_DELAY_MS 10000
-
 // Static variables
 typedef struct
 {
@@ -29,9 +22,10 @@ typedef struct
   wifi_status_t status;
   int retry_count;
   wifi_info_t connection_info;
-  void (*ui_callback)(const char *status_text, bool is_connected);
-  void (*ha_callback)(bool is_connected);
   wifi_status_callback_t status_callback;
+  wifi_connected_callback_t connected_callback;
+  bool connected_callback_called;
+  bool initial_connection_attempted;
   TaskHandle_t reconnect_task_handle;
 } wifi_manager_internal_t;
 
@@ -41,6 +35,8 @@ static wifi_manager_internal_t s_wifi_manager = {
     .retry_count = 0,
     .connection_info = {{0}},
     .status_callback = NULL,
+    .connected_callback_called = false,
+    .initial_connection_attempted = false,
     .reconnect_task_handle = NULL};
 
 static EventGroupHandle_t s_wifi_event_group;
@@ -53,8 +49,46 @@ static void wifi_set_status(wifi_status_t new_status);
 static void wifi_reconnect_task(void *pvParameters);
 static esp_err_t wifi_start_reconnect_task(void);
 static void wifi_stop_reconnect_task(void);
-static bool ping_host(const char *host, uint32_t timeout_ms);
 static const char *wifi_status_to_text(wifi_status_t status, const wifi_info_t *info);
+
+// Helper functions for default credential fallback
+static bool wifi_has_stored_credentials(void)
+{
+  wifi_config_t wifi_config;
+  esp_err_t ret = esp_wifi_get_config(WIFI_IF_STA, &wifi_config);
+  if (ret != ESP_OK)
+  {
+    debug_log_warning(DEBUG_TAG_WIFI_MANAGER, "Failed to get stored WiFi config");
+    return false;
+  }
+
+  // Check if SSID is empty or just contains null characters
+  if (strlen((char *)wifi_config.sta.ssid) == 0)
+  {
+    debug_log_info(DEBUG_TAG_WIFI_MANAGER, "No stored WiFi credentials found");
+    return false;
+  }
+
+  debug_log_info_f(DEBUG_TAG_WIFI_MANAGER, "Found stored WiFi credentials for: %s", wifi_config.sta.ssid);
+  return true;
+}
+
+static esp_err_t wifi_connect_with_default_credentials(void)
+{
+#ifdef WIFI_SSID
+  debug_log_info(DEBUG_TAG_WIFI_MANAGER, "Connecting with default WiFi credentials from config");
+
+#ifdef WIFI_PASSWORD
+  return wifi_manager_connect(WIFI_SSID, WIFI_PASSWORD);
+#else
+  return wifi_manager_connect(WIFI_SSID, NULL);
+#endif
+
+#else
+  debug_log_warning(DEBUG_TAG_WIFI_MANAGER, "No default WiFi credentials defined in config");
+  return ESP_ERR_NOT_FOUND;
+#endif
+}
 
 // Event handlers
 static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -63,7 +97,36 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
   {
   case WIFI_EVENT_STA_START:
     wifi_set_status(WIFI_STATUS_CONNECTING);
-    esp_wifi_connect();
+
+    // On first start, check if we have stored credentials, if not try default credentials
+    if (!s_wifi_manager.initial_connection_attempted)
+    {
+      s_wifi_manager.initial_connection_attempted = true;
+
+      // Check if there are stored WiFi credentials, if not, use default credentials
+      if (!wifi_has_stored_credentials())
+      {
+        debug_log_info(DEBUG_TAG_WIFI_MANAGER, "No stored WiFi credentials found, attempting to connect with default credentials");
+        esp_err_t connect_ret = wifi_connect_with_default_credentials();
+        if (connect_ret != ESP_OK)
+        {
+          debug_log_warning(DEBUG_TAG_WIFI_MANAGER, "Failed to connect with default credentials");
+          // Still try esp_wifi_connect() as fallback
+          esp_wifi_connect();
+        }
+        // If connect_ret == ESP_OK, wifi_manager_connect() will handle the connection
+      }
+      else
+      {
+        debug_log_info(DEBUG_TAG_WIFI_MANAGER, "Using stored WiFi credentials for auto-connection");
+        esp_wifi_connect();
+      }
+    }
+    else
+    {
+      // Subsequent starts, just connect normally
+      esp_wifi_connect();
+    }
     break;
 
   case WIFI_EVENT_STA_CONNECTED:
@@ -198,6 +261,13 @@ static void wifi_set_status(wifi_status_t new_status)
     {
       s_wifi_manager.status_callback(is_connected, status_text, new_status, &s_wifi_manager.connection_info);
     }
+
+    // Notify connected callback, only called once in the entire lifecycle
+    if (s_wifi_manager.connected_callback && new_status == WIFI_STATUS_CONNECTED && !s_wifi_manager.connected_callback_called)
+    {
+      s_wifi_manager.connected_callback();
+      s_wifi_manager.connected_callback_called = true;
+    }
   }
 }
 
@@ -260,15 +330,6 @@ static void wifi_stop_reconnect_task(void)
     s_wifi_manager.reconnect_task_handle = NULL;
     debug_log_info(DEBUG_TAG_WIFI_MANAGER, "WiFi reconnect task stopped");
   }
-}
-
-static bool ping_host(const char *host, uint32_t timeout_ms)
-{
-  // Simplified ping - just return true for now
-  // Full implementation would require ICMP socket programming
-  (void)host;
-  (void)timeout_ms;
-  return true;
 }
 
 // Public API functions
@@ -420,61 +481,18 @@ esp_err_t wifi_manager_unregister_callback(void)
   return ESP_OK;
 }
 
-esp_err_t wifi_manager_scan(uint16_t max_aps, wifi_ap_record_t *ap_list, uint16_t *found_aps)
+esp_err_t wifi_manager_register_connected_callback(wifi_connected_callback_t callback)
 {
-  if (!s_wifi_manager.initialized || !ap_list || !found_aps)
-  {
-    return ESP_ERR_INVALID_ARG;
-  }
-
-  wifi_scan_config_t scan_config = {
-      .ssid = NULL,
-      .bssid = NULL,
-      .channel = 0,
-      .show_hidden = false};
-
-  ESP_ERROR_CHECK(esp_wifi_scan_start(&scan_config, true));
-  ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&max_aps, ap_list));
-  ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(found_aps));
-
+  s_wifi_manager.connected_callback = callback;
+  s_wifi_manager.connected_callback_called = false; // Reset flag when new callback is registered
   return ESP_OK;
 }
 
-bool wifi_manager_check_internet(uint32_t timeout_ms)
+esp_err_t wifi_manager_unregister_connected_callback(void)
 {
-  if (s_wifi_manager.status != WIFI_STATUS_CONNECTED)
-  {
-    return false;
-  }
-
-  return ping_host("8.8.8.8", timeout_ms);
-}
-
-const char *wifi_manager_get_signal_strength_desc(int8_t rssi)
-{
-  if (rssi >= -30)
-    return "Excellent";
-  if (rssi >= -67)
-    return "Good";
-  if (rssi >= -70)
-    return "Fair";
-  if (rssi >= -80)
-    return "Weak";
-  return "Very Weak";
-}
-
-esp_err_t wifi_manager_reconnect(void)
-{
-  if (!s_wifi_manager.initialized)
-  {
-    return ESP_ERR_INVALID_STATE;
-  }
-
-  debug_log_info(DEBUG_TAG_WIFI_MANAGER, "Manual WiFi reconnection requested");
-  s_wifi_manager.retry_count = 0;
-  wifi_set_status(WIFI_STATUS_CONNECTING);
-
-  return esp_wifi_connect();
+  s_wifi_manager.connected_callback = NULL;
+  s_wifi_manager.connected_callback_called = false; // Reset flag when callback is unregistered
+  return ESP_OK;
 }
 
 esp_err_t wifi_manager_deinit(void)

@@ -93,6 +93,11 @@ extern "C"
    */
   typedef void (*wifi_status_callback_t)(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info);
 
+  /**
+   * @brief WiFi connected callback function type
+   */
+  typedef void (*wifi_connected_callback_t)(void);
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // PUBLIC FUNCTION DECLARATIONS
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -154,37 +159,19 @@ extern "C"
   esp_err_t wifi_manager_unregister_callback(void);
 
   /**
-   * @brief Perform WiFi network scan
+   * @brief Register callback for WiFi connected event, only called once
    *
-   * @param max_aps Maximum number of access points to return
-   * @param ap_list Array to store found access points
-   * @param found_aps Pointer to store number of found access points
-   * @return ESP_OK on successful scan, error code otherwise
+   * @param callback Function to call when WiFi is connected
+   * @return ESP_OK on successful registration
    */
-  esp_err_t wifi_manager_scan(uint16_t max_aps, wifi_ap_record_t *ap_list, uint16_t *found_aps);
+  esp_err_t wifi_manager_register_connected_callback(wifi_connected_callback_t callback);
 
   /**
-   * @brief Check internet connectivity by pinging a known server
+   * @brief Unregister WiFi connected event callback
    *
-   * @param timeout_ms Timeout for connectivity check in milliseconds
-   * @return true if internet is accessible, false otherwise
+   * @return ESP_OK on successful unregistration
    */
-  bool wifi_manager_check_internet(uint32_t timeout_ms);
-
-  /**
-   * @brief Get WiFi signal strength description
-   *
-   * @param rssi Signal strength in dBm
-   * @return Human-readable signal strength description
-   */
-  const char *wifi_manager_get_signal_strength_desc(int8_t rssi);
-
-  /**
-   * @brief Force WiFi reconnection attempt
-   *
-   * @return ESP_OK if reconnection started successfully
-   */
-  esp_err_t wifi_manager_reconnect(void);
+  esp_err_t wifi_manager_unregister_connected_callback(void);
 
   /**
    * @brief Deinitialize WiFi manager and cleanup resources
