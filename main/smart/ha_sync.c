@@ -8,7 +8,7 @@
 
 #include "ha_sync.h"
 #include "ha_api.h"
-#include "system_monitor.h"
+#include "ui_dashboard.h"
 #include "ui_controls_panel.h"
 #include <esp_log.h>
 #include <esp_timer.h>

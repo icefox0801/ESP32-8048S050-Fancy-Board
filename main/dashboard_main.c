@@ -10,7 +10,7 @@
 #include "smart/ha_task_manager.h"
 #include "smart/smart_config.h"
 #include "smart/smart_home.h"
-#include "system_monitor.h"
+#include "ui_dashboard.h"
 #include <stdio.h>
 
 static const char *TAG = "dashboard";
@@ -65,7 +65,7 @@ static void init_display_watchdog(void)
 static void ui_wifi_status_callback(const char *status_text, bool is_connected)
 {
   ESP_LOGI(TAG, "WiFi UI update: %s (connected: %s)", status_text, is_connected ? "yes" : "no");
-  system_monitor_ui_update_wifi_status(status_text, is_connected);
+  ui_dashboard_update_wifi_status(status_text, is_connected);
 }
 
 void app_main(void)
@@ -119,8 +119,8 @@ void app_main(void)
   // Memory check after touch init
   ESP_LOGI(TAG, "After touch init - Internal RAM: %zu bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
 
-  // Create system monitor UI with thread safety and logging BEFORE starting LVGL task
-  lvgl_setup_create_ui_safe(display, system_monitor_ui_create);
+  // Create dashboard UI with thread safety and logging BEFORE starting LVGL task
+  lvgl_setup_create_ui_safe(display, ui_dashboard_create);
 
   // Memory check after UI creation
   ESP_LOGI(TAG, "After UI creation - Internal RAM: %zu bytes", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));

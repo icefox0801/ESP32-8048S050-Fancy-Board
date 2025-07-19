@@ -60,7 +60,7 @@ lv_obj_t *create_status_info_panel(lv_obj_t *parent)
  * @param connected True if connection is active, false if lost
  * @note Changes color and text of status indicator based on connection state
  */
-void system_monitor_ui_set_connection_status(bool connected)
+void ui_dashboard_set_connection_status(bool connected)
 {
   if (!connection_status_label)
     return;
@@ -96,7 +96,7 @@ void system_monitor_ui_set_connection_status(bool connected)
  * @param status_text WiFi status message to display
  * @param connected True if WiFi is connected, false otherwise
  */
-void system_monitor_ui_update_wifi_status(const char *status_text, bool connected)
+void ui_dashboard_update_wifi_status(const char *status_text, bool connected)
 {
   if (!wifi_status_label || !status_text)
     return;

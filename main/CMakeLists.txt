@@ -1,6 +1,6 @@
 idf_component_register(SRCS "dashboard_main.c"
                            "lvgl/lvgl_setup.c"
-                           "ui/system_monitor.c"
+                           "ui/ui_dashboard.c"
                            "ui/ui_helpers.c"
                            "ui/ui_cpu_panel.c"
                            "ui/ui_gpu_panel.c"

@@ -10,7 +10,7 @@
 #include "ha_api.h"
 #include "ha_sync.h"
 #include "smart_config.h"
-#include "system_monitor.h"
+#include "ui_dashboard.h"
 #include "ui_controls_panel.h"
 #include "esp_log.h"
 #include "esp_task_wdt.h"
@@ -295,7 +295,7 @@ static void home_assistant_task(void *pvParameters)
       {
         float temperature = atof(temp_state.state);
         ESP_LOGD(TAG, "Temperature: %.1f°C", temperature);
-        // TODO: system_monitor_ui_set_temperature(temperature);
+        // TODO: ui_dashboard_set_temperature(temperature);
       }
 
       vTaskDelay(pdMS_TO_TICKS(300));
@@ -309,7 +309,7 @@ static void home_assistant_task(void *pvParameters)
       {
         float humidity = atof(humidity_state.state);
         ESP_LOGD(TAG, "Humidity: %.1f%%", humidity);
-        // TODO: system_monitor_ui_set_humidity(humidity);
+        // TODO: ui_dashboard_set_humidity(humidity);
       }
 
       ESP_LOGI(TAG, "Sensor fetch completed");

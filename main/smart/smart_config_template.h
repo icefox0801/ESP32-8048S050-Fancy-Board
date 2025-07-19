@@ -33,12 +33,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Smart Switches (Replace with your actual entity IDs)
-#define HA_ENTITY_A "switch.your_switch_a_entity_id" // Switch A Control
-#define HA_ENTITY_B "switch.your_switch_b_entity_id" // Switch B Control
-#define HA_ENTITY_C "switch.your_switch_c_entity_id" // Switch C Control
+#define HA_ENTITY_A_ID "switch.your_switch_a_entity_id" // Switch A Control
+#define HA_ENTITY_B_ID "switch.your_switch_b_entity_id" // Switch B Control
+#define HA_ENTITY_C_ID "switch.your_switch_c_entity_id" // Switch C Control
 
 // Scene Control
-#define HA_ENTITY_D "scene.your_scene_entity_id" // Scene trigger button
+#define HA_ENTITY_D_ID "scene.your_scene_entity_id" // Scene trigger button
 
 #define HA_ENTITY_A_LABEL "Switch A"
 #define HA_ENTITY_B_LABEL "Switch B"

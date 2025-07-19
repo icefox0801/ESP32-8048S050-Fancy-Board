@@ -1,8 +1,8 @@
 /**
- * @file system_monitor_ui.c
- * @brief System Monitor Dashboard UI for ESP32-S3-8048S050
+ * @file ui_dashboard.c
+ * @brief Dashboard UI for ESP32-S3-8048S050
  *
- * Creates a clean, spacious real-time system monitoring dashboard with:
+ * Creates a clean, spacious real-time dashboard with:
  * - CPU Panel (Left): Usage, Temperature, Fan Speed
  * - GPU Panel (Center): Usage, Memory, Temperature
  * - Memory Panel (Right): System Memory Usage
@@ -15,7 +15,7 @@
  * - Clean design without emoji icons
  */
 
-#include "system_monitor.h"
+#include "ui_dashboard.h"
 
 #include "esp_log.h"
 #include "lvgl_setup.h"
@@ -31,13 +31,13 @@
 #include <stdio.h>
 #include <time.h>
 
-static const char *TAG = "system_monitor";
+static const char *TAG = "ui_dashboard";
 
 /**
- * @brief Create the complete system monitor dashboard UI
+ * @brief Create the complete dashboard UI
  * @param disp LVGL display handle
  */
-void system_monitor_ui_create(lv_display_t *disp)
+void ui_dashboard_create(lv_display_t *disp)
 {
   // Initialize LVGL theme with dark mode and blue/red accents
   lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
@@ -52,15 +52,15 @@ void system_monitor_ui_create(lv_display_t *disp)
   create_memory_panel(screen);
   create_status_info_panel(screen);
 
-  ESP_LOGI(TAG, "System Monitor UI created successfully");
+  ESP_LOGI(TAG, "Dashboard UI created successfully");
 }
 
 /**
- * @brief Update all system monitor display elements with new data
+ * @brief Update all dashboard display elements with new data
  * @param data Pointer to system monitoring data structure
  * @note This function is thread-safe and handles LVGL mutex locking
  */
-void system_monitor_ui_update(const system_data_t *data)
+void ui_dashboard_update(const system_data_t *data)
 {
   if (!data)
     return;

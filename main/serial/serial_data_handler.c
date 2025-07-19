@@ -25,7 +25,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include "system_monitor.h"
+#include "ui_dashboard.h"
 #include "ui/ui_status_info.h"
 #include <string.h>
 #include <time.h>
@@ -248,7 +248,7 @@ static void process_received_line(const char *line_buffer, system_data_t *system
       // Parse and update UI (reduce logging frequency)
       if (parse_json_data(trimmed, system_data))
       {
-        system_monitor_ui_update(system_data);
+        ui_dashboard_update(system_data);
 
         // Log less frequently to avoid blocking serial processing
         static uint32_t success_counter = 0;
