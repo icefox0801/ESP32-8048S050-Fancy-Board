@@ -9,16 +9,7 @@
 #pragma once
 
 #include "lvgl.h"
-
-// GPU monitoring data structure
-struct gpu_info
-{
-  uint8_t usage;      ///< GPU usage percentage (0-100)
-  uint8_t temp;       ///< GPU temperature in Celsius
-  char name[32];      ///< GPU name/model string
-  uint32_t mem_used;  ///< GPU memory used (MB)
-  uint32_t mem_total; ///< GPU memory total (MB)
-};
+#include "common_types.h"
 
 /**
  * @brief Create the GPU monitoring panel

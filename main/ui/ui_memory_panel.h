@@ -9,15 +9,7 @@
 #pragma once
 
 #include "lvgl.h"
-
-// Memory monitoring data structure
-struct memory_info
-{
-  uint8_t usage; ///< Memory usage percentage (0-100)
-  float used;    ///< Memory used (GB)
-  float total;   ///< Memory total (GB)
-  float avail;   ///< Memory available (GB)
-};
+#include "common_types.h"
 
 /**
  * @brief Create the memory monitoring panel

@@ -18,41 +18,14 @@
 #include "lvgl.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "common_types.h"
 #include "ui_controls_panel.h"
 
-// Include panel headers for data structure definitions
+// Include panel headers for LVGL UI functions only
 #include "ui_cpu_panel.h"
 #include "ui_gpu_panel.h"
 #include "ui_memory_panel.h"
 #include "ui_status_info.h"
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// DATA STRUCTURES
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief System monitoring data structure
- *
- * Contains all system metrics received via JSON from serial port:
- * - Timestamp for data freshness tracking
- * - CPU usage, temperature, and identification
- * - GPU usage, temperature, memory, and identification
- * - System memory usage and availability
- */
-typedef struct
-{
-  // Timestamp (milliseconds since epoch)
-  uint64_t timestamp;
-
-  // CPU Information Section - uses struct from ui_cpu_panel.h
-  struct cpu_info cpu;
-
-  // GPU Information Section - uses struct from ui_gpu_panel.h
-  struct gpu_info gpu;
-
-  // System Memory Information Section - uses struct from ui_memory_panel.h
-  struct memory_info mem;
-} system_data_t;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PUBLIC FUNCTION PROTOTYPES

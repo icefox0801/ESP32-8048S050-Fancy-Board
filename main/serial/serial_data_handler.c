@@ -25,8 +25,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include "ui_dashboard.h"
-#include "ui/ui_status_info.h"
 #include <string.h>
 #include <time.h>
 
@@ -61,8 +59,14 @@ static TaskHandle_t serial_task_handle = NULL; ///< Serial reception task handle
 static bool serial_running = false;            ///< Task running state flag
 static uint32_t last_data_time = 0;            ///< Last data reception timestamp
 
+// Callback function pointers
+static serial_connection_callback_t connection_callback = NULL; ///< Connection status callback
+static serial_data_callback_t data_callback = NULL;             ///< Data update callback
+
+// Connection state tracking
+static bool is_connection_lost = false; ///< Track if connection is currently lost
+
 // Static task resources for SPIRAM allocation
-static StaticTask_t serial_task_tcb;          ///< Task control block
 static StackType_t *serial_task_stack = NULL; ///< Task stack allocated from SPIRAM
 static uint32_t connection_timeout_ms = 5000; ///< Connection timeout (5 seconds)
 
@@ -248,7 +252,11 @@ static void process_received_line(const char *line_buffer, system_data_t *system
       // Parse and update UI (reduce logging frequency)
       if (parse_json_data(trimmed, system_data))
       {
-        ui_dashboard_update(system_data);
+        // Call data callback if registered
+        if (data_callback)
+        {
+          data_callback(system_data);
+        }
 
         // Log less frequently to avoid blocking serial processing
         static uint32_t success_counter = 0;
@@ -325,13 +333,28 @@ static void check_connection_timeout(uint32_t current_time)
     if (!timeout_logged)
     {
       ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
-      status_info_update_serial_status("Connection Lost", false);
+      // Call connection callback if registered
+      if (connection_callback)
+      {
+        connection_callback(false);
+      }
+      is_connection_lost = true;
       timeout_logged = true;
     }
   }
   else
   {
     // Reset timeout flag when data is received
+    if (timeout_logged && is_connection_lost)
+    {
+      ESP_LOGI(TAG, "Connection restored");
+      // Call connection callback to indicate connection restored
+      if (connection_callback)
+      {
+        connection_callback(true);
+      }
+      is_connection_lost = false;
+    }
     timeout_logged = false;
   }
 }
@@ -420,18 +443,21 @@ void serial_data_start_task(void)
     }
     else
     {
-      // Create static task with SPIRAM stack
-      serial_task_handle = xTaskCreateStatic(
-          serial_data_task,                             // Task function
-          "serial_data",                                // Task name
-          SERIAL_TASK_STACK_SIZE / sizeof(StackType_t), // Stack size in words
-          NULL,                                         // Parameters
-          SERIAL_TASK_PRIORITY,                         // Priority
-          serial_task_stack,                            // Stack buffer
-          &serial_task_tcb                              // Task control block
+      // Create task with SPIRAM stack using PinnedToCore (will use internal RAM for TCB)
+      xTaskCreatePinnedToCore(
+          serial_data_task,      // Task function
+          "serial_data",         // Task name
+          SERIAL_TASK_STACK_SIZE, // Stack size in bytes
+          NULL,                  // Parameters
+          SERIAL_TASK_PRIORITY,  // Priority
+          &serial_task_handle,   // Task handle
+          0                      // Core ID (0)
       );
 
-      ESP_LOGI(TAG, "Serial task created with SPIRAM stack at %p", serial_task_stack);
+      ESP_LOGI(TAG, "Serial task created with standard stack allocation");
+      // Free the SPIRAM allocation since we're not using it for static task
+      heap_caps_free(serial_task_stack);
+      serial_task_stack = NULL;
     }
 
     ESP_LOGI(TAG, "Serial data reception started on core 0");
@@ -458,4 +484,26 @@ void serial_data_stop(void)
     }
     ESP_LOGI(TAG, "Serial data reception stopped");
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CALLBACK REGISTRATION FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Register callback for connection status changes
+ */
+void serial_data_register_connection_callback(serial_connection_callback_t callback)
+{
+  connection_callback = callback;
+  ESP_LOGI(TAG, "Connection callback %s", callback ? "registered" : "unregistered");
+}
+
+/**
+ * @brief Register callback for data updates
+ */
+void serial_data_register_data_callback(serial_data_callback_t callback)
+{
+  data_callback = callback;
+  ESP_LOGI(TAG, "Data callback %s", callback ? "registered" : "unregistered");
 }

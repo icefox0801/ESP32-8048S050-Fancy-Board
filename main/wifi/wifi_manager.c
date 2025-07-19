@@ -75,7 +75,6 @@ typedef struct
 static wifi_manager_state_t s_wifi_manager = {0};
 
 // SPIRAM optimization for WiFi reconnect task
-static StaticTask_t wifi_reconnect_tcb;
 static StackType_t *wifi_reconnect_stack = NULL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -362,18 +361,21 @@ static esp_err_t wifi_start_reconnect_task(void)
     }
     else
     {
-      // Create static task with SPIRAM stack
-      s_wifi_manager.reconnect_task_handle = xTaskCreateStatic(
-          wifi_reconnect_task,              // Task function
-          "wifi_reconnect",                 // Task name
-          stack_size / sizeof(StackType_t), // Stack size in words
-          NULL,                             // Parameters
-          2,                                // Priority (lowered for LVGL priority)
-          wifi_reconnect_stack,             // Stack buffer
-          &wifi_reconnect_tcb               // Task control block
-      );
-
-      ESP_LOGI(TAG, "WiFi reconnection task started with SPIRAM stack at %p", wifi_reconnect_stack);
+      // Create task with standard allocation (FreeRTOS will handle stack allocation)
+      BaseType_t result = xTaskCreatePinnedToCore(wifi_reconnect_task, "wifi_reconnect",
+                                                  stack_size, NULL, 2, &s_wifi_manager.reconnect_task_handle, 0);
+      if (result != pdPASS)
+      {
+        ESP_LOGE(TAG, "Failed to create reconnection task on core 0");
+        heap_caps_free(wifi_reconnect_stack);
+        wifi_reconnect_stack = NULL;
+        return ESP_ERR_NO_MEM;
+      }
+      
+      // Free the SPIRAM allocation since we're not using it for static task
+      heap_caps_free(wifi_reconnect_stack);
+      wifi_reconnect_stack = NULL;
+      ESP_LOGI(TAG, "WiFi reconnection task started with standard stack allocation");
     }
   }
   return ESP_OK;

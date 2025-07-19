@@ -18,7 +18,25 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #include "esp_err.h"
-#include "ui_dashboard.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include "common_types.h"
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CALLBACK FUNCTION TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Callback function type for connection status changes
+ * @param connected True if connection is active, false if lost
+ */
+typedef void (*serial_connection_callback_t)(bool connected);
+
+/**
+ * @brief Callback function type for data updates
+ * @param data Pointer to system data structure with new monitoring data
+ */
+typedef void (*serial_data_callback_t)(const system_data_t *data);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PUBLIC FUNCTION PROTOTYPES
@@ -43,3 +61,17 @@ void serial_data_start_task(void);
  * @note Terminates reception task and frees allocated memory
  */
 void serial_data_stop(void);
+
+/**
+ * @brief Register callback for connection status changes
+ * @param callback Function to call when connection status changes
+ * @note Pass NULL to unregister the callback
+ */
+void serial_data_register_connection_callback(serial_connection_callback_t callback);
+
+/**
+ * @brief Register callback for data updates
+ * @param callback Function to call when new monitoring data arrives
+ * @note Pass NULL to unregister the callback
+ */
+void serial_data_register_data_callback(serial_data_callback_t callback);

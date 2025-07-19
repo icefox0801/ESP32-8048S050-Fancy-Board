@@ -68,6 +68,23 @@ static void ui_wifi_status_callback(const char *status_text, bool is_connected)
   ui_dashboard_update_wifi_status(status_text, is_connected);
 }
 
+/**
+ * @brief Serial connection status callback for UI
+ */
+static void serial_connection_status_callback(bool connected)
+{
+  ESP_LOGI(TAG, "Serial connection: %s", connected ? "connected" : "lost");
+  ui_dashboard_set_connection_status(connected);
+}
+
+/**
+ * @brief Serial data update callback for UI
+ */
+static void serial_data_update_callback(const system_data_t *data)
+{
+  ui_dashboard_update(data);
+}
+
 void app_main(void)
 {
   ESP_LOGI(TAG, "System Monitor Dashboard started!");
@@ -172,6 +189,11 @@ void app_main(void)
 #endif
   }
 #endif
+
+  // Register serial data callbacks for UI updates
+  ESP_LOGI(TAG, "Registering serial data callbacks...");
+  serial_data_register_connection_callback(serial_connection_status_callback);
+  serial_data_register_data_callback(serial_data_update_callback);
 
   // Start receiving serial data
   serial_data_start_task();

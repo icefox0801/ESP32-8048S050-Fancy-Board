@@ -9,16 +9,7 @@
 #pragma once
 
 #include "lvgl.h"
-
-// CPU monitoring data structure
-struct cpu_info
-{
-  uint8_t usage; ///< CPU usage percentage (0-100)
-  uint8_t temp;  ///< CPU temperature in Celsius
-  uint32_t freq; ///< CPU frequency in MHz
-  uint16_t fan;  ///< CPU fan speed in RPM
-  char name[32]; ///< CPU name/model string
-};
+#include "common_types.h"
 
 /**
  * @brief Create the CPU monitoring panel
