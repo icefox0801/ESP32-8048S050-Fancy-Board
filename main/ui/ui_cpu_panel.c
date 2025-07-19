@@ -30,11 +30,7 @@ lv_obj_t *create_cpu_panel(lv_obj_t *parent)
   ui_create_title_with_separator(cpu_panel, "CPU", 0x4fc3f7, 355);
 
   // CPU Name (positioned to the right of title, baseline aligned)
-  cpu_name_label = lv_label_create(cpu_panel);
-  lv_label_set_text(cpu_name_label, "Unknown CPU");
-  lv_obj_set_style_text_font(cpu_name_label, font_small, 0);
-  lv_obj_set_style_text_color(cpu_name_label, lv_color_hex(0x888888), 0);
-  lv_obj_set_pos(cpu_name_label, 80, 8);
+  cpu_name_label = ui_create_device_name(cpu_panel, "Unknown CPU", 80, font_small, 0x808080);
 
   // Create CPU fields - Temperature first
   cpu_temp_label = ui_create_field(cpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);

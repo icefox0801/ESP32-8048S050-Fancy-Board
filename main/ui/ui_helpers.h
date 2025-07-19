@@ -17,6 +17,18 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * @brief Create a device name label with consistent styling
+ * @param parent Parent panel
+ * @param device_name Device name text (e.g., "ESP32-S3", "GPU")
+ * @param x X position
+ * @param font Font to use
+ * @param color Color (hex)
+ * @return Created device name label object
+ */
+lv_obj_t *ui_create_device_name(lv_obj_t *parent, const char *device_name, int x,
+                                const lv_font_t *font, uint32_t color);
+
+/**
  * @brief Create a standard panel with common styling
  * @param parent Parent object
  * @param width Panel width
@@ -56,18 +68,6 @@ lv_obj_t *ui_create_title_with_separator(lv_obj_t *parent, const char *title,
 lv_obj_t *ui_create_field(lv_obj_t *parent, const char *field_name, const char *default_value,
                           int x, const lv_font_t *label_font, const lv_font_t *value_font,
                           uint32_t label_color, uint32_t value_color);
-
-/**
- * @brief Create a device name label (CPU/GPU name)
- * @param parent Parent panel
- * @param device_name Name of the device
- * @param x X position
- * @param font Font to use
- * @param color Color (hex)
- * @return Created label object
- */
-lv_obj_t *ui_create_device_name(lv_obj_t *parent, const char *device_name, int x,
-                                const lv_font_t *font, uint32_t color);
 
 /**
  * @brief Create a vertical separator line

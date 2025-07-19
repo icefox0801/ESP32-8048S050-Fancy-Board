@@ -30,11 +30,7 @@ lv_obj_t *create_gpu_panel(lv_obj_t *parent)
   ui_create_title_with_separator(gpu_panel, "GPU", 0x4caf50, 355);
 
   // GPU Name (positioned to the right of title, baseline aligned)
-  gpu_name_label = lv_label_create(gpu_panel);
-  lv_label_set_text(gpu_name_label, "Unknown GPU");
-  lv_obj_set_style_text_font(gpu_name_label, font_small, 0);
-  lv_obj_set_style_text_color(gpu_name_label, lv_color_hex(0x888888), 0);
-  lv_obj_set_pos(gpu_name_label, 80, 8);
+  gpu_name_label = ui_create_device_name(gpu_panel, "Unknown GPU", 80, font_small, 0x808080);
 
   // Create GPU fields - Temperature first
   gpu_temp_label = ui_create_field(gpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);

@@ -38,6 +38,26 @@ const lv_font_t *font_big_numbers = &lv_font_montserrat_14; // Fallback to 14px
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * @brief Create a device name label with consistent styling
+ * @param parent Parent panel
+ * @param device_name Device name text (e.g., "ESP32-S3", "GPU")
+ * @param x X position
+ * @param font Font to use
+ * @param color Color (hex)
+ * @return Created device name label object
+ */
+lv_obj_t *ui_create_device_name(lv_obj_t *parent, const char *device_name, int x,
+                                const lv_font_t *font, uint32_t color)
+{
+  lv_obj_t *label = lv_label_create(parent);
+  lv_label_set_text(label, device_name);
+  lv_obj_set_style_text_font(label, font, 0);
+  lv_obj_set_style_text_color(label, lv_color_hex(color), 0);
+  lv_obj_set_pos(label, x, 8); // Fixed Y position of 8
+  return label;
+}
+
+/**
  * @brief Create a standard panel with common styling
  * @param parent Parent object
  * @param width Panel width
