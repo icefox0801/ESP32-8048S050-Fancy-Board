@@ -12,10 +12,10 @@
 #include "wifi_manager.h"
 #include "wifi_config.h"
 #include <string.h>
-#include <esp_log.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
 #include <esp_event.h>
+#include <esp_log.h>
 #include <esp_heap_caps.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
@@ -23,6 +23,7 @@
 #include <lwip/sys.h>
 #include <esp_sntp.h>
 #include <nvs_flash.h>
+#include "utils/system_debug_utils.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS AND CONFIGURATION
@@ -104,13 +105,13 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     switch (event_id)
     {
     case WIFI_EVENT_STA_START:
-      ESP_LOGI(TAG, "WiFi station started, connecting to AP...");
+      // Removed debug logging
       wifi_set_status(WIFI_STATUS_CONNECTING);
       esp_wifi_connect();
       break;
 
     case WIFI_EVENT_STA_CONNECTED:
-      ESP_LOGI(TAG, "Connected to WiFi network");
+      // Removed debug logging
       wifi_update_connection_info();
       s_wifi_manager.retry_count = 0;
       wifi_stop_reconnect_task();
@@ -127,8 +128,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
 
       if (s_wifi_manager.retry_count < WIFI_MAX_RETRY_COUNT)
       {
-        ESP_LOGI(TAG, "Retry connecting to WiFi (%d/%d)",
-                 s_wifi_manager.retry_count + 1, WIFI_MAX_RETRY_COUNT);
+        // Removed debug logging
         s_wifi_manager.retry_count++;
         wifi_set_status(WIFI_STATUS_RECONNECTING);
 
@@ -183,13 +183,13 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base, int32_t eve
         esp_sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
         esp_sntp_init();
         s_wifi_manager.sntp_initialized = true;
-        ESP_LOGI(TAG, "SNTP initialized successfully");
+        debug_log_event(DEBUG_TAG_WIFI_MANAGER, "SNTP initialized");
       }
       break;
     }
 
     case IP_EVENT_STA_LOST_IP:
-      ESP_LOGW(TAG, "Lost IP address");
+      // Removed debug logging
       wifi_set_status(WIFI_STATUS_DISCONNECTED);
 
       // Clean up SNTP when IP is lost
@@ -197,7 +197,7 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base, int32_t eve
       {
         esp_sntp_stop();
         s_wifi_manager.sntp_initialized = false;
-        ESP_LOGI(TAG, "SNTP stopped due to IP loss");
+        debug_log_event(DEBUG_TAG_WIFI_MANAGER, "SNTP stopped");
       }
       break;
 
@@ -428,6 +428,7 @@ esp_err_t wifi_manager_init(void)
     return ESP_OK;
   }
 
+  debug_log_startup(DEBUG_TAG_WIFI_MANAGER, "WiFi Manager");
   ESP_LOGI(TAG, "Initializing WiFi manager...");
 
   // Initialize NVS (required for WiFi)
@@ -529,6 +530,7 @@ esp_err_t wifi_manager_init(void)
   s_wifi_manager.retry_count = 0;
   s_wifi_manager.initialized = true;
 
+  debug_log_event(DEBUG_TAG_WIFI_MANAGER, "WiFi manager initialized successfully");
   ESP_LOGI(TAG, "WiFi manager initialized successfully");
   return ESP_OK;
 }
@@ -547,6 +549,7 @@ esp_err_t wifi_manager_connect(const char *ssid, const char *password)
     return ESP_ERR_INVALID_ARG;
   }
 
+  debug_log_event(DEBUG_TAG_WIFI_MANAGER, "Connecting to WiFi network");
   ESP_LOGI(TAG, "Connecting to WiFi network: %s", ssid);
 
   // Store credentials

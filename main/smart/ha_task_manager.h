@@ -65,12 +65,6 @@ extern "C"
    */
   void ha_task_manager_wifi_callback(bool is_connected);
 
-  /**
-   * @brief Print detailed memory usage information for all tasks
-   * Shows internal RAM usage, task stack usage, and system memory statistics
-   */
-  void ha_task_manager_print_memory_usage(void);
-
 #ifdef __cplusplus
 }
 #endif

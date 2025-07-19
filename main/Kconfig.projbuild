@@ -1,3 +1,14 @@
+menu "System Debug Configuration"
+    config SYSTEM_DEBUG_ENABLED
+        bool "Enable debug logging"
+        default y
+        help
+            Enable debug logging throughout the system.
+            This controls conditional debug output in all modules.
+            When disabled, only critical errors and important events are logged.
+
+endmenu
+
 menu "Example Configuration"
     choice EXAMPLE_LCD_BUFFER_MODE
         prompt "RGB LCD Buffer Mode"

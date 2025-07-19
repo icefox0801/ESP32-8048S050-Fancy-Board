@@ -20,11 +20,11 @@
 
 #include "cjson.h"
 #include "driver/uart.h"
-#include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "utils/system_debug_utils.h"
 #include <string.h>
 #include <time.h>
 
@@ -32,7 +32,7 @@
 // CONSTANTS AND CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
-static const char *TAG = "serial_data";
+// static const char *TAG = "serial_data"; // Removed - unused after debug cleanup
 
 // UART Hardware Configuration
 #define UART_PORT_NUM UART_NUM_0                ///< UART port number
@@ -113,7 +113,7 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
   cJSON *json = cJSON_Parse(json_str);
   if (json == NULL)
   {
-    ESP_LOGW(TAG, "Invalid JSON format");
+    // Only log JSON errors when debug enabled - too verbose otherwise
     return false;
   }
 
@@ -258,31 +258,21 @@ static void process_received_line(const char *line_buffer, system_data_t *system
           data_callback(system_data);
         }
 
-        // Log less frequently to avoid blocking serial processing
-        static uint32_t success_counter = 0;
-        if (++success_counter % 10 == 0) // Log every 10th successful parse
-        {
-          ESP_LOGI(TAG, "Successfully parsed and updated system data (total: %lu)", success_counter);
-        }
+        // Removed excessive logging to reduce verbosity
       }
       else
       {
-        ESP_LOGW(TAG, "Failed to parse JSON: %.50s...", trimmed);
+        // Removed debug logging
       }
     }
     else
     {
-      ESP_LOGW(TAG, "Incomplete JSON received: %.50s...", trimmed);
+      // Removed debug logging
     }
   }
   else
   {
-    // Log non-JSON debug messages from sender (less frequently)
-    static uint32_t debug_counter = 0;
-    if (++debug_counter % 10 == 0) // More frequent debug logging
-    {
-      ESP_LOGI(TAG, "[SENDER DEBUG] %s", line_buffer);
-    }
+    // Removed debug logging
   }
 }
 
@@ -312,8 +302,7 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
     }
     else
     {
-      // Line too long, reset buffer
-      ESP_LOGW(TAG, "Line buffer overflow, resetting");
+      // Removed debug logging
       *line_pos = 0;
     }
   }
@@ -332,7 +321,7 @@ static void check_connection_timeout(uint32_t current_time)
   {
     if (!timeout_logged)
     {
-      ESP_LOGW(TAG, "No data received for %d ms", connection_timeout_ms);
+      // Removed debug logging
       // Call connection callback if registered
       if (connection_callback)
       {
@@ -347,7 +336,7 @@ static void check_connection_timeout(uint32_t current_time)
     // Reset timeout flag when data is received
     if (timeout_logged && is_connection_lost)
     {
-      ESP_LOGI(TAG, "Connection restored");
+      // Removed debug logging
       // Call connection callback to indicate connection restored
       if (connection_callback)
       {
@@ -370,7 +359,7 @@ static void serial_data_task(void *pvParameters)
   system_data_t system_data = {0};
   uint32_t current_time;
 
-  ESP_LOGI(TAG, "Serial data task started");
+  // Removed debug logging
 
   while (serial_running)
   {
@@ -398,7 +387,7 @@ static void serial_data_task(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(5)); // Reduced delay for faster response
   }
 
-  ESP_LOGI(TAG, "Serial data task stopped");
+  // Removed debug logging
   vTaskDelete(NULL);
 }
 
@@ -417,7 +406,7 @@ esp_err_t serial_data_init(void)
   ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, BUF_SIZE * 2, 0, 0, NULL, 0));
   ESP_ERROR_CHECK(uart_param_config(UART_PORT_NUM, &uart_config));
 
-  ESP_LOGI(TAG, "UART initialized on port %d at %d baud", UART_PORT_NUM, UART_BAUD_RATE);
+  debug_log_startup(DEBUG_TAG_SERIAL_DATA, "Serial Port");
 
   return ESP_OK;
 }
@@ -426,6 +415,7 @@ void serial_data_start_task(void)
 {
   if (!serial_running)
   {
+    debug_log_event(DEBUG_TAG_SERIAL_DATA, "Starting serial data task");
     serial_running = true;
     last_data_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
@@ -435,11 +425,11 @@ void serial_data_start_task(void)
 
     if (serial_task_stack == NULL)
     {
-      ESP_LOGE(TAG, "Failed to allocate serial task stack from SPIRAM");
+      debug_log_error(DEBUG_TAG_SERIAL_DATA, "Failed to allocate task stack");
       // Fallback to standard task creation
       xTaskCreatePinnedToCore(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
                               NULL, SERIAL_TASK_PRIORITY, &serial_task_handle, 0);
-      ESP_LOGW(TAG, "Serial task created with standard internal RAM stack");
+      // Removed debug logging
     }
     else
     {
@@ -454,13 +444,13 @@ void serial_data_start_task(void)
           0                       // Core ID (0)
       );
 
-      ESP_LOGI(TAG, "Serial task created with standard stack allocation");
+      // Removed debug logging
       // Free the SPIRAM allocation since we're not using it for static task
       heap_caps_free(serial_task_stack);
       serial_task_stack = NULL;
     }
 
-    ESP_LOGI(TAG, "Serial data reception started on core 0");
+    // Removed debug logging
   }
 }
 
@@ -479,10 +469,10 @@ void serial_data_stop(void)
       {
         heap_caps_free(serial_task_stack);
         serial_task_stack = NULL;
-        ESP_LOGI(TAG, "Serial task SPIRAM stack freed");
+        // Removed debug logging
       }
     }
-    ESP_LOGI(TAG, "Serial data reception stopped");
+    // Removed debug logging
   }
 }
 
@@ -496,7 +486,7 @@ void serial_data_stop(void)
 void serial_data_register_connection_callback(serial_connection_callback_t callback)
 {
   connection_callback = callback;
-  ESP_LOGI(TAG, "Connection callback %s", callback ? "registered" : "unregistered");
+  debug_log_event(DEBUG_TAG_SERIAL_DATA, "Connection callback registered");
 }
 
 /**
@@ -505,5 +495,5 @@ void serial_data_register_connection_callback(serial_connection_callback_t callb
 void serial_data_register_data_callback(serial_data_callback_t callback)
 {
   data_callback = callback;
-  ESP_LOGI(TAG, "Data callback %s", callback ? "registered" : "unregistered");
+  debug_log_event(DEBUG_TAG_SERIAL_DATA, "Data callback registered");
 }

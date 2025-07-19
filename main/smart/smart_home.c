@@ -14,7 +14,7 @@
 #include "ha_api.h"
 #include "ha_sync.h"
 #include "esp_timer.h"
-#include "esp_log.h"
+#include "../utils/system_debug_utils.h"
 
 #include <esp_log.h>
 #include <esp_err.h>
@@ -38,11 +38,11 @@ esp_err_t smart_home_init(void)
 {
   if (smart_home_initialized)
   {
-    ESP_LOGW(TAG, "Smart home already initialized");
+    debug_log_event(DEBUG_TAG_SMART_HOME, "Already initialized");
     return ESP_OK;
   }
 
-  ESP_LOGI(TAG, "Initializing Smart Home integration");
+  debug_log_startup(DEBUG_TAG_SMART_HOME, "SmartHome");
 
   // Initialize Home Assistant API
   esp_err_t ret = ha_api_init();
@@ -65,14 +65,14 @@ esp_err_t smart_home_deinit(void)
     return ESP_OK;
   }
 
-  ESP_LOGI(TAG, "Deinitializing Smart Home integration");
+  debug_log_event(DEBUG_TAG_SMART_HOME, "Deinitializing integration");
 
   // Cleanup Home Assistant API
   ha_api_deinit();
 
   smart_home_initialized = false;
 
-  ESP_LOGI(TAG, "Smart Home integration deinitialized");
+  debug_log_event(DEBUG_TAG_SMART_HOME, "Integration deinitialized");
   return ESP_OK;
 }
 

@@ -15,6 +15,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "gt911_touch.h"
+#include "utils/system_debug_utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/lock.h>
@@ -73,11 +74,13 @@ esp_lcd_panel_handle_t lvgl_setup_create_lcd_panel(void)
 // 3. LVGL initialization (called third)
 lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 {
+  debug_log_event(DEBUG_TAG_LVGL_SETUP, "Initializing LVGL display");
   lv_init();
 
   lv_display_t *display = lv_display_create(LCD_H_RES, LCD_V_RES);
   if (!display)
   {
+    debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to create LVGL display");
     ESP_LOGE(TAG, "Failed to create LVGL display");
     return NULL;
   }
@@ -143,14 +146,17 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 // 4. Task management (called fourth)
 void lvgl_setup_start_task(void)
 {
+  debug_log_event(DEBUG_TAG_LVGL_SETUP, "Starting LVGL task on core 1");
   ESP_LOGI(TAG, "Creating LVGL task on core 1 with priority %d, stack size %d", LVGL_TASK_PRIORITY, LVGL_TASK_STACK_SIZE);
   BaseType_t result = xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 1);
   if (result == pdPASS)
   {
+    debug_log_event(DEBUG_TAG_LVGL_SETUP, "LVGL task created successfully");
     ESP_LOGI(TAG, "LVGL task created successfully on core 1");
   }
   else
   {
+    debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to create LVGL task");
     ESP_LOGE(TAG, "Failed to create LVGL task on core 1, result: %d", result);
   }
 }
@@ -299,12 +305,14 @@ static void lvgl_port_task(void *arg)
 
 lv_indev_t *lvgl_setup_init_touch(void)
 {
+  debug_log_event(DEBUG_TAG_GT911_TOUCH, "Initializing GT911 touch controller");
   ESP_LOGI(TAG, "Initializing GT911 touch controller...");
 
   // Initialize GT911 hardware
   esp_err_t ret = gt911_init();
   if (ret != ESP_OK)
   {
+    debug_log_error(DEBUG_TAG_GT911_TOUCH, "GT911 initialization failed");
     ESP_LOGE(TAG, "GT911 initialization failed: %s", esp_err_to_name(ret));
     return NULL;
   }
@@ -313,6 +321,7 @@ lv_indev_t *lvgl_setup_init_touch(void)
   lv_indev_t *indev = lv_indev_create();
   if (!indev)
   {
+    debug_log_error(DEBUG_TAG_GT911_TOUCH, "Failed to create LVGL input device");
     ESP_LOGE(TAG, "Failed to create LVGL input device");
     gt911_deinit();
     return NULL;
@@ -322,6 +331,7 @@ lv_indev_t *lvgl_setup_init_touch(void)
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, gt911_lvgl_read);
 
+  debug_log_event(DEBUG_TAG_GT911_TOUCH, "Touch controller initialized successfully");
   ESP_LOGI(TAG, "GT911 touch controller initialized successfully");
   return indev;
 }
