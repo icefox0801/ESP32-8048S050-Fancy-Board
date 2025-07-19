@@ -10,7 +10,6 @@
 #include "esp_heap_caps.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_rgb.h"
-#include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -21,7 +20,6 @@
 #include <sys/lock.h>
 #include <unistd.h>
 
-static const char *TAG = "lvgl_setup";
 static _lock_t lvgl_api_lock;
 
 // Static function prototypes (ordered by call sequence)
@@ -48,11 +46,11 @@ void lvgl_setup_set_backlight(uint32_t level)
   gpio_set_level(PIN_NUM_BK_LIGHT, level);
   if (level == LCD_BK_LIGHT_ON_LEVEL)
   {
-    ESP_LOGI(TAG, "LCD backlight turned ON");
+    debug_log_info(DEBUG_TAG_LVGL_SETUP, "LCD backlight turned ON");
   }
   else if (level == LCD_BK_LIGHT_OFF_LEVEL)
   {
-    ESP_LOGI(TAG, "LCD backlight turned OFF");
+    debug_log_info(DEBUG_TAG_LVGL_SETUP, "LCD backlight turned OFF");
   }
 #endif
 }
@@ -81,7 +79,6 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
   if (!display)
   {
     debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to create LVGL display");
-    ESP_LOGE(TAG, "Failed to create LVGL display");
     return NULL;
   }
 
@@ -96,31 +93,31 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 #if CONFIG_EXAMPLE_USE_DOUBLE_FB
   ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2));
   lv_display_set_buffers(display, buf1, buf2, LCD_H_RES * LCD_V_RES * LCD_PIXEL_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
-  ESP_LOGI(TAG, "Using double framebuffer mode");
+  debug_log_info(DEBUG_TAG_LVGL_SETUP, "Using double framebuffer mode");
 #else
   size_t draw_buffer_sz = LCD_H_RES * LVGL_DRAW_BUF_LINES * LCD_PIXEL_SIZE;
   // Use PSRAM for large draw buffer instead of internal RAM
   buf1 = heap_caps_malloc(draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if (!buf1)
   {
-    ESP_LOGW(TAG, "Failed to allocate LVGL draw buffer in PSRAM, trying internal RAM with smaller size");
+    debug_log_warning(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer in PSRAM, trying internal RAM");
     // Fallback to smaller buffer in internal RAM
     size_t fallback_buffer_sz = LCD_H_RES * 10 * LCD_PIXEL_SIZE; // 10 lines instead of 50
     buf1 = heap_caps_malloc(fallback_buffer_sz, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     if (!buf1)
     {
-      ESP_LOGE(TAG, "Failed to allocate LVGL draw buffer in both PSRAM and internal RAM");
+      debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer");
       return NULL;
     }
     draw_buffer_sz = fallback_buffer_sz;
-    ESP_LOGI(TAG, "Using fallback buffer: %zu bytes in internal RAM at %p", draw_buffer_sz, buf1);
+    debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "Using fallback buffer: %zu bytes in internal RAM", draw_buffer_sz);
   }
   else
   {
-    ESP_LOGI(TAG, "LVGL draw buffer allocated in PSRAM: %zu bytes at %p", draw_buffer_sz, buf1);
+    debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "LVGL draw buffer allocated in PSRAM: %zu bytes", draw_buffer_sz);
   }
 
-  ESP_LOGI(TAG, "LVGL draw buffer allocated: %zu bytes at %p", draw_buffer_sz, buf1);
+  debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "LVGL draw buffer allocated: %zu bytes", draw_buffer_sz);
   lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
 #endif
 
@@ -147,17 +144,15 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 void lvgl_setup_start_task(void)
 {
   debug_log_event(DEBUG_TAG_LVGL_SETUP, "Starting LVGL task on core 1");
-  ESP_LOGI(TAG, "Creating LVGL task on core 1 with priority %d, stack size %d", LVGL_TASK_PRIORITY, LVGL_TASK_STACK_SIZE);
+  debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "Creating LVGL task with priority %d, stack size %d", LVGL_TASK_PRIORITY, LVGL_TASK_STACK_SIZE);
   BaseType_t result = xTaskCreatePinnedToCore(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL, 1);
   if (result == pdPASS)
   {
     debug_log_event(DEBUG_TAG_LVGL_SETUP, "LVGL task created successfully");
-    ESP_LOGI(TAG, "LVGL task created successfully on core 1");
   }
   else
   {
-    debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to create LVGL task");
-    ESP_LOGE(TAG, "Failed to create LVGL task on core 1, result: %d", result);
+    debug_log_error_f(DEBUG_TAG_LVGL_SETUP, "Failed to create LVGL task, result: %d", result);
   }
 }
 
@@ -306,14 +301,12 @@ static void lvgl_port_task(void *arg)
 lv_indev_t *lvgl_setup_init_touch(void)
 {
   debug_log_event(DEBUG_TAG_GT911_TOUCH, "Initializing GT911 touch controller");
-  ESP_LOGI(TAG, "Initializing GT911 touch controller...");
 
   // Initialize GT911 hardware
   esp_err_t ret = gt911_init();
   if (ret != ESP_OK)
   {
-    debug_log_error(DEBUG_TAG_GT911_TOUCH, "GT911 initialization failed");
-    ESP_LOGE(TAG, "GT911 initialization failed: %s", esp_err_to_name(ret));
+    debug_log_error_f(DEBUG_TAG_GT911_TOUCH, "GT911 initialization failed: %s", esp_err_to_name(ret));
     return NULL;
   }
 
@@ -322,7 +315,6 @@ lv_indev_t *lvgl_setup_init_touch(void)
   if (!indev)
   {
     debug_log_error(DEBUG_TAG_GT911_TOUCH, "Failed to create LVGL input device");
-    ESP_LOGE(TAG, "Failed to create LVGL input device");
     gt911_deinit();
     return NULL;
   }
@@ -332,6 +324,5 @@ lv_indev_t *lvgl_setup_init_touch(void)
   lv_indev_set_read_cb(indev, gt911_lvgl_read);
 
   debug_log_event(DEBUG_TAG_GT911_TOUCH, "Touch controller initialized successfully");
-  ESP_LOGI(TAG, "GT911 touch controller initialized successfully");
   return indev;
 }

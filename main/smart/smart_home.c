@@ -14,15 +14,11 @@
 #include "ha_api.h"
 #include "ha_sync.h"
 #include "esp_timer.h"
-#include "../utils/system_debug_utils.h"
-
-#include <esp_log.h>
+#include "system_debug_utils.h"
 #include <esp_err.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
-static const char *TAG = "SmartHome";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE VARIABLES
@@ -48,12 +44,12 @@ esp_err_t smart_home_init(void)
   esp_err_t ret = ha_api_init();
   if (ret != ESP_OK)
   {
-    ESP_LOGE(TAG, "Failed to initialize HA API: %s", esp_err_to_name(ret));
+    debug_log_error_f(DEBUG_TAG_SMART_HOME, "Failed to initialize HA API: %s", esp_err_to_name(ret));
     return ret;
   }
 
   smart_home_initialized = true;
-  ESP_LOGI(TAG, "Smart Home integration initialized successfully");
+  debug_log_event(DEBUG_TAG_SMART_HOME, "Smart Home integration initialized successfully");
 
   return ESP_OK;
 }
@@ -89,11 +85,11 @@ esp_err_t smart_home_test_connection(void)
 
   if (ret == ESP_OK)
   {
-    ESP_LOGI(TAG, "Home Assistant connection test successful");
+    debug_log_event(DEBUG_TAG_SMART_HOME, "Home Assistant connection test successful");
   }
   else
   {
-    ESP_LOGE(TAG, "Home Assistant connection test failed: %s", esp_err_to_name(ret));
+    debug_log_error_f(DEBUG_TAG_SMART_HOME, "Home Assistant connection test failed: %s", esp_err_to_name(ret));
   }
 
   return ret;
@@ -103,15 +99,15 @@ esp_err_t smart_home_control_switch(const char *entity_id, bool turn_on)
 {
   if (!smart_home_initialized || !entity_id)
   {
-    ESP_LOGE(TAG, "Invalid parameters - initialized: %d, entity_id: %s",
-             smart_home_initialized, entity_id ? entity_id : "NULL");
+    debug_log_error_f(DEBUG_TAG_SMART_HOME, "Invalid parameters - initialized: %d, entity_id: %s",
+                      smart_home_initialized, entity_id ? entity_id : "NULL");
     return ESP_ERR_INVALID_ARG;
   }
 
   const char *action = turn_on ? "ON" : "OFF";
   const char *emoji = turn_on ? "🔵" : "🔴";
 
-  ESP_LOGI(TAG, "%s SWITCH CONTROL: %s → %s", emoji, entity_id, action);
+  debug_log_info_f(DEBUG_TAG_SMART_HOME, "%s SWITCH CONTROL: %s → %s", emoji, entity_id, action);
 
   esp_err_t result;
   if (turn_on)
@@ -125,11 +121,11 @@ esp_err_t smart_home_control_switch(const char *entity_id, bool turn_on)
 
   if (result == ESP_OK)
   {
-    ESP_LOGI(TAG, "✅ Switch %s turned %s successfully", entity_id, action);
+    debug_log_info_f(DEBUG_TAG_SMART_HOME, "✅ Switch %s turned %s successfully", entity_id, action);
   }
   else
   {
-    ESP_LOGE(TAG, "❌ Failed to turn %s switch %s: %s", action, entity_id, esp_err_to_name(result));
+    debug_log_error_f(DEBUG_TAG_SMART_HOME, "❌ Failed to turn %s switch %s: %s", action, entity_id, esp_err_to_name(result));
   }
 
   return result;
@@ -142,7 +138,7 @@ esp_err_t smart_home_trigger_scene(void)
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_LOGI(TAG, "Triggering scene button");
+  debug_log_event(DEBUG_TAG_SMART_HOME, "Triggering scene button");
 
   // For scene entities, we use the scene.turn_on service
   ha_service_call_t scene_call = {

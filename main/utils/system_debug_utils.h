@@ -78,6 +78,51 @@ extern "C"
    */
   void debug_print_memory_usage(debug_tag_t tag, void *task_handle);
 
+  /**
+   * @brief Log general information messages
+   * @param tag Debug tag identifying the component
+   * @param info_msg Information message
+   */
+  void debug_log_info(debug_tag_t tag, const char *info_msg);
+
+  /**
+   * @brief Log warning messages
+   * @param tag Debug tag identifying the component
+   * @param warning_msg Warning message
+   */
+  void debug_log_warning(debug_tag_t tag, const char *warning_msg);
+
+  /**
+   * @brief Log debug messages (verbose)
+   * @param tag Debug tag identifying the component
+   * @param debug_msg Debug message
+   */
+  void debug_log_debug(debug_tag_t tag, const char *debug_msg);
+
+  /**
+   * @brief Log formatted information messages
+   * @param tag Debug tag identifying the component
+   * @param format Printf-style format string
+   * @param ... Variable arguments
+   */
+  void debug_log_info_f(debug_tag_t tag, const char *format, ...);
+
+  /**
+   * @brief Log formatted error messages
+   * @param tag Debug tag identifying the component
+   * @param format Printf-style format string
+   * @param ... Variable arguments
+   */
+  void debug_log_error_f(debug_tag_t tag, const char *format, ...);
+
+  /**
+   * @brief Log formatted warning messages
+   * @param tag Debug tag identifying the component
+   * @param format Printf-style format string
+   * @param ... Variable arguments
+   */
+  void debug_log_warning_f(debug_tag_t tag, const char *format, ...);
+
 #ifdef __cplusplus
 }
 #endif

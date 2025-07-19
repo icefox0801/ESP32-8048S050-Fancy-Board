@@ -17,7 +17,7 @@
 
 #include "ui_dashboard.h"
 
-#include "esp_log.h"
+#include "system_debug_utils.h"
 #include "lvgl_setup.h"
 #include "ui_config.h"
 #include "ui_helpers.h"
@@ -30,8 +30,6 @@
 #include "smart/smart_config.h"
 #include <stdio.h>
 #include <time.h>
-
-static const char *TAG = "ui_dashboard";
 
 /**
  * @brief Create the complete dashboard UI
@@ -52,7 +50,7 @@ void ui_dashboard_create(lv_display_t *disp)
   create_memory_panel(screen);
   create_status_info_panel(screen);
 
-  ESP_LOGI(TAG, "Dashboard UI created successfully");
+  debug_log_info(DEBUG_TAG_UI_DASHBOARD, "Dashboard UI created successfully");
 }
 
 /**

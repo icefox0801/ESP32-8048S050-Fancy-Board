@@ -12,6 +12,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
+#include <stdarg.h>
+#include <stdio.h>
 
 #ifdef CONFIG_SYSTEM_DEBUG_ENABLED
 
@@ -98,6 +100,63 @@ void debug_print_memory_usage(debug_tag_t tag, void *task_handle)
   }
 }
 
+void debug_log_info(debug_tag_t tag, const char *info_msg)
+{
+  if (tag < DEBUG_TAG_MAX && info_msg)
+  {
+    ESP_LOGI(debug_tag_strings[tag], "%s", info_msg);
+  }
+}
+
+void debug_log_warning(debug_tag_t tag, const char *warning_msg)
+{
+  if (tag < DEBUG_TAG_MAX && warning_msg)
+  {
+    ESP_LOGW(debug_tag_strings[tag], "%s", warning_msg);
+  }
+}
+
+void debug_log_debug(debug_tag_t tag, const char *debug_msg)
+{
+  if (tag < DEBUG_TAG_MAX && debug_msg)
+  {
+    ESP_LOGD(debug_tag_strings[tag], "%s", debug_msg);
+  }
+}
+
+void debug_log_info_f(debug_tag_t tag, const char *format, ...)
+{
+  if (tag >= DEBUG_TAG_MAX || !format)
+    return;
+
+  va_list args;
+  va_start(args, format);
+  esp_log_writev(ESP_LOG_INFO, debug_tag_strings[tag], format, args);
+  va_end(args);
+}
+
+void debug_log_error_f(debug_tag_t tag, const char *format, ...)
+{
+  if (tag >= DEBUG_TAG_MAX || !format)
+    return;
+
+  va_list args;
+  va_start(args, format);
+  esp_log_writev(ESP_LOG_ERROR, debug_tag_strings[tag], format, args);
+  va_end(args);
+}
+
+void debug_log_warning_f(debug_tag_t tag, const char *format, ...)
+{
+  if (tag >= DEBUG_TAG_MAX || !format)
+    return;
+
+  va_list args;
+  va_start(args, format);
+  esp_log_writev(ESP_LOG_WARN, debug_tag_strings[tag], format, args);
+  va_end(args);
+}
+
 #else
 
 // Empty implementations when debug is disabled
@@ -135,6 +194,42 @@ void debug_print_memory_usage(debug_tag_t tag, void *task_handle)
 {
   (void)tag;
   (void)task_handle;
+}
+
+void debug_log_info(debug_tag_t tag, const char *info_msg)
+{
+  (void)tag;
+  (void)info_msg;
+}
+
+void debug_log_warning(debug_tag_t tag, const char *warning_msg)
+{
+  (void)tag;
+  (void)warning_msg;
+}
+
+void debug_log_debug(debug_tag_t tag, const char *debug_msg)
+{
+  (void)tag;
+  (void)debug_msg;
+}
+
+void debug_log_info_f(debug_tag_t tag, const char *format, ...)
+{
+  (void)tag;
+  (void)format;
+}
+
+void debug_log_error_f(debug_tag_t tag, const char *format, ...)
+{
+  (void)tag;
+  (void)format;
+}
+
+void debug_log_warning_f(debug_tag_t tag, const char *format, ...)
+{
+  (void)tag;
+  (void)format;
 }
 
 #endif

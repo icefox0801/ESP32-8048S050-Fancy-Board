@@ -13,14 +13,11 @@
 #include "ui_dashboard.h"
 #include "ui_controls_panel.h"
 #include "system_debug_utils.h"
-#include "esp_log.h"
 #include "esp_task_wdt.h"
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <string.h>
-
-static const char *TAG = "ha_task_mgr";
 
 // Task management
 static TaskHandle_t ha_task_handle = NULL;
@@ -192,7 +189,7 @@ static void home_assistant_task(void *pvParameters)
 esp_err_t ha_task_manager_init(void)
 {
   debug_log_startup(DEBUG_TAG_HA_TASK_MGR, "Home Assistant Task Manager");
-  ESP_LOGI(TAG, "Initializing Home Assistant task manager");
+  debug_log_info(DEBUG_TAG_HA_TASK_MGR, "Initializing Home Assistant task manager");
 
   ha_initialized = false;
   immediate_sync_requested = false;
