@@ -29,8 +29,6 @@ static const char *TAG = "SmartHome";
 // ═══════════════════════════════════════════════════════════════════════════════
 
 static bool smart_home_initialized = false;
-static smart_home_event_callback_t event_callback = NULL;
-static void *callback_user_data = NULL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PUBLIC FUNCTION IMPLEMENTATIONS
@@ -73,8 +71,6 @@ esp_err_t smart_home_deinit(void)
   ha_api_deinit();
 
   smart_home_initialized = false;
-  event_callback = NULL;
-  callback_user_data = NULL;
 
   ESP_LOGI(TAG, "Smart Home integration deinitialized");
   return ESP_OK;
