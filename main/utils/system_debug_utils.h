@@ -123,6 +123,14 @@ extern "C"
    */
   void debug_log_warning_f(debug_tag_t tag, const char *format, ...);
 
+  /**
+   * @brief Log formatted debug messages (verbose)
+   * @param tag Debug tag identifying the component
+   * @param format Printf-style format string
+   * @param ... Variable arguments
+   */
+  void debug_log_debug_f(debug_tag_t tag, const char *format, ...);
+
 #ifdef __cplusplus
 }
 #endif

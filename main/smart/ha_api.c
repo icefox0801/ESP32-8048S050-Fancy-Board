@@ -10,16 +10,10 @@
 
 #include "ha_api.h"
 #include "smart_config.h"
-#include <esp_log.h>
+#include "../utils/system_debug_utils.h"
 #include <esp_http_client.h>
 #include <string.h>
 #include <stdio.h>
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONSTANTS AND CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
-
-static const char *TAG = "HA_API";
 
 /** HTTP User-Agent string */
 #define USER_AGENT "ESP32-SystemMonitor/1.0"
@@ -124,12 +118,12 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     return ESP_ERR_INVALID_STATE;
   }
 
-  ESP_LOGI(TAG, "=== HTTP REQUEST START ===");
-  ESP_LOGI(TAG, "Method: %s", method);
-  ESP_LOGI(TAG, "URL: %s", url);
+  debug_log_info(DEBUG_TAG_HA_API, "=== HTTP REQUEST START ===");
+  debug_log_info_f(DEBUG_TAG_HA_API, "Method: %s", method);
+  debug_log_info_f(DEBUG_TAG_HA_API, "URL: %s", url);
   if (post_data)
   {
-    ESP_LOGI(TAG, "POST Data: %s", post_data);
+    debug_log_info_f(DEBUG_TAG_HA_API, "POST Data: %s", post_data);
   }
 
   esp_err_t err = ESP_FAIL;
@@ -140,7 +134,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     esp_http_client_handle_t client = create_http_client(url);
     if (client == NULL)
     {
-      ESP_LOGE(TAG, "Failed to create HTTP client");
+      debug_log_error(DEBUG_TAG_HA_API, "Failed to create HTTP client");
       continue;
     }
 
@@ -170,25 +164,25 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     }
 
     // Perform request
-    ESP_LOGI(TAG, "Sending HTTP request (attempt %d/%d)...", retry + 1, HA_SYNC_RETRY_COUNT);
+    debug_log_info_f(DEBUG_TAG_HA_API, "Sending HTTP request (attempt %d/%d)...", retry + 1, HA_SYNC_RETRY_COUNT);
     err = esp_http_client_perform(client);
 
     // Get status code for logging
     status_code = esp_http_client_get_status_code(client);
-    ESP_LOGI(TAG, "HTTP Status Code: %d", status_code);
+    debug_log_info_f(DEBUG_TAG_HA_API, "HTTP Status Code: %d", status_code);
 
     esp_http_client_cleanup(client);
 
     if (err == ESP_OK)
     {
-      ESP_LOGI(TAG, "HTTP request successful (attempt %d)", retry + 1);
-      ESP_LOGI(TAG, "=== HTTP REQUEST SUCCESS ===");
+      debug_log_info_f(DEBUG_TAG_HA_API, "HTTP request successful (attempt %d)", retry + 1);
+      debug_log_info(DEBUG_TAG_HA_API, "=== HTTP REQUEST SUCCESS ===");
       break;
     }
     else
     {
-      ESP_LOGW(TAG, "HTTP request failed (attempt %d/%d): %s (status: %d)",
-               retry + 1, HA_SYNC_RETRY_COUNT, esp_err_to_name(err), status_code);
+      debug_log_warning_f(DEBUG_TAG_HA_API, "HTTP request failed (attempt %d/%d): %s (status: %d)",
+                          retry + 1, HA_SYNC_RETRY_COUNT, esp_err_to_name(err), status_code);
       if (response)
       {
         snprintf(response->error_message, sizeof(response->error_message),
@@ -199,14 +193,14 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     // Wait before retry
     if (retry < HA_SYNC_RETRY_COUNT - 1)
     {
-      ESP_LOGI(TAG, "Waiting %d seconds before retry...", retry + 1);
+      debug_log_info_f(DEBUG_TAG_HA_API, "Waiting %d seconds before retry...", retry + 1);
       vTaskDelay(pdMS_TO_TICKS(1000 * (retry + 1))); // Progressive backoff
     }
   }
 
   if (err != ESP_OK)
   {
-    ESP_LOGE(TAG, "=== HTTP REQUEST FAILED === (Final status: %d, Error: %s)", status_code, esp_err_to_name(err));
+    debug_log_error_f(DEBUG_TAG_HA_API, "=== HTTP REQUEST FAILED === (Final status: %d, Error: %s)", status_code, esp_err_to_name(err));
   }
 
   return err;
@@ -220,43 +214,43 @@ esp_err_t ha_api_init(void)
 {
   if (ha_api_initialized)
   {
-    ESP_LOGW(TAG, "Home Assistant API already initialized");
+    debug_log_warning(DEBUG_TAG_HA_API, "Home Assistant API already initialized");
     return ESP_OK;
   }
 
-  ESP_LOGI(TAG, "Initializing Home Assistant API client...");
+  debug_log_info(DEBUG_TAG_HA_API, "Initializing Home Assistant API client...");
 
   // Check if constants are properly defined
   if (HA_API_TOKEN == NULL || strlen(HA_API_TOKEN) == 0)
   {
-    ESP_LOGE(TAG, "HA API Token is not defined or empty");
+    debug_log_error(DEBUG_TAG_HA_API, "HA API Token is not defined or empty");
     return ESP_ERR_INVALID_ARG;
   }
 
   if (HA_SERVER_HOST_NAME == NULL || strlen(HA_SERVER_HOST_NAME) == 0)
   {
-    ESP_LOGE(TAG, "HA Server Host Name is not defined or empty");
+    debug_log_error(DEBUG_TAG_HA_API, "HA Server Host Name is not defined or empty");
     return ESP_ERR_INVALID_ARG;
   }
 
-  ESP_LOGI(TAG, "HA Server: %s:%d", HA_SERVER_HOST_NAME, HA_SERVER_PORT);
-  ESP_LOGI(TAG, "Token length: %d", strlen(HA_API_TOKEN));
+  debug_log_info_f(DEBUG_TAG_HA_API, "HA Server: %s:%d", HA_SERVER_HOST_NAME, HA_SERVER_PORT);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Token length: %d", strlen(HA_API_TOKEN));
 
   // Format authorization header with error checking
   int ret = snprintf(auth_header, sizeof(auth_header), AUTH_HEADER_TEMPLATE, HA_API_TOKEN);
   if (ret < 0 || ret >= sizeof(auth_header))
   {
-    ESP_LOGE(TAG, "Failed to format authorization header: %d", ret);
+    debug_log_error_f(DEBUG_TAG_HA_API, "Failed to format authorization header: %d", ret);
     return ESP_ERR_NO_MEM;
   }
 
-  ESP_LOGI(TAG, "Authorization header formatted successfully");
+  debug_log_info(DEBUG_TAG_HA_API, "Authorization header formatted successfully");
 
   ha_api_initialized = true;
 
-  ESP_LOGI(TAG, "Home Assistant API client initialized (Server: %s:%d)",
-           HA_SERVER_HOST_NAME, HA_SERVER_PORT);
-  ESP_LOGI(TAG, "Base URL: %s", HA_API_BASE_URL);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Home Assistant API client initialized (Server: %s:%d)",
+                   HA_SERVER_HOST_NAME, HA_SERVER_PORT);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Base URL: %s", HA_API_BASE_URL);
 
   return ESP_OK;
 }
@@ -268,7 +262,7 @@ esp_err_t ha_api_deinit(void)
     return ESP_OK;
   }
 
-  ESP_LOGI(TAG, "Deinitializing Home Assistant API client");
+  debug_log_info(DEBUG_TAG_HA_API, "Deinitializing Home Assistant API client");
 
   ha_api_initialized = false;
   memset(auth_header, 0, sizeof(auth_header));
@@ -278,18 +272,18 @@ esp_err_t ha_api_deinit(void)
 
 esp_err_t ha_api_test_connection(void)
 {
-  ESP_LOGI(TAG, "Testing connection to Home Assistant...");
+  debug_log_info(DEBUG_TAG_HA_API, "Testing connection to Home Assistant...");
 
   ha_api_response_t response;
   esp_err_t err = perform_http_request(HA_API_BASE_URL, "GET", NULL, &response);
 
   if (err == ESP_OK && response.success)
   {
-    ESP_LOGI(TAG, "Connection test successful (Status: %d)", response.status_code);
+    debug_log_info_f(DEBUG_TAG_HA_API, "Connection test successful (Status: %d)", response.status_code);
   }
   else
   {
-    ESP_LOGE(TAG, "Connection test failed: %s", response.error_message);
+    debug_log_error_f(DEBUG_TAG_HA_API, "Connection test failed: %s", response.error_message);
   }
 
   ha_api_free_response(&response);
@@ -325,7 +319,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     return ESP_ERR_INVALID_ARG;
   }
 
-  ESP_LOGI(TAG, "Fetching %d entity states in bulk", entity_count);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states in bulk", entity_count);
 
   // Use the bulk states API endpoint
   char url[128];
@@ -354,7 +348,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
         // Safety check to prevent processing too many entities
         if (++processed_count > MAX_ENTITIES_TO_PROCESS)
         {
-          ESP_LOGW(TAG, "Reached maximum entity processing limit (%d), stopping search", MAX_ENTITIES_TO_PROCESS);
+          debug_log_warning_f(DEBUG_TAG_HA_API, "Reached maximum entity processing limit (%d), stopping search", MAX_ENTITIES_TO_PROCESS);
           break;
         }
         cJSON *entity_id_json = cJSON_GetObjectItem(entity_json, "entity_id");
@@ -381,11 +375,11 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
                 states[i].state[HA_MAX_STATE_LEN - 1] = '\0';
 
                 found_count++;
-                ESP_LOGD(TAG, "Found state for %s: %s", entity_id, states[i].state);
+                debug_log_debug_f(DEBUG_TAG_HA_API, "Found state for %s: %s", entity_id, states[i].state);
               }
               else
               {
-                ESP_LOGW(TAG, "Entity %s has no valid state", entity_id);
+                debug_log_warning_f(DEBUG_TAG_HA_API, "Entity %s has no valid state", entity_id);
               }
               break;
             }
@@ -394,7 +388,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
           // Early exit if we found all entities
           if (found_count >= entity_count)
           {
-            ESP_LOGI(TAG, "Found all %d entities, stopping search early", entity_count);
+            debug_log_info_f(DEBUG_TAG_HA_API, "Found all %d entities, stopping search early", entity_count);
             break;
           }
         }
@@ -404,23 +398,23 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
 
       if (found_count == entity_count)
       {
-        ESP_LOGI(TAG, "Successfully fetched all %d entity states", entity_count);
+        debug_log_info_f(DEBUG_TAG_HA_API, "Successfully fetched all %d entity states", entity_count);
         err = ESP_OK;
       }
       else if (found_count > 0)
       {
-        ESP_LOGW(TAG, "Found only %d/%d entity states", found_count, entity_count);
+        debug_log_warning_f(DEBUG_TAG_HA_API, "Found only %d/%d entity states", found_count, entity_count);
         err = ESP_ERR_NOT_FOUND;
       }
       else
       {
-        ESP_LOGE(TAG, "No matching entities found");
+        debug_log_error(DEBUG_TAG_HA_API, "No matching entities found");
         err = ESP_ERR_NOT_FOUND;
       }
     }
     else
     {
-      ESP_LOGE(TAG, "Failed to parse bulk states response");
+      debug_log_error(DEBUG_TAG_HA_API, "Failed to parse bulk states response");
       err = ESP_ERR_INVALID_RESPONSE;
     }
   }
@@ -456,10 +450,10 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
   char *json_string = cJSON_Print(json);
 
-  ESP_LOGI(TAG, "=== SERVICE CALL START ===");
-  ESP_LOGI(TAG, "Service: %s.%s", service_call->domain, service_call->service);
-  ESP_LOGI(TAG, "Entity: %s", service_call->entity_id);
-  ESP_LOGI(TAG, "Service data: %s", json_string);
+  debug_log_info(DEBUG_TAG_HA_API, "=== SERVICE CALL START ===");
+  debug_log_info_f(DEBUG_TAG_HA_API, "Service: %s.%s", service_call->domain, service_call->service);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Entity: %s", service_call->entity_id);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Service data: %s", json_string);
 
   ha_api_response_t local_response;
   ha_api_response_t *resp = response ? response : &local_response;
@@ -468,16 +462,16 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
   if (err == ESP_OK && resp->success)
   {
-    ESP_LOGI(TAG, "=== SERVICE CALL SUCCESS ===");
-    ESP_LOGI(TAG, "Service %s.%s executed successfully for %s",
-             service_call->domain, service_call->service, service_call->entity_id);
+    debug_log_info(DEBUG_TAG_HA_API, "=== SERVICE CALL SUCCESS ===");
+    debug_log_info_f(DEBUG_TAG_HA_API, "Service %s.%s executed successfully for %s",
+                     service_call->domain, service_call->service, service_call->entity_id);
   }
   else
   {
-    ESP_LOGE(TAG, "=== SERVICE CALL FAILED ===");
-    ESP_LOGE(TAG, "Service %s.%s failed for %s: %s",
-             service_call->domain, service_call->service, service_call->entity_id,
-             resp->error_message[0] ? resp->error_message : "Unknown error");
+    debug_log_error(DEBUG_TAG_HA_API, "=== SERVICE CALL FAILED ===");
+    debug_log_error_f(DEBUG_TAG_HA_API, "Service %s.%s failed for %s: %s",
+                      service_call->domain, service_call->service, service_call->entity_id,
+                      resp->error_message[0] ? resp->error_message : "Unknown error");
   }
 
   // Cleanup
@@ -505,7 +499,7 @@ esp_err_t ha_api_toggle_switch(const char *entity_id)
 
 esp_err_t ha_api_turn_on_switch(const char *entity_id)
 {
-  ESP_LOGI(TAG, ">>> TURN ON SWITCH: %s", entity_id);
+  debug_log_info_f(DEBUG_TAG_HA_API, ">>> TURN ON SWITCH: %s", entity_id);
 
   ha_service_call_t service_call = {
       .domain = "switch",
@@ -518,11 +512,11 @@ esp_err_t ha_api_turn_on_switch(const char *entity_id)
 
   if (result == ESP_OK)
   {
-    ESP_LOGI(TAG, "<<< TURN ON SUCCESS: %s", entity_id);
+    debug_log_info_f(DEBUG_TAG_HA_API, "<<< TURN ON SUCCESS: %s", entity_id);
   }
   else
   {
-    ESP_LOGE(TAG, "<<< TURN ON FAILED: %s (Error: %s)", entity_id, esp_err_to_name(result));
+    debug_log_error_f(DEBUG_TAG_HA_API, "<<< TURN ON FAILED: %s (Error: %s)", entity_id, esp_err_to_name(result));
   }
 
   ha_api_free_response(&response);
@@ -531,7 +525,7 @@ esp_err_t ha_api_turn_on_switch(const char *entity_id)
 
 esp_err_t ha_api_turn_off_switch(const char *entity_id)
 {
-  ESP_LOGI(TAG, ">>> TURN OFF SWITCH: %s", entity_id);
+  debug_log_info_f(DEBUG_TAG_HA_API, ">>> TURN OFF SWITCH: %s", entity_id);
 
   ha_service_call_t service_call = {
       .domain = "switch",
@@ -544,11 +538,11 @@ esp_err_t ha_api_turn_off_switch(const char *entity_id)
 
   if (result == ESP_OK)
   {
-    ESP_LOGI(TAG, "<<< TURN OFF SUCCESS: %s", entity_id);
+    debug_log_info_f(DEBUG_TAG_HA_API, "<<< TURN OFF SUCCESS: %s", entity_id);
   }
   else
   {
-    ESP_LOGE(TAG, "<<< TURN OFF FAILED: %s (Error: %s)", entity_id, esp_err_to_name(result));
+    debug_log_error_f(DEBUG_TAG_HA_API, "<<< TURN OFF FAILED: %s (Error: %s)", entity_id, esp_err_to_name(result));
   }
 
   ha_api_free_response(&response);
@@ -585,7 +579,7 @@ esp_err_t ha_api_parse_entity_state(const char *json_str, ha_entity_state_t *sta
   cJSON *json = cJSON_Parse(json_str);
   if (json == NULL)
   {
-    ESP_LOGE(TAG, "Failed to parse JSON response");
+    debug_log_error(DEBUG_TAG_HA_API, "Failed to parse JSON response");
     return ESP_ERR_INVALID_RESPONSE;
   }
 

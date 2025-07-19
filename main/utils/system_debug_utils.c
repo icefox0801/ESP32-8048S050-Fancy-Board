@@ -157,6 +157,17 @@ void debug_log_warning_f(debug_tag_t tag, const char *format, ...)
   va_end(args);
 }
 
+void debug_log_debug_f(debug_tag_t tag, const char *format, ...)
+{
+  if (tag >= DEBUG_TAG_MAX || !format)
+    return;
+
+  va_list args;
+  va_start(args, format);
+  esp_log_writev(ESP_LOG_DEBUG, debug_tag_strings[tag], format, args);
+  va_end(args);
+}
+
 #else
 
 // Empty implementations when debug is disabled
@@ -227,6 +238,12 @@ void debug_log_error_f(debug_tag_t tag, const char *format, ...)
 }
 
 void debug_log_warning_f(debug_tag_t tag, const char *format, ...)
+{
+  (void)tag;
+  (void)format;
+}
+
+void debug_log_debug_f(debug_tag_t tag, const char *format, ...)
 {
   (void)tag;
   (void)format;

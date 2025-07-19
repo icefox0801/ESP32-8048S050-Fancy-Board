@@ -1,6 +1,9 @@
 /**
  * @file gt911_touch.c
- * @brief GT911 Capacitive Touch Controller Driver for ESP32-S3-8048S050
+ * @brief GT911 Capacitiv  esp_err_t ret = i2c_param_config(GT911_I2C_MASTER_NUM, &conf);
+  if (ret != ESP_OK)
+  {
+    debug_log_error_f(DEBUG_TAG_GT911_TOUCH, "I2C param config failed: %s", esp_err_to_name(ret));uch Controller Driver for ESP32-S3-8048S050
  *
  * This driver provides complete GT911 touch controller support including:
  * - I2C communication and initialization
@@ -11,14 +14,12 @@
  */
 
 #include "gt911_touch.h"
+#include "system_debug_utils.h"
 
 #include "driver/gpio.h"
-#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <string.h>
-
-static const char *TAG = "gt911_touch";
 
 // Static variables
 static bool gt911_initialized = false;
@@ -57,18 +58,18 @@ static esp_err_t gt911_i2c_init(void)
   esp_err_t ret = i2c_param_config(GT911_I2C_NUM, &conf);
   if (ret != ESP_OK)
   {
-    ESP_LOGE(TAG, "I2C param config failed: %s", esp_err_to_name(ret));
+    debug_log_error_f(DEBUG_TAG_GT911_TOUCH, "I2C param config failed: %s", esp_err_to_name(ret));
     return ret;
   }
 
   ret = i2c_driver_install(GT911_I2C_NUM, conf.mode, 0, 0, 0);
   if (ret != ESP_OK)
   {
-    ESP_LOGE(TAG, "I2C driver install failed: %s", esp_err_to_name(ret));
+    debug_log_error_f(DEBUG_TAG_GT911_TOUCH, "I2C driver install failed: %s", esp_err_to_name(ret));
     return ret;
   }
 
-  ESP_LOGI(TAG, "I2C initialized successfully");
+  debug_log_info(DEBUG_TAG_GT911_TOUCH, "I2C initialized successfully");
   return ESP_OK;
 }
 
@@ -94,7 +95,7 @@ static esp_err_t gt911_i2c_write_reg(uint16_t reg_addr, uint8_t *data, size_t le
 
   if (ret != ESP_OK)
   {
-    ESP_LOGW(TAG, "I2C write failed: %s", esp_err_to_name(ret));
+    debug_log_warning_f(DEBUG_TAG_GT911_TOUCH, "I2C write failed: %s", esp_err_to_name(ret));
   }
 
   return ret;
@@ -131,7 +132,7 @@ static esp_err_t gt911_i2c_read_reg(uint16_t reg_addr, uint8_t *data, size_t len
 
   if (ret != ESP_OK)
   {
-    ESP_LOGW(TAG, "I2C read failed: %s", esp_err_to_name(ret));
+    debug_log_warning_f(DEBUG_TAG_GT911_TOUCH, "I2C read failed: %s", esp_err_to_name(ret));
   }
 
   return ret;
@@ -173,7 +174,7 @@ static esp_err_t gt911_hardware_reset(void)
 
   vTaskDelay(pdMS_TO_TICKS(50)); // Additional stabilization time
 
-  ESP_LOGI(TAG, "GT911 hardware reset completed");
+  debug_log_info(DEBUG_TAG_GT911_TOUCH, "GT911 hardware reset completed");
   return ESP_OK;
 }
 
@@ -188,7 +189,7 @@ static esp_err_t gt911_detect_i2c_address(void)
   gt911_i2c_addr = GT911_I2C_ADDR_1;
   if (gt911_i2c_read_reg(GT911_REG_ID, &test_data, 1) == ESP_OK)
   {
-    ESP_LOGI(TAG, "GT911 detected at address 0x%02X", gt911_i2c_addr);
+    debug_log_info_f(DEBUG_TAG_GT911_TOUCH, "GT911 detected at address 0x%02X", gt911_i2c_addr);
     return ESP_OK;
   }
 
@@ -196,11 +197,11 @@ static esp_err_t gt911_detect_i2c_address(void)
   gt911_i2c_addr = GT911_I2C_ADDR_2;
   if (gt911_i2c_read_reg(GT911_REG_ID, &test_data, 1) == ESP_OK)
   {
-    ESP_LOGI(TAG, "GT911 detected at address 0x%02X", gt911_i2c_addr);
+    debug_log_info_f(DEBUG_TAG_GT911_TOUCH, "GT911 detected at address 0x%02X", gt911_i2c_addr);
     return ESP_OK;
   }
 
-  ESP_LOGE(TAG, "GT911 not found at any address");
+  debug_log_error(DEBUG_TAG_GT911_TOUCH, "GT911 not found at any address");
   return ESP_FAIL;
 }
 
@@ -251,11 +252,11 @@ esp_err_t gt911_init(void)
 {
   if (gt911_initialized)
   {
-    ESP_LOGW(TAG, "GT911 already initialized");
+    debug_log_warning(DEBUG_TAG_GT911_TOUCH, "GT911 already initialized");
     return ESP_OK;
   }
 
-  ESP_LOGI(TAG, "Initializing GT911 touch controller...");
+  debug_log_info(DEBUG_TAG_GT911_TOUCH, "Initializing GT911 touch controller...");
 
   // Initialize I2C
   esp_err_t ret = gt911_i2c_init();
@@ -282,7 +283,7 @@ esp_err_t gt911_init(void)
   char product_id[5] = {0};
   if (gt911_get_product_id(product_id) == ESP_OK)
   {
-    ESP_LOGI(TAG, "GT911 Product ID: %s", product_id);
+    debug_log_info_f(DEBUG_TAG_GT911_TOUCH, "GT911 Product ID: %s", product_id);
   }
 
   // Clear any pending touch data
@@ -290,7 +291,7 @@ esp_err_t gt911_init(void)
   gt911_i2c_write_reg(GT911_REG_STATUS, &clear_cmd, 1);
 
   gt911_initialized = true;
-  ESP_LOGI(TAG, "GT911 initialization completed successfully");
+  debug_log_info(DEBUG_TAG_GT911_TOUCH, "GT911 initialization completed successfully");
 
   return ESP_OK;
 }
@@ -305,7 +306,7 @@ esp_err_t gt911_deinit(void)
   i2c_driver_delete(GT911_I2C_NUM);
   gt911_initialized = false;
 
-  ESP_LOGI(TAG, "GT911 deinitialized");
+  debug_log_info(DEBUG_TAG_GT911_TOUCH, "GT911 deinitialized");
   return ESP_OK;
 }
 
@@ -370,9 +371,9 @@ void gt911_lvgl_read(lv_indev_t *indev, lv_indev_data_t *data)
     data->state = LV_INDEV_STATE_PRESSED;
 
     // Enhanced debugging for touch events
-    ESP_LOGI(TAG, "Touch: Count=%d, X=%d, Y=%d, TrackID=%d",
-             touch_data.touch_count, data->point.x, data->point.y,
-             touch_data.points[0].track_id);
+    debug_log_info_f(DEBUG_TAG_GT911_TOUCH, "Touch: Count=%d, X=%d, Y=%d, TrackID=%d",
+                     touch_data.touch_count, data->point.x, data->point.y,
+                     touch_data.points[0].track_id);
   }
   else
   {
@@ -382,7 +383,7 @@ void gt911_lvgl_read(lv_indev_t *indev, lv_indev_data_t *data)
     static bool was_pressed = false;
     if (was_pressed && touch_data.data_ready)
     {
-      ESP_LOGI(TAG, "Touch released");
+      debug_log_info(DEBUG_TAG_GT911_TOUCH, "Touch released");
     }
     was_pressed = (data->state == LV_INDEV_STATE_PRESSED);
   }
@@ -424,7 +425,7 @@ esp_err_t gt911_soft_reset(void)
   if (ret == ESP_OK)
   {
     vTaskDelay(pdMS_TO_TICKS(100)); // Wait for reset to complete
-    ESP_LOGI(TAG, "GT911 soft reset completed");
+    debug_log_info(DEBUG_TAG_GT911_TOUCH, "GT911 soft reset completed");
   }
 
   return ret;

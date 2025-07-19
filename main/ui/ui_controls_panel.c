@@ -48,10 +48,9 @@ static const switch_config_t switch_configs[3] = {
 static void debug_touch_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
-  lv_obj_t *obj = lv_event_get_target(e);
 
   // Simplified touch debug - only log important events
-  if (lv_event_get_code(e) == LV_EVENT_CLICKED)
+  if (code == LV_EVENT_CLICKED)
   {
     debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Control pressed");
   }
