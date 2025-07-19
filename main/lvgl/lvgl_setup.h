@@ -100,9 +100,8 @@ esp_lcd_panel_handle_t lvgl_setup_create_lcd_panel(void);
 
 /**
  * @brief Initialize GT911 touch input device for LVGL
- * @return LVGL input device handle
  */
-lv_indev_t *lvgl_setup_init_touch(void);
+void *lvgl_setup_init_touch(void);
 
 /**
  * @brief Create UI with thread safety and logging

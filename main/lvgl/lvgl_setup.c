@@ -298,7 +298,7 @@ static void lvgl_port_task(void *arg)
 // TOUCH INPUT DEVICE SETUP
 // ═══════════════════════════════════════════════════════════════════════════════
 
-lv_indev_t *lvgl_setup_init_touch(void)
+void *lvgl_setup_init_touch(void)
 {
   debug_log_event(DEBUG_TAG_GT911_TOUCH, "Initializing GT911 touch controller");
 
@@ -324,5 +324,9 @@ lv_indev_t *lvgl_setup_init_touch(void)
   lv_indev_set_read_cb(indev, gt911_lvgl_read);
 
   debug_log_event(DEBUG_TAG_GT911_TOUCH, "Touch controller initialized successfully");
-  return indev;
+
+  if (indev == NULL)
+  {
+    debug_log_error(DEBUG_TAG_GT911_TOUCH, "Failed to initialize touch");
+  }
 }

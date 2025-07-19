@@ -86,10 +86,12 @@ extern "C"
 
   /**
    * @brief WiFi status callback function type
+   * @param is_connected Boolean indicating if WiFi is connected
+   * @param status_text Human-readable status text
    * @param status Current WiFi status
    * @param info WiFi connection information (NULL if disconnected)
    */
-  typedef void (*wifi_status_callback_t)(wifi_status_t status, const wifi_info_t *info);
+  typedef void (*wifi_status_callback_t)(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info);
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // PUBLIC FUNCTION DECLARATIONS
@@ -142,28 +144,7 @@ extern "C"
    * @param callback Function to call when WiFi status changes
    * @return ESP_OK on successful registration
    */
-  esp_err_t wifi_manager_register_callback(wifi_status_callback_t callback);
-
-  /**
-   * @brief Register UI callback for WiFi status changes
-   *
-   * This is a convenience function that handles UI updates automatically.
-   * It internally manages status text and connection state for UI display.
-   *
-   * @param ui_update_func Function to call for UI updates (status_text, is_connected)
-   * @return ESP_OK on successful registration
-   */
-  esp_err_t wifi_manager_register_ui_callback(void (*ui_update_func)(const char *status_text, bool is_connected));
-
-  /**
-   * @brief Register Home Assistant task management callback for WiFi status changes
-   *
-   * This callback handles starting/stopping Home Assistant tasks based on WiFi connectivity.
-   *
-   * @param ha_callback Function to call for HA task management (is_connected)
-   * @return ESP_OK on successful registration
-   */
-  esp_err_t wifi_manager_register_ha_callback(void (*ha_callback)(bool is_connected));
+  esp_err_t wifi_manager_register_status_callback(wifi_status_callback_t callback);
 
   /**
    * @brief Unregister WiFi status change callback

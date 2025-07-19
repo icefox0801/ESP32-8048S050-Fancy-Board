@@ -45,9 +45,10 @@ static void init_display_watchdog(void)
   }
 }
 
-static void ui_wifi_status_callback(const char *status_text, bool is_connected)
+static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)
 {
   ui_dashboard_update_wifi_status(status_text, is_connected);
+  ha_task_manager_wifi_callback(is_connected);
 }
 
 static void serial_connection_status_callback(bool connected)
@@ -76,11 +77,7 @@ void app_main(void)
 
   init_display_watchdog();
 
-  lv_indev_t *touch_indev = lvgl_setup_init_touch();
-  if (touch_indev == NULL)
-  {
-    debug_log_error(DEBUG_TAG_GT911_TOUCH, "Failed to initialize touch");
-  }
+  lvgl_setup_init_touch();
 
   lvgl_setup_create_ui_safe(display, ui_dashboard_create);
 
@@ -88,16 +85,11 @@ void app_main(void)
 
   ESP_ERROR_CHECK(serial_data_init());
 
-  debug_log_event(DEBUG_TAG_SYSTEM, "Stabilizing before WiFi init");
-  vTaskDelay(1000 / portTICK_PERIOD_MS);
-
   ESP_ERROR_CHECK(wifi_manager_init());
 
-  ESP_ERROR_CHECK(wifi_manager_register_ui_callback(ui_wifi_status_callback));
+  ESP_ERROR_CHECK(wifi_manager_register_status_callback(wifi_status_callback));
 
   ESP_ERROR_CHECK(ha_task_manager_init());
-
-  ESP_ERROR_CHECK(wifi_manager_register_ha_callback(ha_task_manager_wifi_callback));
 
   // Connect to WiFi if configured
 #ifdef DEFAULT_WIFI_SSID
@@ -132,6 +124,6 @@ void app_main(void)
 
   while (1)
   {
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }

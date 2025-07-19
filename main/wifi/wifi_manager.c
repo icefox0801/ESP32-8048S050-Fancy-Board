@@ -40,8 +40,6 @@ static wifi_manager_internal_t s_wifi_manager = {
     .status = WIFI_STATUS_DISCONNECTED,
     .retry_count = 0,
     .connection_info = {{0}},
-    .ui_callback = NULL,
-    .ha_callback = NULL,
     .status_callback = NULL,
     .reconnect_task_handle = NULL};
 
@@ -198,17 +196,7 @@ static void wifi_set_status(wifi_status_t new_status)
     // Notify callbacks
     if (s_wifi_manager.status_callback)
     {
-      s_wifi_manager.status_callback(new_status, &s_wifi_manager.connection_info);
-    }
-
-    if (s_wifi_manager.ui_callback)
-    {
-      s_wifi_manager.ui_callback(status_text, is_connected);
-    }
-
-    if (s_wifi_manager.ha_callback)
-    {
-      s_wifi_manager.ha_callback(is_connected);
+      s_wifi_manager.status_callback(is_connected, status_text, new_status, &s_wifi_manager.connection_info);
     }
   }
 }
@@ -420,29 +408,15 @@ esp_err_t wifi_manager_get_info(wifi_info_t *info)
   return ESP_OK;
 }
 
-esp_err_t wifi_manager_register_callback(wifi_status_callback_t callback)
+esp_err_t wifi_manager_register_status_callback(wifi_status_callback_t callback)
 {
   s_wifi_manager.status_callback = callback;
-  return ESP_OK;
-}
-
-esp_err_t wifi_manager_register_ui_callback(void (*ui_update_func)(const char *status_text, bool is_connected))
-{
-  s_wifi_manager.ui_callback = ui_update_func;
-  return ESP_OK;
-}
-
-esp_err_t wifi_manager_register_ha_callback(void (*ha_callback_func)(bool is_connected))
-{
-  s_wifi_manager.ha_callback = ha_callback_func;
   return ESP_OK;
 }
 
 esp_err_t wifi_manager_unregister_callback(void)
 {
   s_wifi_manager.status_callback = NULL;
-  s_wifi_manager.ui_callback = NULL;
-  s_wifi_manager.ha_callback = NULL;
   return ESP_OK;
 }
 
