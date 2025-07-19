@@ -51,3 +51,36 @@ void controls_panel_set_switch(int switch_id, bool state);
  * @return True if on, false if off
  */
 bool controls_panel_get_switch(int switch_id);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EVENT CALLBACK REGISTRATION (DECOUPLING)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Callback function type for switch control
+ * @param entity_id Home Assistant entity ID
+ * @param state True to turn on, false to turn off
+ * @return ESP_OK on success, error code on failure
+ */
+typedef esp_err_t (*switch_control_callback_t)(const char *entity_id, bool state);
+
+/**
+ * @brief Callback function type for scene trigger
+ * @return ESP_OK on success, error code on failure
+ */
+typedef esp_err_t (*scene_trigger_callback_t)(void);
+
+/**
+ * @brief Smart home callback structure for UI decoupling
+ */
+typedef struct
+{
+  switch_control_callback_t switch_callback; /**< Function to call when switch state changes */
+  scene_trigger_callback_t scene_callback;   /**< Function to call when scene button is pressed */
+} smart_home_callbacks_t;
+
+/**
+ * @brief Register event callbacks to decouple UI from smart home logic
+ * @param callbacks Pointer to smart home callback structure
+ */
+void controls_panel_register_event_callbacks(const smart_home_callbacks_t *callbacks);

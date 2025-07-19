@@ -26,7 +26,6 @@
 #include "ui_memory_panel.h"
 #include "ui_status_info.h"
 #include "smart/ha_api.h"
-#include "smart/smart_home.h"
 #include "smart/smart_config.h"
 #include <stdio.h>
 #include <time.h>
@@ -71,4 +70,14 @@ void ui_dashboard_update(const system_data_t *data)
   update_gpu_panel(&data->gpu);
   update_memory_panel(&data->mem);
   lvgl_lock_release();
+}
+
+/**
+ * @brief Register smart home control callbacks for UI decoupling
+ * @param callbacks Pointer to smart home callback structure
+ */
+void ui_dashboard_register_smart_home_callbacks(const smart_home_callbacks_t *callbacks)
+{
+  controls_panel_register_event_callbacks(callbacks);
+  debug_log_info(DEBUG_TAG_UI_DASHBOARD, "Smart home callbacks registered with UI dashboard");
 }

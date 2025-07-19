@@ -10,7 +10,6 @@
 #include "ui_config.h"
 #include "ui_helpers.h"
 #include "lvgl_setup.h"
-#include "smart/smart_home.h"
 #include "smart/smart_config.h"
 #include "system_debug_utils.h"
 #include <stdio.h>
@@ -20,6 +19,13 @@ static lv_obj_t *switch_b = NULL;
 static lv_obj_t *switch_c = NULL;
 static lv_obj_t *scene_button = NULL;
 static lv_obj_t *ha_status_label = NULL;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CALLBACK FUNCTION POINTERS (DECOUPLING)
+// ══════════════════════════════════════════════════════════════════════════════
+
+static switch_control_callback_t g_switch_control_callback = NULL;
+static scene_trigger_callback_t g_scene_trigger_callback = NULL;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SWITCH ENUMERATION AND HELPER TYPES
@@ -83,12 +89,19 @@ static void switch_event_handler(lv_event_t *e)
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
     debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Switch state changed");
 
-    // Control the actual device via Home Assistant
-    esp_err_t ret = smart_home_control_switch(config->entity, state);
-    if (ret != ESP_OK)
+    // Control the actual device via registered callback (decoupled)
+    if (g_switch_control_callback != NULL)
     {
-      debug_log_error_f(DEBUG_TAG_UI_CONTROLS, "Switch %s control failed: %s", config->label, esp_err_to_name(ret));
-      // TODO: Consider reverting the switch state on failure
+      esp_err_t ret = g_switch_control_callback(config->entity, state);
+      if (ret != ESP_OK)
+      {
+        debug_log_error_f(DEBUG_TAG_UI_CONTROLS, "Switch %s control failed: %s", config->label, esp_err_to_name(ret));
+        // TODO: Consider reverting the switch state on failure
+      }
+    }
+    else
+    {
+      debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Switch control callback not registered");
     }
   }
 }
@@ -106,15 +119,22 @@ static void scene_button_event_handler(lv_event_t *e)
   {
     debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene button pressed");
 
-    // Trigger the scene via Home Assistant
-    esp_err_t ret = smart_home_trigger_scene();
-    if (ret != ESP_OK)
+    // Trigger the scene via registered callback (decoupled)
+    if (g_scene_trigger_callback != NULL)
     {
-      debug_log_error_f(DEBUG_TAG_UI_CONTROLS, "Scene trigger failed: %s", esp_err_to_name(ret));
+      esp_err_t ret = g_scene_trigger_callback();
+      if (ret != ESP_OK)
+      {
+        debug_log_error_f(DEBUG_TAG_UI_CONTROLS, "Scene trigger failed: %s", esp_err_to_name(ret));
+      }
+      else
+      {
+        debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene triggered successfully");
+      }
     }
     else
     {
-      debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene triggered successfully");
+      debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Scene trigger callback not registered");
     }
   }
 }
@@ -259,4 +279,27 @@ void controls_panel_update_ha_status(const char *status_text, bool connected)
   }
 
   lvgl_lock_release();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CALLBACK REGISTRATION FUNCTIONS (DECOUPLING)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @brief Register event callbacks to decouple UI from smart home logic
+ * @param callbacks Pointer to smart home callback structure
+ */
+void controls_panel_register_event_callbacks(const smart_home_callbacks_t *callbacks)
+{
+  if (callbacks == NULL)
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "NULL callbacks parameter passed");
+    return;
+  }
+
+  g_switch_control_callback = callbacks->switch_callback;
+  g_scene_trigger_callback = callbacks->scene_callback;
+
+  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "Event callbacks registered - switch: %p, scene: %p",
+                   (void *)callbacks->switch_callback, (void *)callbacks->scene_callback);
 }

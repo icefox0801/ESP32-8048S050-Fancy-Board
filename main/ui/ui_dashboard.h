@@ -55,3 +55,9 @@ void ui_dashboard_set_connection_status(bool connected);
  * @param connected True if WiFi is connected, false otherwise
  */
 void ui_dashboard_update_wifi_status(const char *status_text, bool connected);
+
+/**
+ * @brief Register smart home control callbacks for UI decoupling
+ * @param callbacks Pointer to smart home callback structure
+ */
+void ui_dashboard_register_smart_home_callbacks(const smart_home_callbacks_t *callbacks);

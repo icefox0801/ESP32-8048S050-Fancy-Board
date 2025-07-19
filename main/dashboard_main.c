@@ -122,6 +122,12 @@ void app_main(void)
     debug_log_error(DEBUG_TAG_SMART_HOME, "Failed to initialize");
   }
 
+  // Register smart home callbacks with UI dashboard for decoupled control
+  smart_home_callbacks_t callbacks = {
+      .switch_callback = smart_home_control_switch,
+      .scene_callback = smart_home_trigger_scene};
+  ui_dashboard_register_smart_home_callbacks(&callbacks);
+
   debug_log_startup(DEBUG_TAG_SYSTEM, "System Monitor - Fully Initialized");
 
   while (1)
