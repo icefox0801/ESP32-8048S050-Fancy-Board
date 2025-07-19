@@ -120,15 +120,6 @@ extern "C"
   esp_err_t ha_api_deinit(void);
 
   /**
-   * @brief Test connection to Home Assistant server
-   *
-   * Performs a simple API call to verify connectivity and authentication.
-   *
-   * @return ESP_OK if connection successful, error code otherwise
-   */
-  esp_err_t ha_api_test_connection(void);
-
-  /**
    * @brief Get state of a specific entity
    *
    * Retrieves current state and attributes for the specified entity.
@@ -163,16 +154,6 @@ extern "C"
   esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_response_t *response);
 
   /**
-   * @brief Toggle a switch entity
-   *
-   * Convenience function to toggle a switch on/off.
-   *
-   * @param entity_id Switch entity ID (e.g., "switch.pump")
-   * @return ESP_OK on success, error code on failure
-   */
-  esp_err_t ha_api_toggle_switch(const char *entity_id);
-
-  /**
    * @brief Turn on a switch entity
    *
    * Convenience function to turn on a switch.
@@ -193,43 +174,6 @@ extern "C"
   esp_err_t ha_api_turn_off_switch(const char *entity_id);
 
   /**
-   * @brief Get sensor value as float
-   *
-   * Retrieves numeric sensor value (temperature, humidity, etc.).
-   *
-   * @param entity_id Sensor entity ID
-   * @param value Pointer to store sensor value
-   * @return ESP_OK on success, error code on failure
-   */
-  esp_err_t ha_api_get_sensor_value(const char *entity_id, float *value);
-
-  /**
-   * @brief Get all entities matching a pattern
-   *
-   * Retrieves all entities whose IDs contain the specified pattern.
-   *
-   * @param pattern Search pattern (e.g., "sensor" to find all sensors)
-   * @param entities Array to store found entities
-   * @param max_entities Maximum number of entities to return
-   * @param found_count Pointer to store actual number found
-   * @return ESP_OK on success, error code on failure
-   */
-  esp_err_t ha_api_get_entities_by_pattern(const char *pattern, ha_entity_state_t *entities,
-                                           uint16_t max_entities, uint16_t *found_count);
-
-  /**
-   * @brief Set entity state
-   *
-   * Updates the state of an entity (for input sensors, etc.).
-   *
-   * @param entity_id Entity ID to update
-   * @param new_state New state value
-   * @param attributes Optional attributes JSON object
-   * @return ESP_OK on success, error code on failure
-   */
-  esp_err_t ha_api_set_entity_state(const char *entity_id, const char *new_state, cJSON *attributes);
-
-  /**
    * @brief Parse JSON response into entity state
    *
    * Utility function to parse HA API JSON response into entity state structure.
@@ -248,16 +192,6 @@ extern "C"
    * @param response Response structure to clean up
    */
   void ha_api_free_response(ha_api_response_t *response);
-
-  /**
-   * @brief Get human-readable error message
-   *
-   * Converts error codes to descriptive error messages.
-   *
-   * @param error_code ESP error code
-   * @return Human-readable error description
-   */
-  const char *ha_api_get_error_string(esp_err_t error_code);
 
 #ifdef __cplusplus
 }

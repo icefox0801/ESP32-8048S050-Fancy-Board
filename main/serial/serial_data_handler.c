@@ -257,22 +257,8 @@ static void process_received_line(const char *line_buffer, system_data_t *system
         {
           data_callback(system_data);
         }
-
-        // Removed excessive logging to reduce verbosity
-      }
-      else
-      {
-        // Removed debug logging
       }
     }
-    else
-    {
-      // Removed debug logging
-    }
-  }
-  else
-  {
-    // Removed debug logging
   }
 }
 

@@ -72,29 +72,6 @@ esp_err_t smart_home_deinit(void)
   return ESP_OK;
 }
 
-esp_err_t smart_home_test_connection(void)
-{
-  if (!smart_home_initialized)
-  {
-    return ESP_ERR_INVALID_STATE;
-  }
-
-  // Test connection by getting state of a known entity
-  ha_entity_state_t test_state;
-  esp_err_t ret = ha_api_get_entity_state(HA_ENTITY_A_ID, &test_state);
-
-  if (ret == ESP_OK)
-  {
-    debug_log_event(DEBUG_TAG_SMART_HOME, "Home Assistant connection test successful");
-  }
-  else
-  {
-    debug_log_error_f(DEBUG_TAG_SMART_HOME, "Home Assistant connection test failed: %s", esp_err_to_name(ret));
-  }
-
-  return ret;
-}
-
 esp_err_t smart_home_control_switch(const char *entity_id, bool turn_on)
 {
   if (!smart_home_initialized || !entity_id)

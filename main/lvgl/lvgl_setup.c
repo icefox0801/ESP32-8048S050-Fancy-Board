@@ -329,4 +329,6 @@ void *lvgl_setup_init_touch(void)
   {
     debug_log_error(DEBUG_TAG_GT911_TOUCH, "Failed to initialize touch");
   }
+
+  return indev;
 }

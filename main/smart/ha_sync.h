@@ -53,89 +53,8 @@ typedef struct
 } ha_device_sync_t;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WATER PUMP SYNC FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Initialize water pump synchronization
- * @return true if initialization successful, false otherwise
- */
-bool ha_sync_pump_init(void);
-
-/**
- * @brief Check if water pump is in sync with Home Assistant
- * @return Current sync status
- */
-ha_sync_status_t ha_sync_pump_check_status(void);
-
-/**
- * @brief Get current water pump state from Home Assistant
- * @param state Pointer to store the retrieved state
- * @return true if state retrieved successfully, false otherwise
- */
-bool ha_sync_pump_get_remote_state(ha_device_state_t *state);
-
-/**
- * @brief Set local water pump state expectation
- * @param state The expected state (ON/OFF)
- * @return true if state set successfully, false otherwise
- */
-bool ha_sync_pump_set_local_state(ha_device_state_t state);
-
-/**
- * @brief Synchronize water pump state with Home Assistant
- * If sync fails multiple times, the device will be disabled
- * @return true if sync successful, false otherwise
- */
-bool ha_sync_pump_synchronize(void);
-
-/**
- * @brief Check if water pump is enabled for control
- * @return true if enabled, false if disabled due to sync issues
- */
-bool ha_sync_pump_is_enabled(void);
-
-/**
- * @brief Force enable/disable water pump control
- * @param enabled true to enable, false to disable
- */
-void ha_sync_pump_set_enabled(bool enabled);
-
-/**
- * @brief Get detailed sync information for water pump
- * @return Pointer to sync structure (read-only)
- */
-const ha_device_sync_t *ha_sync_pump_get_info(void);
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // GENERAL SYNC FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * @brief Initialize the entire sync system
- * @return true if initialization successful, false otherwise
- */
-bool ha_sync_init(void);
-
-/**
- * @brief Periodic sync task - call this regularly from main loop
- * This will check all monitored devices and update their sync status
- */
-void ha_sync_task(void);
-
-/**
- * @brief Get sync status string for display
- * @param status The sync status enum
- * @return Human-readable status string
- */
-const char *ha_sync_status_to_string(ha_sync_status_t status);
-
-/**
- * @brief Convert device state enum to string
- * @param state The device state enum
- * @return Human-readable state string
- */
-const char *ha_device_state_to_string(ha_device_state_t state);
 
 /**
  * @brief Immediately sync all switch states from Home Assistant using bulk API

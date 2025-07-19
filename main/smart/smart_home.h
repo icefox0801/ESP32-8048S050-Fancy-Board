@@ -48,15 +48,6 @@ extern "C"
   // Functions removed - were declared but not implemented or used
 
   /**
-   * @brief Check Home Assistant connection
-   *
-   * Tests connectivity to the Home Assistant server.
-   *
-   * @return ESP_OK if connected, error code if not
-   */
-  esp_err_t smart_home_test_connection(void);
-
-  /**
    * @brief Control any switch entity
    *
    * Generic function to control any switch-type entity.

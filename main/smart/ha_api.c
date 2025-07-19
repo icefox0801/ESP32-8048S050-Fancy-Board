@@ -270,26 +270,6 @@ esp_err_t ha_api_deinit(void)
   return ESP_OK;
 }
 
-esp_err_t ha_api_test_connection(void)
-{
-  debug_log_info(DEBUG_TAG_HA_API, "Testing connection to Home Assistant...");
-
-  ha_api_response_t response;
-  esp_err_t err = perform_http_request(HA_API_BASE_URL, "GET", NULL, &response);
-
-  if (err == ESP_OK && response.success)
-  {
-    debug_log_info_f(DEBUG_TAG_HA_API, "Connection test successful (Status: %d)", response.status_code);
-  }
-  else
-  {
-    debug_log_error_f(DEBUG_TAG_HA_API, "Connection test failed: %s", response.error_message);
-  }
-
-  ha_api_free_response(&response);
-  return err;
-}
-
 esp_err_t ha_api_get_entity_state(const char *entity_id, ha_entity_state_t *state)
 {
   if (!entity_id || !state)
@@ -486,17 +466,6 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
   return err;
 }
 
-esp_err_t ha_api_toggle_switch(const char *entity_id)
-{
-  ha_service_call_t service_call = {
-      .domain = "switch",
-      .service = "toggle",
-      .service_data = NULL};
-  strncpy(service_call.entity_id, entity_id, sizeof(service_call.entity_id) - 1);
-
-  return ha_api_call_service(&service_call, NULL);
-}
-
 esp_err_t ha_api_turn_on_switch(const char *entity_id)
 {
   debug_log_info_f(DEBUG_TAG_HA_API, ">>> TURN ON SWITCH: %s", entity_id);
@@ -547,24 +516,6 @@ esp_err_t ha_api_turn_off_switch(const char *entity_id)
 
   ha_api_free_response(&response);
   return result;
-}
-
-esp_err_t ha_api_get_sensor_value(const char *entity_id, float *value)
-{
-  if (!entity_id || !value)
-  {
-    return ESP_ERR_INVALID_ARG;
-  }
-
-  ha_entity_state_t state;
-  esp_err_t err = ha_api_get_entity_state(entity_id, &state);
-
-  if (err == ESP_OK)
-  {
-    *value = atof(state.state);
-  }
-
-  return err;
 }
 
 esp_err_t ha_api_parse_entity_state(const char *json_str, ha_entity_state_t *state)
@@ -641,26 +592,5 @@ void ha_api_free_response(ha_api_response_t *response)
     free(response->response_data);
     response->response_data = NULL;
     response->response_len = 0;
-  }
-}
-
-const char *ha_api_get_error_string(esp_err_t error_code)
-{
-  switch (error_code)
-  {
-  case ESP_OK:
-    return "Success";
-  case ESP_ERR_INVALID_ARG:
-    return "Invalid argument";
-  case ESP_ERR_INVALID_STATE:
-    return "API not initialized";
-  case ESP_ERR_NO_MEM:
-    return "Out of memory";
-  case ESP_ERR_TIMEOUT:
-    return "Request timeout";
-  case ESP_ERR_INVALID_RESPONSE:
-    return "Invalid response format";
-  default:
-    return esp_err_to_name(error_code);
   }
 }
