@@ -117,9 +117,11 @@ This project is configured with VS Code tasks for streamlined development. Use t
 
 **MANDATORY WORKFLOW - Always Flash Before Monitor:**
 ⚠️ **CRITICAL**: You MUST flash firmware before starting monitor
+0. **STEP 0**: If config changed → `del sdkconfig` → Run `ESP-IDF Reconfigure` to regenerate sdkconfig
 1. **First**: Run `ESP-IDF Build` to compile firmware
 2. **Second**: Run `ESP-IDF Flash` to upload firmware to device
 3. **Third**: Run `ESP-IDF Monitor` to view device output
+4. **Last**: Kill monitor task (`taskkill /f /im python.exe`) before next flash
 
 **CRITICAL PORT MANAGEMENT:**
 🚨 **BEFORE FLASHING**: ALWAYS stop any running monitor tasks to free COM port
@@ -127,6 +129,12 @@ This project is configured with VS Code tasks for streamlined development. Use t
 - Use `Ctrl+C` in monitor terminal OR run: `taskkill /f /im python.exe`
 - Verify port is free before attempting flash operation
 - **NEVER** run monitor and flash simultaneously
+
+🚨 **CRITICAL CONFIG MANAGEMENT:**
+- **STEP 0**: If ANY config changed in `sdkconfig.defaults.*` → `del sdkconfig` → Run `ESP-IDF Reconfigure` FIRST
+- Config changes don't take effect until `sdkconfig` is regenerated
+- **MANDATORY**: Delete `sdkconfig` file before reconfigure to force regeneration
+- Workflow: `del sdkconfig` → Reconfigure → Build → Flash → Monitor → Kill Tasks (repeat cycle)
 
 **Usage:**
 - Press `Ctrl+Shift+P` → `Tasks: Run Task` → Select desired task

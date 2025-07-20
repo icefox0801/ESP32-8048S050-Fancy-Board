@@ -9,35 +9,35 @@
 CONFIG_SYSTEM_DEBUG_ENABLED=y
 
 # ----------------------------------------------------------
-# Memory and Task Configuration (Conservative for Stability)
+# Memory and Task Configuration (Minimal for Dual-Core Stability)
 # ----------------------------------------------------------
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
-CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=8192
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=2048
 CONFIG_ESP_INT_WDT_TIMEOUT_MS=1500
 CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
 
-# Heap debugging and corruption detection
-CONFIG_HEAP_POISONING_LIGHT=y
-CONFIG_HEAP_TRACING=y
-CONFIG_HEAP_TASK_TRACKING=y
+# TEMPORARY: Disable debug features that may cause cache conflicts
+# CONFIG_HEAP_POISONING_LIGHT=y
+# CONFIG_HEAP_TRACING=y
+# CONFIG_HEAP_TASK_TRACKING=y
 
-# ESP Timer task stack size (conservative)
-CONFIG_ESP_TIMER_TASK_STACK_SIZE=6144
+# ESP Timer task stack size (minimal)
+CONFIG_ESP_TIMER_TASK_STACK_SIZE=4096
 CONFIG_ESP_TIMER_INTERRUPT_LEVEL=1
 
-# System event task stack size (conservative)
-CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=12288
+# System event task stack size (minimal)
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
 
-# Additional task stack sizes for stability (conservative)
-CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=6144
+# Additional task stack sizes for stability (minimal)
+CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=2048
 
-# Stack overflow detection and monitoring
-CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y
-CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y
+# TEMPORARY: Disable problematic stack monitoring
+# CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y
+# CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y
 CONFIG_ESP_SYSTEM_CHECK_INT_LEVEL_5=y
 
-# TCP/IP task stack size (conservative)
-CONFIG_LWIP_TCPIP_TASK_STACK_SIZE=8192
+# TCP/IP task stack size (minimal)
+CONFIG_LWIP_TCPIP_TASK_STACK_SIZE=4096
 
 # ----------------------------------------------------------
 # PSRAM Configuration (8MB Octal SPI PSRAM) - Conservative
@@ -45,7 +45,7 @@ CONFIG_LWIP_TCPIP_TASK_STACK_SIZE=8192
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
-CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+# CONFIG_SPIRAM_XIP_FROM_PSRAM=y  # TEMPORARY: Disabled to test dual-core crash
 CONFIG_SPIRAM_USE_MALLOC=y
 CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096
 CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
@@ -55,10 +55,8 @@ CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=65536
 
 # Additional SPIRAM heap optimizations for 8MB PSRAM
-# Increase heap task stack for better SPIRAM management
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
-# Enable SPIRAM for heap trace (debugging large allocations)
-CONFIG_HEAP_TRACING=y
+# Enable SPIRAM for heap trace (debugging large allocations) - DISABLED for dual-core stability
+# CONFIG_HEAP_TRACING=y
 
 # ----------------------------------------------------------
 # WiFi Memory Optimization - Force all WiFi buffers to SPIRAM
@@ -184,7 +182,7 @@ CONFIG_LV_FONT_DEFAULT_MONTSERRAT_14=y
 # ----------------------------------------------------------
 # LCD CAM and RGB Panel Configuration
 # ----------------------------------------------------------
-CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
+# CONFIG_LCD_RGB_ISR_IRAM_SAFE=y  # TEMPORARY: Disabled to test GDMA dual-core crash
 CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
 
 # ----------------------------------------------------------
@@ -222,9 +220,9 @@ CONFIG_EXAMPLE_LCD_DATA14_GPIO=21
 CONFIG_EXAMPLE_LCD_DATA15_GPIO=14
 
 # ----------------------------------------------------------
-# FreeRTOS Configuration
+# FreeRTOS Configuration (Minimal for Dual-Core Stability)
 # ----------------------------------------------------------
-CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=4096
+# CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=4096  # Removed duplicate config
 
 # ----------------------------------------------------------
 # WiFi Performance Optimization for Large HTTP Transfers (100KB+)
