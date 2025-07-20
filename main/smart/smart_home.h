@@ -89,28 +89,11 @@ extern "C"
   void smart_home_update_wifi_status(bool is_connected);
 
   /**
-   * @brief Smart home status callback function type
-   * @param connected True if smart home is connected and operational, false otherwise
-   * @param status_text Human-readable status message describing current state
-   */
-  typedef void (*smart_home_status_callback_t)(bool connected, const char *status_text);
-
-  /**
    * @brief Smart home states sync callback function type
    * @param switch_states Array of switch states (A, B, C)
    * @param state_count Number of switch states in the array
    */
   typedef void (*smart_home_states_sync_callback_t)(bool switch_states[3], int state_count);
-
-  /**
-   * @brief Register a callback for smart home status updates
-   *
-   * The callback will be called whenever the smart home connection status changes.
-   * This allows other components to react to connection events without tight coupling.
-   *
-   * @param callback Function to call when status changes (can be NULL to unregister)
-   */
-  void smart_home_register_status_callback(smart_home_status_callback_t callback);
 
   /**
    * @brief Register a callback for smart home states synchronization updates

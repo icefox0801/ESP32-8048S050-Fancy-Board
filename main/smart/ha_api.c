@@ -9,8 +9,9 @@
  */
 
 #include "ha_api.h"
+#include "ha_status.h"
 #include "smart_config.h"
-#include "../utils/system_debug_utils.h"
+#include "system_debug_utils.h"
 #include <esp_http_client.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
@@ -171,10 +172,14 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     return ESP_ERR_INVALID_STATE;
   }
 
+  // Notify that we're starting a request (syncing)
+  ha_status_change(HA_STATUS_SYNCING);
+
   // Check network connectivity before attempting HTTP request
   if (!check_network_connectivity())
   {
     debug_log_error(DEBUG_TAG_HA_API, "❌ Network connectivity check failed, skipping HTTP request");
+    ha_status_change(HA_STATUS_SYNC_FAILED);
     if (response)
     {
       response->success = false;
@@ -259,6 +264,12 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     if (retry < HA_SYNC_RETRY_COUNT - 1)
     {
       debug_log_info_f(DEBUG_TAG_HA_API, "Waiting %d seconds before retry...", retry + 1);
+
+      // Notify retry status
+      {
+        ha_status_change(HA_STATUS_SYNCING);
+      }
+
       vTaskDelay(pdMS_TO_TICKS(1000 * (retry + 1))); // Progressive backoff
     }
   }
@@ -266,6 +277,12 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
   if (err != ESP_OK)
   {
     debug_log_error_f(DEBUG_TAG_HA_API, "=== HTTP REQUEST FAILED === (Final status: %d, Error: %s)", status_code, esp_err_to_name(err));
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+  }
+  else
+  {
+    // Notify success status
+    ha_status_change(HA_STATUS_READY);
   }
 
   return err;
@@ -317,6 +334,9 @@ esp_err_t ha_api_init(void)
                    HA_SERVER_HOST_NAME, HA_SERVER_PORT);
   debug_log_info_f(DEBUG_TAG_HA_API, "Base URL: %s", HA_API_BASE_URL);
 
+  // Notify status callback about initialization
+  ha_status_change(HA_STATUS_READY);
+
   return ESP_OK;
 }
 
@@ -331,6 +351,9 @@ esp_err_t ha_api_deinit(void)
 
   ha_api_initialized = false;
   memset(auth_header, 0, sizeof(auth_header));
+
+  // Notify status callback about deinitialization
+  ha_status_change(HA_STATUS_OFFLINE);
 
   return ESP_OK;
 }
@@ -366,6 +389,9 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
 
   debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states individually", entity_count);
 
+  // Notify that we're starting a sync operation
+  ha_status_change(HA_STATUS_SYNCING);
+
   // Clear all states first
   memset(states, 0, sizeof(ha_entity_state_t) * entity_count);
 
@@ -396,16 +422,28 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
   if (success_count == entity_count)
   {
     debug_log_info_f(DEBUG_TAG_HA_API, "Successfully fetched all %d entity states", entity_count);
+
+    // Notify successful sync completion
+    ha_status_change(HA_STATUS_STATES_SYNCED);
+
     return ESP_OK;
   }
   else if (success_count > 0)
   {
     debug_log_warning_f(DEBUG_TAG_HA_API, "Fetched %d/%d entity states", success_count, entity_count);
+
+    // Notify partial sync
+    ha_status_change(HA_STATUS_PARTIAL_SYNC);
+
     return ESP_ERR_NOT_FOUND;
   }
   else
   {
     debug_log_error(DEBUG_TAG_HA_API, "Failed to fetch any entity states");
+
+    // Notify sync failure
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+
     return overall_result;
   }
 }
@@ -587,4 +625,9 @@ void ha_api_free_response(ha_api_response_t *response)
     response->response_data = NULL;
     response->response_len = 0;
   }
+}
+
+bool ha_api_is_ready(void)
+{
+  return ha_api_initialized;
 }

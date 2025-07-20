@@ -6,6 +6,7 @@
 #include "serial/serial_data_handler.h"
 #include "wifi/wifi_manager.h"
 #include "smart/smart_home.h"
+#include "smart/ha_status.h"
 #include "ui/ui_controls_panel.h"
 #include "ui/ui_dashboard.h"
 #include "utils/system_debug_utils.h"
@@ -48,7 +49,6 @@ static void init_display_watchdog(void)
 static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)
 {
   status_info_update_wifi_status(status_text, is_connected);
-  smart_home_update_wifi_status(is_connected);
 }
 
 static void wifi_connected_callback(void)
@@ -66,9 +66,9 @@ static void serial_data_update_callback(const system_data_t *data)
   ui_dashboard_update(data);
 }
 
-static void smart_home_status_callback(bool connected, const char *status_text)
+static void ha_status_change_callback(bool is_ready, bool is_syncing, const char *status_text)
 {
-  controls_panel_update_ha_status(connected, status_text);
+  controls_panel_update_ha_status(is_ready, is_syncing, status_text);
 }
 
 static void smart_home_states_sync_callback(bool switch_states[3], int state_count)
@@ -120,8 +120,8 @@ void app_main(void)
 
   serial_data_start_task();
 
-  smart_home_register_status_callback(smart_home_status_callback);
   smart_home_register_states_sync_callback(smart_home_states_sync_callback);
+  ha_status_register_change_callback(ha_status_change_callback);
 
   // Register smart home callbacks with UI dashboard for decoupled control
   smart_home_callbacks_t callbacks = {

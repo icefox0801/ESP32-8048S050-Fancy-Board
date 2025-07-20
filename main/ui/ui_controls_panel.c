@@ -250,26 +250,21 @@ bool controls_panel_get_switch(int switch_id)
   return state;
 }
 
-/**
- * @brief Update Home Assistant connection status in the controls panel
- * @param connected True if HA is connected, false otherwise
- * @param status_text HA status message to display
- */
-void controls_panel_update_ha_status(bool connected, const char *status_text)
+void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char *status_text)
 {
   if (!ha_status_label || !status_text)
     return;
 
   lvgl_lock_acquire();
 
-  // Create formatted status message (keep it short)
-  char ha_msg[32];
-  snprintf(ha_msg, sizeof(ha_msg), "HA: %s", status_text);
-
-  lv_label_set_text(ha_status_label, ha_msg);
+  lv_label_set_text(ha_status_label, status_text);
 
   // Set color based on connection status
-  if (connected)
+  if (is_syncing)
+  {
+    lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0x00bcd4), 0); // Light Blue Syncing
+  }
+  else if (is_ready)
   {
     lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0x00ff88), 0); // Green
   }

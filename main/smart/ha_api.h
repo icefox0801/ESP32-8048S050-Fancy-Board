@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#include "ha_status.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -179,6 +180,13 @@ extern "C"
    * @param response Response structure to clean up
    */
   void ha_api_free_response(ha_api_response_t *response);
+
+  /**
+   * @brief Check if Home Assistant API is ready
+   *
+   * @return true if HA API is initialized and ready, false otherwise
+   */
+  bool ha_api_is_ready(void);
 
 #ifdef __cplusplus
 }

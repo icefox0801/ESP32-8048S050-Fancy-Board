@@ -12,14 +12,16 @@
 #include "smart_home.h"
 #include "smart_config.h"
 #include "ha_api.h"
-#include "../ui/ui_controls_panel.h"
-#include <stdlib.h> // For malloc/free
+#include "ha_status.h"
+#include "ui/ui_controls_panel.h"
+#include <stdlib.h>
 #include "esp_timer.h"
-#include "system_debug_utils.h"
+#include "utils/system_debug_utils.h"
 #include <esp_err.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include <esp_wifi.h>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE VARIABLES
@@ -27,7 +29,6 @@
 
 static bool smart_home_initialized = false;
 static TaskHandle_t sync_task_handle = NULL;
-static smart_home_status_callback_t status_callback = NULL;
 static smart_home_states_sync_callback_t states_sync_callback = NULL;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -93,6 +94,14 @@ esp_err_t smart_home_init(void)
   }
 
   debug_log_startup(DEBUG_TAG_SMART_HOME, "SmartHome");
+
+  // Initialize HA status module
+  esp_err_t status_ret = ha_status_init();
+  if (status_ret != ESP_OK)
+  {
+    debug_log_error_f(DEBUG_TAG_SMART_HOME, "Failed to initialize HA status module: %s", esp_err_to_name(status_ret));
+    return status_ret;
+  }
 
   // Initialize Home Assistant API
   esp_err_t ret = ha_api_init();
@@ -247,30 +256,6 @@ void smart_home_sync_switch_states(void)
 
   // Free allocated memory
   free(switch_states);
-}
-
-void smart_home_update_wifi_status(bool is_connected)
-{
-  debug_log_info_f(DEBUG_TAG_SMART_HOME, "HA status changed: %s", is_connected ? "offline" : "disconnected");
-
-  // Notify status callback about WiFi status changes
-  if (status_callback)
-  {
-    const char *status_msg = is_connected ? "HA Ready" : "HA Offline";
-    status_callback(is_connected && smart_home_initialized, status_msg);
-  }
-}
-
-void smart_home_register_status_callback(smart_home_status_callback_t callback)
-{
-  status_callback = callback;
-  debug_log_info_f(DEBUG_TAG_SMART_HOME, "Status callback %s", callback ? "registered" : "unregistered");
-
-  // If registering a callback and we're already initialized, notify current status
-  if (callback && smart_home_initialized)
-  {
-    callback(true, "Smart Home Ready");
-  }
 }
 
 void smart_home_register_states_sync_callback(smart_home_states_sync_callback_t callback)
