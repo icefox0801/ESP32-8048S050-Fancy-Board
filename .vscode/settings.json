@@ -12,6 +12,11 @@
     "IDF_TARGET": "esp32s3"
   },
   "idf.flashType": "UART",
+  "cmake.cmakePath": "C:\\Espressif\\tools\\cmake\\3.30.2\\bin\\cmake.exe",
+  "cmake.configureOnOpen": false,
+  "cmake.sourceDirectory": "${workspaceFolder}",
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Ninja",
   "files.associations": {
     "*.cpp": "cpp",
     "*.h": "cpp",
@@ -72,5 +77,8 @@
     "editor.tabSize": 2,
     "editor.insertSpaces": true
   },
+  "cmake.automaticReconfigure": false,
+  "cmake.showSystemKit": false,
+  "cmake.configureOnEdit": false,
   "idf.flashBaudRate": "921600"
 }

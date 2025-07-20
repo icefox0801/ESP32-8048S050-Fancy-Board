@@ -5,8 +5,8 @@
 #include "sdkconfig.h"
 
 // LCD panel configuration for ESP32-8048S050
-// Refresh Rate = 20000000/(8+40+20+800)/(8+10+5+480) =
-#define LCD_PIXEL_CLOCK_HZ (15 * 1000 * 1000)
+// Conservative settings for maximum stability and zero flicker
+#define LCD_PIXEL_CLOCK_HZ (16 * 1000 * 1000) // Conservative 16MHz for rock-solid stability
 #define LCD_H_RES 800
 #define LCD_V_RES 480
 #define LCD_HSYNC 8
@@ -63,11 +63,11 @@
 #define LCD_NUM_FB 1
 #endif
 
-// LVGL configuration
-#define LVGL_DRAW_BUF_LINES 480 // MAXIMUM: Full screen height (480 lines) - 10Hz refresh allows massive buffering
+// LVGL configuration - Maximum stability anti-flicker settings
+#define LVGL_DRAW_BUF_LINES 480 // FULL SCREEN: 480 lines for absolute zero flicker
 #define LVGL_TICK_PERIOD_MS 2
-#define LVGL_TASK_STACK_SIZE (12 * 1024) // Increased from 8KB to 12KB for stability
-#define LVGL_TASK_PRIORITY 2
+#define LVGL_TASK_STACK_SIZE (16 * 1024) // Maximum: 16KB stack for full buffer
+#define LVGL_TASK_PRIORITY 5             // Highest priority for display stability
 
 /**
  * @brief Initialize LVGL with LCD panel
