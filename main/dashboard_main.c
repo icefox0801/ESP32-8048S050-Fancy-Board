@@ -121,6 +121,8 @@ void app_main(void)
   serial_data_start_task();
 
   smart_home_register_states_sync_callback(smart_home_states_sync_callback);
+
+  ha_status_init();
   ha_status_register_change_callback(ha_status_change_callback);
 
   // Register smart home callbacks with UI dashboard for decoupled control
