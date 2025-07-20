@@ -90,6 +90,7 @@ void app_main(void)
   esp_log_level_set("HTTP_CLIENT", ESP_LOG_WARN);
   esp_log_level_set("event", ESP_LOG_WARN);
 
+  // Initialize LVGL
   lvgl_setup_init_backlight();
   lvgl_setup_set_backlight(LCD_BK_LIGHT_OFF_LEVEL);
 
@@ -97,31 +98,26 @@ void app_main(void)
   global_panel_handle = panel_handle;
 
   lvgl_setup_set_backlight(LCD_BK_LIGHT_ON_LEVEL);
-
   lv_display_t *display = lvgl_setup_init(panel_handle);
-
   init_display_watchdog();
-
   lvgl_setup_init_touch();
-
   lvgl_setup_create_ui_safe(display, ui_dashboard_create);
-
   lvgl_setup_start_task();
 
-  ESP_ERROR_CHECK(serial_data_init());
-
+  // Initialize Wi-Fi manager
   ESP_ERROR_CHECK(wifi_manager_init());
-
   wifi_manager_register_status_callback(wifi_status_callback);
   wifi_manager_register_connected_callback(wifi_connected_callback);
 
+  // Initialize Serial Data
+  ESP_ERROR_CHECK(serial_data_init());
   serial_data_register_connection_callback(serial_connection_status_callback);
   serial_data_register_data_callback(serial_data_update_callback);
-
   serial_data_start_task();
 
+  // Initialize Home Assistant API
   smart_home_register_states_sync_callback(smart_home_states_sync_callback);
-
+  ha_api_init();
   ha_status_init();
   ha_status_register_change_callback(ha_status_change_callback);
 
