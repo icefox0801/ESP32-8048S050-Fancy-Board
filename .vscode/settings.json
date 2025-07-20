@@ -24,7 +24,8 @@
     "array": "c",
     "string": "c",
     "string_view": "c",
-    "span": "c"
+    "span": "c",
+    "functional": "c"
   },
   "editor.tabSize": 2,
   "editor.insertSpaces": true,

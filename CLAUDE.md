@@ -110,11 +110,23 @@ This project is configured with VS Code tasks for streamlined development. Use t
 
 **Available Tasks:**
 - `ESP-IDF Build` - Standard build
-- `Build with System Manager Debug` - Build with debug configuration
-- `ESP-IDF Build Clean` - Clean build
-- `ESP-IDF Full Clean Build` - Full clean and rebuild
-- `Flash and Monitor with Debug` - Flash firmware and start monitor
-- `Build and Flash Debug` - Combined build and flash
+- `ESP-IDF Flash` - Flash firmware to device
+- `ESP-IDF Monitor` - Monitor device output (MUST flash first)
+- `ESP-IDF Full Clean` - Full clean build
+- `ESP-IDF Reconfigure` - Reconfigure project
+
+**MANDATORY WORKFLOW - Always Flash Before Monitor:**
+⚠️ **CRITICAL**: You MUST flash firmware before starting monitor
+1. **First**: Run `ESP-IDF Build` to compile firmware
+2. **Second**: Run `ESP-IDF Flash` to upload firmware to device
+3. **Third**: Run `ESP-IDF Monitor` to view device output
+
+**CRITICAL PORT MANAGEMENT:**
+🚨 **BEFORE FLASHING**: ALWAYS stop any running monitor tasks to free COM port
+- Monitor tasks lock the COM port preventing flash operations
+- Use `Ctrl+C` in monitor terminal OR run: `taskkill /f /im python.exe`
+- Verify port is free before attempting flash operation
+- **NEVER** run monitor and flash simultaneously
 
 **Usage:**
 - Press `Ctrl+Shift+P` → `Tasks: Run Task` → Select desired task
@@ -126,6 +138,8 @@ This project is configured with VS Code tasks for streamlined development. Use t
 - Integrated with VS Code's problem matcher for error highlighting
 - Consistent build environment across different terminals
 - No need to manually run `export.bat` before each command
+- Enforced workflow prevents running monitor without flashing
+- Port management prevents COM port conflicts
 
 ## Hardware Configuration
 ESP32-8048S050 standard GPIO assignments:
