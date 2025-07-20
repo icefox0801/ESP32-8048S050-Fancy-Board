@@ -14,6 +14,7 @@
 #include <esp_http_client.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
+#include <esp_task_wdt.h>
 #include <lwip/netdb.h>
 #include <string.h>
 #include <stdio.h>
@@ -109,6 +110,9 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
         response->response_len += evt->data_len;
         response->response_data[response->response_len] = '\0';
       }
+
+      // Feed the task watchdog to prevent timeout during large responses
+      esp_task_wdt_reset();
     }
     break;
 
@@ -147,7 +151,11 @@ static esp_http_client_handle_t create_http_client(const char *url)
       .timeout_ms = HA_HTTP_TIMEOUT_MS,
       .user_agent = USER_AGENT,
       .buffer_size = HA_MAX_RESPONSE_SIZE,
-      .buffer_size_tx = 1024,
+      .buffer_size_tx = 512,     // Reduced TX buffer for individual requests
+      .keep_alive_enable = true, // Enable keep-alive for multiple requests
+      .keep_alive_idle = 5,      // Keep connection alive for 5 seconds
+      .keep_alive_interval = 5,
+      .keep_alive_count = 3,
   };
 
   return esp_http_client_init(&config);
@@ -356,108 +364,50 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     return ESP_ERR_INVALID_ARG;
   }
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states in bulk", entity_count);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states individually", entity_count);
 
-  // Use the bulk states API endpoint
-  char url[128];
-  snprintf(url, sizeof(url), "%s", HA_API_STATES_URL);
+  // Clear all states first
+  memset(states, 0, sizeof(ha_entity_state_t) * entity_count);
 
-  ha_api_response_t response;
-  esp_err_t err = perform_http_request(url, "GET", NULL, &response);
+  esp_err_t overall_result = ESP_OK;
+  int success_count = 0;
 
-  if (err == ESP_OK && response.success)
+  // Fetch each entity state individually to avoid watchdog timeout
+  for (int i = 0; i < entity_count; i++)
   {
-    // Parse JSON response to extract our entities
-    cJSON *json = cJSON_Parse(response.response_data);
-    if (json)
+    debug_log_info_f(DEBUG_TAG_HA_API, "Fetching entity %d/%d: %s", i + 1, entity_count, entity_ids[i]);
+
+    esp_err_t result = ha_api_get_entity_state(entity_ids[i], &states[i]);
+    if (result == ESP_OK)
     {
-      // Clear all states first
-      memset(states, 0, sizeof(ha_entity_state_t) * entity_count);
-
-      int found_count = 0;
-      int processed_count = 0;
-      const int MAX_ENTITIES_TO_PROCESS = 100; // Safety limit to prevent memory issues
-
-      // Iterate through the response array to find our entities
-      cJSON *entity_json = NULL;
-      cJSON_ArrayForEach(entity_json, json)
-      {
-        // Safety check to prevent processing too many entities
-        if (++processed_count > MAX_ENTITIES_TO_PROCESS)
-        {
-          debug_log_warning_f(DEBUG_TAG_HA_API, "Reached maximum entity processing limit (%d), stopping search", MAX_ENTITIES_TO_PROCESS);
-          break;
-        }
-        cJSON *entity_id_json = cJSON_GetObjectItem(entity_json, "entity_id");
-        if (cJSON_IsString(entity_id_json))
-        {
-          const char *entity_id = entity_id_json->valuestring;
-
-          // Check if this entity is in our requested list
-          for (int i = 0; i < entity_count; i++)
-          {
-            if (strcmp(entity_id, entity_ids[i]) == 0)
-            {
-              // Parse entity state directly from JSON object to avoid memory allocation
-              cJSON *state_json = cJSON_GetObjectItem(entity_json, "state");
-              if (cJSON_IsString(state_json))
-              {
-                // Clear the state structure
-                memset(&states[i], 0, sizeof(ha_entity_state_t));
-
-                // Copy entity ID and state
-                strncpy(states[i].entity_id, entity_id, HA_MAX_ENTITY_ID_LEN - 1);
-                strncpy(states[i].state, state_json->valuestring, HA_MAX_STATE_LEN - 1);
-                states[i].entity_id[HA_MAX_ENTITY_ID_LEN - 1] = '\0';
-                states[i].state[HA_MAX_STATE_LEN - 1] = '\0';
-
-                found_count++;
-                debug_log_debug_f(DEBUG_TAG_HA_API, "Found state for %s: %s", entity_id, states[i].state);
-              }
-              else
-              {
-                debug_log_warning_f(DEBUG_TAG_HA_API, "Entity %s has no valid state", entity_id);
-              }
-              break;
-            }
-          }
-
-          // Early exit if we found all entities
-          if (found_count >= entity_count)
-          {
-            debug_log_info_f(DEBUG_TAG_HA_API, "Found all %d entities, stopping search early", entity_count);
-            break;
-          }
-        }
-      }
-
-      cJSON_Delete(json);
-
-      if (found_count == entity_count)
-      {
-        debug_log_info_f(DEBUG_TAG_HA_API, "Successfully fetched all %d entity states", entity_count);
-        err = ESP_OK;
-      }
-      else if (found_count > 0)
-      {
-        debug_log_warning_f(DEBUG_TAG_HA_API, "Found only %d/%d entity states", found_count, entity_count);
-        err = ESP_ERR_NOT_FOUND;
-      }
-      else
-      {
-        debug_log_error(DEBUG_TAG_HA_API, "No matching entities found");
-        err = ESP_ERR_NOT_FOUND;
-      }
+      success_count++;
+      debug_log_info_f(DEBUG_TAG_HA_API, "✅ Entity %s state: %s", entity_ids[i], states[i].state);
     }
     else
     {
-      debug_log_error(DEBUG_TAG_HA_API, "Failed to parse bulk states response");
-      err = ESP_ERR_INVALID_RESPONSE;
+      debug_log_warning_f(DEBUG_TAG_HA_API, "❌ Failed to fetch entity %s: %s", entity_ids[i], esp_err_to_name(result));
+      overall_result = result; // Keep track of last error
     }
+
+    // Add small delay between requests to prevent overwhelming the server
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 
-  ha_api_free_response(&response);
-  return err;
+  if (success_count == entity_count)
+  {
+    debug_log_info_f(DEBUG_TAG_HA_API, "Successfully fetched all %d entity states", entity_count);
+    return ESP_OK;
+  }
+  else if (success_count > 0)
+  {
+    debug_log_warning_f(DEBUG_TAG_HA_API, "Fetched %d/%d entity states", success_count, entity_count);
+    return ESP_ERR_NOT_FOUND;
+  }
+  else
+  {
+    debug_log_error(DEBUG_TAG_HA_API, "Failed to fetch any entity states");
+    return overall_result;
+  }
 }
 
 esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_response_t *response)
@@ -605,7 +555,7 @@ esp_err_t ha_api_parse_entity_state(const char *json_str, ha_entity_state_t *sta
     strncpy(state->state, state_item->valuestring, sizeof(state->state) - 1);
   }
 
-  // Parse attributes
+  // Parse friendly name from attributes
   cJSON *attributes = cJSON_GetObjectItem(json, "attributes");
   if (cJSON_IsObject(attributes))
   {
@@ -614,28 +564,15 @@ esp_err_t ha_api_parse_entity_state(const char *json_str, ha_entity_state_t *sta
     {
       strncpy(state->friendly_name, friendly_name->valuestring, sizeof(state->friendly_name) - 1);
     }
+  }
 
-    // Parse other attributes
-    cJSON *attribute = NULL;
-    state->attribute_count = 0;
-    cJSON_ArrayForEach(attribute, attributes)
-    {
-      if (state->attribute_count < HA_MAX_ATTRIBUTES)
-      {
-        strncpy(state->attributes[state->attribute_count].key, attribute->string, 31);
-        if (cJSON_IsString(attribute))
-        {
-          strncpy(state->attributes[state->attribute_count].value, attribute->valuestring, HA_MAX_ATTRIBUTE_LEN - 1);
-        }
-        else
-        {
-          char *attr_str = cJSON_Print(attribute);
-          strncpy(state->attributes[state->attribute_count].value, attr_str, HA_MAX_ATTRIBUTE_LEN - 1);
-          free(attr_str);
-        }
-        state->attribute_count++;
-      }
-    }
+  // Parse last_updated timestamp
+  cJSON *last_updated = cJSON_GetObjectItem(json, "last_updated");
+  if (cJSON_IsString(last_updated))
+  {
+    // Convert ISO timestamp to Unix time if needed
+    // For now, just set to current time
+    state->last_updated = time(NULL);
   }
 
   cJSON_Delete(json);

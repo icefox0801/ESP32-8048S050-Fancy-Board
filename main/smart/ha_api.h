@@ -24,6 +24,7 @@
 #include <cJSON.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -38,39 +39,25 @@ extern "C"
 #define HA_MAX_ENTITY_ID_LEN 64
 
 /** Maximum length for entity states */
-#define HA_MAX_STATE_LEN 128
+#define HA_MAX_STATE_LEN 256
 
-/** Maximum length for attribute values */
-#define HA_MAX_ATTRIBUTE_LEN 256
-
-/** Maximum number of attributes per entity */
-#define HA_MAX_ATTRIBUTES 16
+/** Maximum length for friendly names */
+#define HA_MAX_FRIENDLY_NAME_LEN 64
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // DATA STRUCTURES
   // ═══════════════════════════════════════════════════════════════════════════════
 
   /**
-   * @brief Home Assistant entity attribute structure
-   */
-  typedef struct
-  {
-    char key[32];                     ///< Attribute name
-    char value[HA_MAX_ATTRIBUTE_LEN]; ///< Attribute value as string
-  } ha_attribute_t;
-
-  /**
-   * @brief Home Assistant entity state structure
+   * @brief Simplified Home Assistant entity state structure
+   * Optimized for switch states without complex attributes
    */
   typedef struct
   {
     char entity_id[HA_MAX_ENTITY_ID_LEN];         ///< Entity ID (e.g., "switch.pump")
     char state[HA_MAX_STATE_LEN];                 ///< Current state (e.g., "on", "off")
-    char friendly_name[64];                       ///< Human-readable name
-    uint64_t last_changed;                        ///< Last change timestamp (Unix time)
-    uint64_t last_updated;                        ///< Last update timestamp (Unix time)
-    ha_attribute_t attributes[HA_MAX_ATTRIBUTES]; ///< Entity attributes
-    uint8_t attribute_count;                      ///< Number of attributes
+    char friendly_name[HA_MAX_FRIENDLY_NAME_LEN]; ///< Human-readable name
+    time_t last_updated;                          ///< Last update timestamp (Unix time)
   } ha_entity_state_t;
 
   /**

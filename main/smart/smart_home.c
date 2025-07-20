@@ -13,6 +13,7 @@
 #include "smart_config.h"
 #include "ha_api.h"
 #include "../ui/ui_controls_panel.h"
+#include <stdlib.h> // For malloc/free
 #include "esp_timer.h"
 #include "system_debug_utils.h"
 #include <esp_err.h>
@@ -63,7 +64,7 @@ static esp_err_t run_sync_states_task(void)
   BaseType_t result = xTaskCreate(
       sync_task_function,
       "SyncStatesTask",
-      8192, // Stack size - increased for HTTP/JSON operations
+      16384, // Stack size - increased to 16KB for individual API call operations and watchdog prevention
       NULL,
       2,                // Priority
       &sync_task_handle // Store task handle for cleanup
@@ -200,7 +201,7 @@ esp_err_t smart_home_trigger_scene(void)
 
 void smart_home_sync_switch_states(void)
 {
-  debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using bulk API");
+  debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using individual API calls");
 
   // Entity IDs from smart config
   const char *switch_entity_ids[] = {
@@ -210,8 +211,14 @@ void smart_home_sync_switch_states(void)
   };
   const int switch_count = sizeof(switch_entity_ids) / sizeof(switch_entity_ids[0]);
 
-  // Fetch all switch states in one bulk request
-  ha_entity_state_t switch_states[switch_count];
+  // Allocate switch states on heap instead of stack (each ha_entity_state_t is ~5.4KB)
+  ha_entity_state_t *switch_states = (ha_entity_state_t *)malloc(switch_count * sizeof(ha_entity_state_t));
+  if (!switch_states)
+  {
+    debug_log_error(DEBUG_TAG_HA_SYNC, "Failed to allocate memory for switch states");
+    return;
+  }
+
   esp_err_t ret = ha_api_get_multiple_entity_states(switch_entity_ids, switch_count, switch_states);
 
   if (ret == ESP_OK)
@@ -237,6 +244,9 @@ void smart_home_sync_switch_states(void)
   {
     debug_log_warning_f(DEBUG_TAG_HA_SYNC, "Immediate sync failed: %s", esp_err_to_name(ret));
   }
+
+  // Free allocated memory
+  free(switch_states);
 }
 
 void smart_home_update_wifi_status(bool is_connected)
