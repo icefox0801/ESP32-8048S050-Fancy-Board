@@ -55,7 +55,7 @@ static void sync_task_function(void *pvParameters)
     // Add error handling to prevent task crashes
     smart_home_sync_switch_states();
 
-    // Wait for 30 seconds before next sync
+    // Wait for 30 seconds before next sync (longer interval due to connection issues)
     vTaskDelay(pdMS_TO_TICKS(30000));
   }
 }
@@ -210,7 +210,17 @@ esp_err_t smart_home_trigger_scene(void)
 
 void smart_home_sync_switch_states(void)
 {
-  debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using individual API calls");
+  debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using optimized individual API calls");
+
+  // Quick network check before attempting sync
+  wifi_ap_record_t ap_info;
+  esp_err_t wifi_ret = esp_wifi_sta_get_ap_info(&ap_info);
+  if (wifi_ret != ESP_OK)
+  {
+    debug_log_warning(DEBUG_TAG_HA_SYNC, "⚠️ WiFi not connected, skipping sync");
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+    return;
+  }
 
   // Entity IDs from smart config
   const char *switch_entity_ids[] = {
@@ -228,7 +238,8 @@ void smart_home_sync_switch_states(void)
     return;
   }
 
-  esp_err_t ret = ha_api_get_multiple_entity_states(switch_entity_ids, switch_count, switch_states);
+  debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using optimized BULK API request");
+  esp_err_t ret = ha_api_get_multiple_entity_states_bulk(switch_entity_ids, switch_count, switch_states);
 
   if (ret == ESP_OK)
   {
