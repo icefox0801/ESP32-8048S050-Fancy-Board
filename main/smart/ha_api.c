@@ -11,11 +11,14 @@
 #include "ha_api.h"
 #include "ha_status.h"
 #include "smart_config.h"
+#include "entity_states_parser.h"
 #include "system_debug_utils.h"
 #include <esp_http_client.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
 #include <esp_task_wdt.h>
+#include <esp_timer.h>
+#include <cJSON.h>
 #include <lwip/netdb.h>
 #include <string.h>
 #include <stdio.h>
@@ -33,6 +36,9 @@
 
 static bool ha_api_initialized = false;
 static char auth_header[256];
+static esp_http_client_handle_t persistent_client = NULL;
+static char current_base_url[256] = {0};
+static bool task_watchdog_subscribed = false;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE FUNCTION DECLARATIONS
@@ -40,6 +46,8 @@ static char auth_header[256];
 
 static esp_err_t http_event_handler(esp_http_client_event_t *evt);
 static esp_http_client_handle_t create_http_client(const char *url);
+static esp_http_client_handle_t get_persistent_client(const char *url);
+static void cleanup_persistent_client(void);
 static esp_err_t perform_http_request(const char *url, const char *method, const char *post_data, ha_api_response_t *response);
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -102,14 +110,26 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
       if (response->response_data == NULL)
       {
         response->response_data = malloc(HA_MAX_RESPONSE_SIZE);
+        if (response->response_data == NULL)
+        {
+          debug_log_error(DEBUG_TAG_HA_API, "Failed to allocate response buffer");
+          return ESP_FAIL;
+        }
         response->response_len = 0;
+        response->response_data[0] = '\0'; // Initialize with null terminator
       }
 
-      if (response->response_data && (response->response_len + evt->data_len) < HA_MAX_RESPONSE_SIZE)
+      if (response->response_data && (response->response_len + evt->data_len) <= (HA_MAX_RESPONSE_SIZE - 1))
       {
         memcpy(response->response_data + response->response_len, evt->data, evt->data_len);
         response->response_len += evt->data_len;
         response->response_data[response->response_len] = '\0';
+      }
+      else if (response->response_data)
+      {
+        // Log if we're hitting buffer size limits
+        debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Response buffer limit reached: %zu + %d >= %d bytes",
+                            response->response_len, evt->data_len, HA_MAX_RESPONSE_SIZE - 1);
       }
 
       // Feed the task watchdog to prevent timeout during large responses
@@ -149,17 +169,85 @@ static esp_http_client_handle_t create_http_client(const char *url)
   esp_http_client_config_t config = {
       .url = url,
       .event_handler = http_event_handler,
-      .timeout_ms = HA_HTTP_TIMEOUT_MS,
+      .timeout_ms = HA_HTTP_TIMEOUT_MS, // 8 seconds total timeout
       .user_agent = USER_AGENT,
       .buffer_size = HA_MAX_RESPONSE_SIZE,
-      .buffer_size_tx = 512,     // Reduced TX buffer for individual requests
-      .keep_alive_enable = true, // Enable keep-alive for multiple requests
-      .keep_alive_idle = 5,      // Keep connection alive for 5 seconds
-      .keep_alive_interval = 5,
-      .keep_alive_count = 3,
+      .buffer_size_tx = 2048,              // Increased TX buffer for better throughput
+      .keep_alive_enable = true,           // Enable keep-alive for multiple requests
+      .keep_alive_idle = 15,               // Keep connection alive for 15 seconds
+      .keep_alive_interval = 5,            // Send keep-alive every 5 seconds
+      .keep_alive_count = 3,               // Send up to 3 keep-alive probes
+      .disable_auto_redirect = false,      // Enable redirects
+      .max_redirection_count = 3,          // Allow up to 3 redirects
+      .max_authorization_retries = 1,      // Limit auth retries
+      .use_global_ca_store = false,        // Skip SSL verification for faster connections
+      .skip_cert_common_name_check = true, // Skip SSL cert name check
   };
 
   return esp_http_client_init(&config);
+}
+
+/**
+ * @brief Get or create persistent HTTP client
+ */
+static esp_http_client_handle_t get_persistent_client(const char *url)
+{
+  // Extract base URL (scheme + host + port)
+  char base_url[256] = {0};
+  const char *path_start = strstr(url, "://");
+  if (path_start)
+  {
+    path_start += 3; // Skip "://"
+    const char *path_end = strchr(path_start, '/');
+    if (path_end)
+    {
+      size_t base_len = path_end - url;
+      if (base_len < sizeof(base_url))
+      {
+        strncpy(base_url, url, base_len);
+        base_url[base_len] = '\0';
+      }
+    }
+    else
+    {
+      strncpy(base_url, url, sizeof(base_url) - 1);
+    }
+  }
+
+  // Check if we need to create a new client or can reuse existing one
+  if (persistent_client == NULL || strcmp(current_base_url, base_url) != 0)
+  {
+    // Clean up existing client if base URL changed
+    if (persistent_client != NULL)
+    {
+      debug_log_info(DEBUG_TAG_HA_API, "🔄 Base URL changed, cleaning up old client");
+      cleanup_persistent_client();
+    }
+
+    debug_log_info_f(DEBUG_TAG_HA_API, "🔗 Creating new persistent HTTP client for: %s", base_url);
+    persistent_client = create_http_client(base_url);
+    if (persistent_client)
+    {
+      strncpy(current_base_url, base_url, sizeof(current_base_url) - 1);
+      current_base_url[sizeof(current_base_url) - 1] = '\0';
+    }
+  }
+
+  return persistent_client;
+}
+
+/**
+ * @brief Clean up persistent HTTP client
+ */
+static void cleanup_persistent_client(void)
+{
+  if (persistent_client != NULL)
+  {
+    debug_log_info(DEBUG_TAG_HA_API, "🧹 Cleaning up persistent HTTP client");
+    esp_http_client_cleanup(persistent_client);
+    persistent_client = NULL;
+    current_base_url[0] = '\0';
+  }
 }
 
 /**
@@ -199,14 +287,39 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
   esp_err_t err = ESP_FAIL;
   int status_code = 0;
 
+  // Subscribe to watchdog only once per task lifecycle
+  if (!task_watchdog_subscribed)
+  {
+    esp_err_t wdt_err = esp_task_wdt_add(xTaskGetCurrentTaskHandle());
+    if (wdt_err == ESP_OK)
+    {
+      task_watchdog_subscribed = true;
+      debug_log_debug(DEBUG_TAG_HA_API, "🐕 Task subscribed to watchdog");
+    }
+    else if (wdt_err != ESP_ERR_INVALID_ARG) // Task already subscribed is OK
+    {
+      debug_log_warning_f(DEBUG_TAG_HA_API, "Failed to subscribe to watchdog: %s", esp_err_to_name(wdt_err));
+    }
+  }
+
   for (int retry = 0; retry < HA_SYNC_RETRY_COUNT; retry++)
   {
-    esp_http_client_handle_t client = create_http_client(url);
+    // Feed watchdog before each retry
+    if (task_watchdog_subscribed)
+    {
+      esp_task_wdt_reset();
+    }
+
+    esp_http_client_handle_t client = get_persistent_client(url);
     if (client == NULL)
     {
-      debug_log_error(DEBUG_TAG_HA_API, "Failed to create HTTP client");
+      debug_log_error(DEBUG_TAG_HA_API, "Failed to get HTTP client");
+      vTaskDelay(pdMS_TO_TICKS(1000)); // Wait before retry
       continue;
     }
+
+    // Set URL for this specific request (in case of persistent client)
+    esp_http_client_set_url(client, url);
 
     // Set headers
     esp_http_client_set_header(client, "Authorization", auth_header);
@@ -241,7 +354,8 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     status_code = esp_http_client_get_status_code(client);
     debug_log_info_f(DEBUG_TAG_HA_API, "HTTP Status Code: %d", status_code);
 
-    esp_http_client_cleanup(client);
+    // Don't cleanup the persistent client, just disconnect
+    esp_http_client_close(client);
 
     if (err == ESP_OK)
     {
@@ -263,14 +377,14 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     // Wait before retry
     if (retry < HA_SYNC_RETRY_COUNT - 1)
     {
-      debug_log_info_f(DEBUG_TAG_HA_API, "Waiting %d seconds before retry...", retry + 1);
+      debug_log_info_f(DEBUG_TAG_HA_API, "Waiting 500ms before retry...");
 
       // Notify retry status
       {
         ha_status_change(HA_STATUS_SYNCING);
       }
 
-      vTaskDelay(pdMS_TO_TICKS(1000 * (retry + 1))); // Progressive backoff
+      vTaskDelay(pdMS_TO_TICKS(500)); // Fixed 500ms delay for faster retries
     }
   }
 
@@ -328,6 +442,15 @@ esp_err_t ha_api_init(void)
 
   debug_log_info(DEBUG_TAG_HA_API, "Authorization header formatted successfully");
 
+  // Initialize async entity states parser
+  esp_err_t parser_err = entity_states_parser_init();
+  if (parser_err != ESP_OK)
+  {
+    debug_log_error_f(DEBUG_TAG_HA_API, "Failed to initialize entity states parser: %s", esp_err_to_name(parser_err));
+    return parser_err;
+  }
+  debug_log_info(DEBUG_TAG_HA_API, "✅ Async entity states parser initialized");
+
   ha_api_initialized = true;
 
   debug_log_info_f(DEBUG_TAG_HA_API, "Home Assistant API client initialized (Server: %s:%d)",
@@ -348,6 +471,28 @@ esp_err_t ha_api_deinit(void)
   }
 
   debug_log_info(DEBUG_TAG_HA_API, "Deinitializing Home Assistant API client");
+
+  // Deinitialize async entity states parser
+  entity_states_parser_deinit();
+  debug_log_info(DEBUG_TAG_HA_API, "🔌 Async entity states parser deinitialized");
+
+  // Clean up persistent HTTP client
+  cleanup_persistent_client();
+
+  // Clean up watchdog subscription if active
+  if (task_watchdog_subscribed)
+  {
+    esp_err_t wdt_err = esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
+    if (wdt_err == ESP_OK)
+    {
+      task_watchdog_subscribed = false;
+      debug_log_debug(DEBUG_TAG_HA_API, "🐕 Task unsubscribed from watchdog");
+    }
+    else
+    {
+      debug_log_warning_f(DEBUG_TAG_HA_API, "Failed to unsubscribe from watchdog: %s", esp_err_to_name(wdt_err));
+    }
+  }
 
   ha_api_initialized = false;
   memset(auth_header, 0, sizeof(auth_header));
@@ -387,7 +532,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     return ESP_ERR_INVALID_ARG;
   }
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states individually", entity_count);
+  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states individually (optimized)", entity_count);
 
   // Notify that we're starting a sync operation
   ha_status_change(HA_STATUS_SYNCING);
@@ -397,8 +542,9 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
 
   esp_err_t overall_result = ESP_OK;
   int success_count = 0;
+  int consecutive_failures = 0;
 
-  // Fetch each entity state individually to avoid watchdog timeout
+  // Fetch each entity state individually but with early exit on consecutive failures
   for (int i = 0; i < entity_count; i++)
   {
     debug_log_info_f(DEBUG_TAG_HA_API, "Fetching entity %d/%d: %s", i + 1, entity_count, entity_ids[i]);
@@ -407,16 +553,47 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     if (result == ESP_OK)
     {
       success_count++;
+      consecutive_failures = 0; // Reset failure counter on success
       debug_log_info_f(DEBUG_TAG_HA_API, "✅ Entity %s state: %s", entity_ids[i], states[i].state);
     }
     else
     {
+      consecutive_failures++;
       debug_log_warning_f(DEBUG_TAG_HA_API, "❌ Failed to fetch entity %s: %s", entity_ids[i], esp_err_to_name(result));
       overall_result = result; // Keep track of last error
+
+      // Early exit with more intelligent failure detection
+      if (consecutive_failures >= 2)
+      {
+        // Stop for persistent connection issues
+        if (result == ESP_ERR_HTTP_CONNECT || result == ESP_ERR_HTTP_EAGAIN)
+        {
+          debug_log_error(DEBUG_TAG_HA_API, "⚠️ Multiple consecutive connection failures, aborting sync to prevent timeout");
+          break;
+        }
+        // Also stop for timeout errors that indicate network issues
+        else if (result == ESP_ERR_TIMEOUT)
+        {
+          debug_log_error(DEBUG_TAG_HA_API, "⚠️ Multiple consecutive timeouts, network appears unstable");
+          break;
+        }
+      }
     }
 
-    // Add small delay between requests to prevent overwhelming the server
-    vTaskDelay(pdMS_TO_TICKS(100));
+    // Adaptive delay between requests based on failure status
+    if (i < entity_count - 1) // Don't delay after the last request
+    {
+      if (consecutive_failures > 0)
+      {
+        // Longer delay after failures to let network recover
+        vTaskDelay(pdMS_TO_TICKS(250)); // 250ms delay after failures
+      }
+      else
+      {
+        // Normal delay for successful requests
+        vTaskDelay(pdMS_TO_TICKS(100)); // 100ms delay between successful requests
+      }
+    }
   }
 
   if (success_count == entity_count)
@@ -445,6 +622,202 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     ha_status_change(HA_STATUS_SYNC_FAILED);
 
     return overall_result;
+  }
+}
+
+/**
+ * @brief Get multiple entity states using bulk API request
+ * This method fetches ALL states and filters the requested entities
+ * Much faster than individual requests but larger response payload
+ */
+esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int entity_count, ha_entity_state_t *states)
+{
+  if (!entity_ids || !states || entity_count <= 0)
+  {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states using BULK API request", entity_count);
+
+  // Notify that we're starting a sync operation
+  ha_status_change(HA_STATUS_SYNCING);
+
+  // Clear all states first
+  memset(states, 0, sizeof(ha_entity_state_t) * entity_count);
+
+  // Measure timing
+  int64_t start_time = esp_timer_get_time();
+
+  // Make single bulk request to get ALL states
+  ha_api_response_t response = {0};
+  esp_err_t err = perform_http_request(HA_API_STATES_URL, "GET", NULL, &response);
+
+  int64_t request_time = esp_timer_get_time() - start_time;
+  debug_log_info_f(DEBUG_TAG_HA_API, "⏱️ Bulk HTTP request took: %lld ms", request_time / 1000);
+
+  if (err != ESP_OK)
+  {
+    debug_log_error_f(DEBUG_TAG_HA_API, "Bulk request failed: %s", esp_err_to_name(err));
+
+    // Provide more specific error information
+    if (err == ESP_ERR_TIMEOUT)
+    {
+      debug_log_error(DEBUG_TAG_HA_API, "⏰ Request timed out - Home Assistant may be slow or response too large");
+    }
+    else if (err == ESP_ERR_NOT_FOUND)
+    {
+      debug_log_error(DEBUG_TAG_HA_API, "🌐 Network connectivity issue - check Home Assistant server");
+    }
+
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+    return err;
+  }
+
+  // Check response size and completeness
+  size_t response_size = response.response_data ? strlen(response.response_data) : 0;
+  debug_log_info_f(DEBUG_TAG_HA_API, "📦 Bulk response size: %zu bytes", response_size);
+
+  if (response_size == 0)
+  {
+    debug_log_error(DEBUG_TAG_HA_API, "Empty bulk response received");
+    ha_api_free_response(&response);
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+    return ESP_ERR_INVALID_RESPONSE;
+  }
+
+  // Check if response looks complete (should be JSON array ending with ']')
+  if (response_size > 0 && response.response_data[response_size - 1] != ']')
+  {
+    debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Response may be truncated - doesn't end with ']' (last char: '%c', 0x%02X)",
+                        response.response_data[response_size - 1],
+                        (unsigned char)response.response_data[response_size - 1]);
+  }
+
+  if (response_size > 32768) // 32KB limit for safety
+  {
+    debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Very large response (%zu bytes), this may cause memory issues", response_size);
+  }
+
+  // Start JSON parsing timing
+  int64_t parse_start = esp_timer_get_time();
+
+  // Reset watchdog before JSON parsing since it can take time
+  esp_task_wdt_reset();
+
+  // Parse JSON response using entity states parser
+  const size_t ASYNC_THRESHOLD = 16384; // 16KB threshold
+  bool use_async = (response_size > ASYNC_THRESHOLD) && entity_states_parser_is_ready();
+
+  esp_err_t parse_err;
+  int success_count = 0;
+
+  if (use_async)
+  {
+    debug_log_info_f(DEBUG_TAG_HA_API, "📡 Using async parser for large response (%zu bytes)", response_size);
+
+    // Submit for async parsing
+    parse_err = entity_states_parser_submit_async(
+        response.response_data,
+        response_size,
+        entity_ids,
+        entity_count,
+        states);
+
+    if (parse_err == ESP_OK)
+    {
+      // Wait for completion with timeout
+      parse_err = entity_states_parser_wait_completion(30000); // 30 second timeout
+
+      if (parse_err == ESP_OK)
+      {
+        // Count successful entities (states with non-empty entity_id)
+        for (int i = 0; i < entity_count; i++)
+        {
+          if (strlen(states[i].entity_id) > 0)
+          {
+            success_count++;
+          }
+        }
+        debug_log_info_f(DEBUG_TAG_HA_API, "✅ Async parsing completed, found %d/%d entities", success_count, entity_count);
+      }
+      else if (parse_err == ESP_ERR_TIMEOUT)
+      {
+        debug_log_error(DEBUG_TAG_HA_API, "⏰ Async parsing timed out");
+      }
+      else
+      {
+        debug_log_error_f(DEBUG_TAG_HA_API, "❌ Async parsing failed: %s", esp_err_to_name(parse_err));
+      }
+    }
+    else
+    {
+      debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Failed to submit async parsing: %s, falling back to sync", esp_err_to_name(parse_err));
+      use_async = false; // Fall back to sync parsing
+    }
+  }
+
+  if (!use_async)
+  {
+    debug_log_info_f(DEBUG_TAG_HA_API, "🔄 Using sync parser for response (%zu bytes)", response_size);
+
+    parse_err = entity_states_parser_parse_sync(
+        response.response_data,
+        entity_ids,
+        entity_count,
+        states);
+
+    if (parse_err == ESP_OK)
+    {
+      // Count successful entities (states with non-empty entity_id)
+      for (int i = 0; i < entity_count; i++)
+      {
+        if (strlen(states[i].entity_id) > 0)
+        {
+          success_count++;
+        }
+      }
+      debug_log_info_f(DEBUG_TAG_HA_API, "✅ Sync parsing completed, found %d/%d entities", success_count, entity_count);
+    }
+    else
+    {
+      debug_log_error_f(DEBUG_TAG_HA_API, "❌ Sync parsing failed: %s", esp_err_to_name(parse_err));
+    }
+  }
+
+  ha_api_free_response(&response);
+
+  // Handle parsing failure
+  if (parse_err != ESP_OK)
+  {
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+    return parse_err;
+  }
+
+  int64_t parse_time = esp_timer_get_time() - parse_start;
+  int64_t total_time = esp_timer_get_time() - start_time;
+
+  debug_log_info_f(DEBUG_TAG_HA_API, "⏱️ JSON parsing took: %lld ms", parse_time / 1000);
+  debug_log_info_f(DEBUG_TAG_HA_API, "⏱️ Total bulk operation took: %lld ms", total_time / 1000);
+  debug_log_info_f(DEBUG_TAG_HA_API, "📊 Response size: %zu bytes", response_size);
+
+  // Determine result based on success count
+  if (success_count == entity_count)
+  {
+    debug_log_info_f(DEBUG_TAG_HA_API, "🎯 Successfully fetched all %d entity states via bulk request", entity_count);
+    ha_status_change(HA_STATUS_STATES_SYNCED);
+    return ESP_OK;
+  }
+  else if (success_count > 0)
+  {
+    debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Fetched %d/%d entity states via bulk request", success_count, entity_count);
+    ha_status_change(HA_STATUS_PARTIAL_SYNC);
+    return ESP_ERR_NOT_FOUND;
+  }
+  else
+  {
+    debug_log_error(DEBUG_TAG_HA_API, "❌ Failed to fetch any entity states via bulk request");
+    ha_status_change(HA_STATUS_SYNC_FAILED);
+    return ESP_ERR_NOT_FOUND;
   }
 }
 
