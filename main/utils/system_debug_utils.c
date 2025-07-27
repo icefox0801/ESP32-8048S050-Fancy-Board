@@ -29,6 +29,7 @@ static const char *debug_tag_strings[DEBUG_TAG_MAX] = {
     "ha_task_mgr",
     "HA_SYNC",
     "HA_API",
+    "PARSER",
     "lvgl_setup",
     "SYSTEM"};
 
