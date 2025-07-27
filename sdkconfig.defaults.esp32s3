@@ -28,8 +28,8 @@ CONFIG_ESP_TIMER_INTERRUPT_LEVEL=1
 # System event task stack size (minimal)
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
 
-# Additional task stack sizes for stability (minimal)
-CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=2048
+# Additional task stack sizes for stability (increased for LVGL and HA operations)
+CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=8192
 
 # TEMPORARY: Disable problematic stack monitoring
 # CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y
@@ -183,8 +183,7 @@ CONFIG_LV_FONT_DEFAULT_MONTSERRAT_14=y
 # ----------------------------------------------------------
 # LCD CAM and RGB Panel Configuration
 # ----------------------------------------------------------
-# LCD RGB ISR optimization (keep disabled for dual-core stability)
-# CONFIG_LCD_RGB_ISR_IRAM_SAFE=y  # Keep disabled for now
+CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
 CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
 
 # ----------------------------------------------------------
@@ -194,7 +193,7 @@ CONFIG_EXAMPLE_LCD_DATA_LINES_16=y
 
 # LCD Frame Buffer Configuration (Anti-Flicker)
 # CONFIG_EXAMPLE_USE_SINGLE_FB is not set
-CONFIG_EXAMPLE_USE_DOUBLE_FB=y
+# CONFIG_EXAMPLE_USE_DOUBLE_FB=y
 # CONFIG_EXAMPLE_USE_BOUNCE_BUFFER is not set
 
 # LCD Control Signals
@@ -251,8 +250,8 @@ CONFIG_ESP_HTTP_CLIENT_BUFFER_SIZE=8192
 CONFIG_ESPTOOLPY_MONITOR_BAUD=115200
 
 # Enable debug logging for LCD and LVGL
-CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y
-CONFIG_LOG_MAXIMUM_LEVEL=4
+# CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y
+CONFIG_LOG_MAXIMUM_LEVEL=1
 
 # ----------------------------------------------------------
 # Flash Programming Behavior

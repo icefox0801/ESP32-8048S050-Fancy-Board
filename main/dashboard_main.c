@@ -15,36 +15,12 @@
 
 // static const char *TAG = "dashboard"; // Removed - unused after debug cleanup
 
-// Display health monitoring
-static TimerHandle_t display_watchdog_timer = NULL;
+// Display health monitoring - removed redundant watchdog timer
+// LVGL task handles all timer processing automatically
 static esp_lcd_panel_handle_t global_panel_handle = NULL;
 
-static void display_watchdog_callback(TimerHandle_t xTimer)
-{
-  if (global_panel_handle != NULL)
-  {
-    lv_timer_handler();
-  }
-}
-
-static void init_display_watchdog(void)
-{
-  display_watchdog_timer = xTimerCreate(
-      "DisplayWatchdog",
-      pdMS_TO_TICKS(5000),
-      pdTRUE,
-      NULL,
-      display_watchdog_callback);
-
-  if (display_watchdog_timer != NULL)
-  {
-    xTimerStart(display_watchdog_timer, 0);
-  }
-  else
-  {
-    debug_log_error(DEBUG_TAG_DASHBOARD, "Failed to create watchdog timer");
-  }
-}
+// Removed redundant display watchdog - LVGL task handles timer processing
+// No additional display monitoring needed
 
 static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)
 {
@@ -99,7 +75,6 @@ void app_main(void)
 
   lvgl_setup_set_backlight(LCD_BK_LIGHT_ON_LEVEL);
   lv_display_t *display = lvgl_setup_init(panel_handle);
-  init_display_watchdog();
   lvgl_setup_init_touch();
   lvgl_setup_create_ui_safe(display, ui_dashboard_create);
   lvgl_setup_start_task();

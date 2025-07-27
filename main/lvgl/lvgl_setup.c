@@ -92,12 +92,12 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 
 #if CONFIG_EXAMPLE_USE_DOUBLE_FB
   ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel_handle, 2, &buf1, &buf2));
-  lv_display_set_buffers(display, buf1, buf2, LCD_H_RES * LCD_V_RES * LCD_PIXEL_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
+  lv_display_set_buffers(display, buf1, buf2, LCD_H_RES * LCD_V_RES * LVGL_DRAW_BUF_LINES, LV_DISPLAY_RENDER_MODE_PARTIAL);
   debug_log_info(DEBUG_TAG_LVGL_SETUP, "Using double framebuffer mode");
 #else
   size_t draw_buffer_sz = LCD_H_RES * LVGL_DRAW_BUF_LINES * LCD_PIXEL_SIZE;
-  // Use PSRAM for large draw buffer instead of internal RAM
-  buf1 = heap_caps_malloc(draw_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  // Use internal RAM for smaller draw buffer
+  buf1 = heap_caps_malloc(draw_buffer_sz, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (!buf1)
   {
     debug_log_warning(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer in PSRAM, trying internal RAM");

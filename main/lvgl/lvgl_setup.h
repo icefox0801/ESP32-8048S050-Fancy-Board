@@ -6,15 +6,15 @@
 
 // LCD panel configuration for ESP32-8048S050
 // Conservative settings for maximum stability and zero flicker
-#define LCD_PIXEL_CLOCK_HZ (16 * 1000 * 1000) // Conservative 16MHz for rock-solid stability
+#define LCD_PIXEL_CLOCK_HZ (20 * 1000 * 1000) // Conservative 20MHz for rock-solid stability
 #define LCD_H_RES 800
 #define LCD_V_RES 480
-#define LCD_HSYNC 8
+#define LCD_HSYNC 10
 #define LCD_HBP 40
 #define LCD_HFP 20
-#define LCD_VSYNC 8
-#define LCD_VBP 10
-#define LCD_VFP 5
+#define LCD_VSYNC 10
+#define LCD_VBP 30
+#define LCD_VFP 15
 
 // Backlight control
 #define LCD_BK_LIGHT_ON_LEVEL 1
@@ -63,11 +63,11 @@
 #define LCD_NUM_FB 1
 #endif
 
-// LVGL configuration - Maximum stability anti-flicker settings
-#define LVGL_DRAW_BUF_LINES 480 // FULL SCREEN: 480 lines for absolute zero flicker
+// LVGL configuration
+#define LVGL_DRAW_BUF_LINES 60
 #define LVGL_TICK_PERIOD_MS 2
-#define LVGL_TASK_STACK_SIZE (16 * 1024) // Maximum: 16KB stack for full buffer
-#define LVGL_TASK_PRIORITY 5             // Highest priority for display stability
+#define LVGL_TASK_STACK_SIZE (16 * 1024)
+#define LVGL_TASK_PRIORITY 5
 
 /**
  * @brief Initialize LVGL with LCD panel
