@@ -350,6 +350,12 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     debug_log_info_f(DEBUG_TAG_HA_API, "Sending HTTP request (attempt %d/%d)...", retry + 1, HA_SYNC_RETRY_COUNT);
     err = esp_http_client_perform(client);
 
+    // Reset watchdog immediately after HTTP operation to prevent timeout
+    if (task_watchdog_subscribed)
+    {
+      esp_task_wdt_reset();
+    }
+
     // Get status code for logging
     status_code = esp_http_client_get_status_code(client);
     debug_log_info_f(DEBUG_TAG_HA_API, "HTTP Status Code: %d", status_code);
@@ -547,6 +553,12 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
   // Fetch each entity state individually but with early exit on consecutive failures
   for (int i = 0; i < entity_count; i++)
   {
+    // Reset watchdog during long sync operations
+    if (task_watchdog_subscribed)
+    {
+      esp_task_wdt_reset();
+    }
+
     debug_log_info_f(DEBUG_TAG_HA_API, "Fetching entity %d/%d: %s", i + 1, entity_count, entity_ids[i]);
 
     esp_err_t result = ha_api_get_entity_state(entity_ids[i], &states[i]);
@@ -702,7 +714,10 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   int64_t parse_start = esp_timer_get_time();
 
   // Reset watchdog before JSON parsing since it can take time
-  esp_task_wdt_reset();
+  if (task_watchdog_subscribed)
+  {
+    esp_task_wdt_reset();
+  }
 
   // Parse JSON response using entity states parser
   const size_t ASYNC_THRESHOLD = 16384; // 16KB threshold
@@ -727,6 +742,12 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
     {
       // Wait for completion with timeout
       parse_err = entity_states_parser_wait_completion(30000); // 30 second timeout
+
+      // Reset watchdog after potentially long async operation
+      if (task_watchdog_subscribed)
+      {
+        esp_task_wdt_reset();
+      }
 
       if (parse_err == ESP_OK)
       {

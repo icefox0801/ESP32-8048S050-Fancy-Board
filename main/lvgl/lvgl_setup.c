@@ -101,9 +101,9 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
   if (!buf1)
   {
     debug_log_warning(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer in PSRAM, trying internal RAM");
-    // Fallback to smaller buffer in internal RAM
-    size_t fallback_buffer_sz = LCD_H_RES * 10 * LCD_PIXEL_SIZE; // 10 lines instead of 50
-    buf1 = heap_caps_malloc(fallback_buffer_sz, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    // Fallback to larger buffer in SPI RAM
+    size_t fallback_buffer_sz = LCD_H_RES * LCD_V_RES * LCD_PIXEL_SIZE; // 10 lines instead of 50
+    buf1 = heap_caps_malloc(fallback_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!buf1)
     {
       debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer");
