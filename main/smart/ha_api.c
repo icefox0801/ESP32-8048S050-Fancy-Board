@@ -124,6 +124,12 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
         memcpy(response->response_data + response->response_len, evt->data, evt->data_len);
         response->response_len += evt->data_len;
         response->response_data[response->response_len] = '\0';
+
+        // Log progress for large responses (every 10KB)
+        if (response->response_len > 0 && (response->response_len % 10240) == 0)
+        {
+          debug_log_info_f(DEBUG_TAG_HA_API, "📥 Received %zu KB so far...", response->response_len / 1024);
+        }
       }
       else if (response->response_data)
       {
@@ -730,6 +736,12 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   {
     debug_log_info_f(DEBUG_TAG_HA_API, "📡 Using async parser for large response (%zu bytes)", response_size);
 
+    // Reset watchdog before starting async parsing
+    if (task_watchdog_subscribed)
+    {
+      esp_task_wdt_reset();
+    }
+
     // Submit for async parsing
     parse_err = entity_states_parser_submit_async(
         response.response_data,
@@ -740,10 +752,31 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
     if (parse_err == ESP_OK)
     {
-      // Wait for completion with timeout
-      parse_err = entity_states_parser_wait_completion(30000); // 30 second timeout
+      // Wait for completion with timeout, resetting watchdog periodically
+      const int timeout_ms = 30000;       // 30 second total timeout
+      const int check_interval_ms = 2000; // Check every 2 seconds
+      int elapsed_ms = 0;
 
-      // Reset watchdog after potentially long async operation
+      while (elapsed_ms < timeout_ms)
+      {
+        parse_err = entity_states_parser_wait_completion(check_interval_ms);
+
+        // Reset watchdog during wait
+        if (task_watchdog_subscribed)
+        {
+          esp_task_wdt_reset();
+        }
+
+        if (parse_err != ESP_ERR_TIMEOUT)
+        {
+          break; // Completed or failed
+        }
+
+        elapsed_ms += check_interval_ms;
+        debug_log_debug_f(DEBUG_TAG_HA_API, "⏳ Async parsing still in progress... (%d/%d ms)", elapsed_ms, timeout_ms);
+      }
+
+      // Final watchdog reset after potentially long async operation
       if (task_watchdog_subscribed)
       {
         esp_task_wdt_reset();
@@ -751,12 +784,24 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
       if (parse_err == ESP_OK)
       {
+        // Reset watchdog before counting entities
+        if (task_watchdog_subscribed)
+        {
+          esp_task_wdt_reset();
+        }
+
         // Count successful entities (states with non-empty entity_id)
         for (int i = 0; i < entity_count; i++)
         {
           if (strlen(states[i].entity_id) > 0)
           {
             success_count++;
+          }
+
+          // Reset watchdog periodically during counting for very large entity lists
+          if (i > 0 && (i % 50) == 0 && task_watchdog_subscribed)
+          {
+            esp_task_wdt_reset();
           }
         }
         debug_log_info_f(DEBUG_TAG_HA_API, "✅ Async parsing completed, found %d/%d entities", success_count, entity_count);
@@ -781,20 +826,44 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   {
     debug_log_info_f(DEBUG_TAG_HA_API, "🔄 Using sync parser for response (%zu bytes)", response_size);
 
+    // Reset watchdog before sync parsing
+    if (task_watchdog_subscribed)
+    {
+      esp_task_wdt_reset();
+    }
+
     parse_err = entity_states_parser_parse_sync(
         response.response_data,
         entity_ids,
         entity_count,
         states);
 
+    // Reset watchdog after sync parsing
+    if (task_watchdog_subscribed)
+    {
+      esp_task_wdt_reset();
+    }
+
     if (parse_err == ESP_OK)
     {
+      // Reset watchdog before counting entities
+      if (task_watchdog_subscribed)
+      {
+        esp_task_wdt_reset();
+      }
+
       // Count successful entities (states with non-empty entity_id)
       for (int i = 0; i < entity_count; i++)
       {
         if (strlen(states[i].entity_id) > 0)
         {
           success_count++;
+        }
+
+        // Reset watchdog periodically during counting for very large entity lists
+        if (i > 0 && (i % 50) == 0 && task_watchdog_subscribed)
+        {
+          esp_task_wdt_reset();
         }
       }
       debug_log_info_f(DEBUG_TAG_HA_API, "✅ Sync parsing completed, found %d/%d entities", success_count, entity_count);

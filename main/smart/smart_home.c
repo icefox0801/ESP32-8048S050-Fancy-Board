@@ -18,6 +18,7 @@
 #include "esp_timer.h"
 #include "utils/system_debug_utils.h"
 #include <esp_err.h>
+#include "esp_task_wdt.h"
 #include <string.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -48,15 +49,33 @@ static void sync_task_function(void *pvParameters)
   debug_log_info(DEBUG_TAG_SMART_HOME, "🔄 Sync task started, waiting 10s for network stability");
   vTaskDelay(pdMS_TO_TICKS(10000));
 
+  // Subscribe to task watchdog
+  esp_task_wdt_add(NULL);
+  debug_log_info(DEBUG_TAG_SMART_HOME, "SyncStatesTask subscribed to watchdog");
+
   while (1)
   {
+    // Feed the watchdog before starting sync
+    esp_task_wdt_reset();
+
     debug_log_info(DEBUG_TAG_SMART_HOME, "⏰ Running periodic switch state sync");
 
     // Add error handling to prevent task crashes
     smart_home_sync_switch_states();
 
+    // Feed watchdog after sync completion
+    esp_task_wdt_reset();
+
     // Wait for 30 seconds before next sync (longer interval due to connection issues)
-    vTaskDelay(pdMS_TO_TICKS(30000));
+    // Break the delay into smaller chunks to feed watchdog periodically
+    for (int i = 0; i < 30; i++)
+    {
+      vTaskDelay(pdMS_TO_TICKS(1000)); // 1 second delay
+      if (i % 10 == 0)                 // Feed watchdog every 10 seconds during wait
+      {
+        esp_task_wdt_reset();
+      }
+    }
   }
 }
 
@@ -137,9 +156,10 @@ esp_err_t smart_home_deinit(void)
   // Stop and cleanup sync task
   if (sync_task_handle != NULL)
   {
+    // Task will unsubscribe from watchdog automatically when deleted
     vTaskDelete(sync_task_handle);
     sync_task_handle = NULL;
-    debug_log_info(DEBUG_TAG_SMART_HOME, "🔄 Stopped periodic switch sync task");
+    debug_log_info(DEBUG_TAG_SMART_HOME, "🔄 Stopped periodic switch sync task and unsubscribed from watchdog");
   }
 
   // Cleanup Home Assistant API
@@ -212,6 +232,9 @@ void smart_home_sync_switch_states(void)
 {
   debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using optimized individual API calls");
 
+  // Feed watchdog before network operations
+  esp_task_wdt_reset();
+
   // Quick network check before attempting sync
   wifi_ap_record_t ap_info;
   esp_err_t wifi_ret = esp_wifi_sta_get_ap_info(&ap_info);
@@ -238,8 +261,14 @@ void smart_home_sync_switch_states(void)
     return;
   }
 
+  // Feed watchdog before potentially long HTTP operation
+  esp_task_wdt_reset();
+
   debug_log_info(DEBUG_TAG_HA_SYNC, "Performing immediate switch sync using optimized BULK API request");
   esp_err_t ret = ha_api_get_multiple_entity_states_bulk(switch_entity_ids, switch_count, switch_states);
+
+  // Feed watchdog after HTTP operation completes
+  esp_task_wdt_reset();
 
   if (ret == ESP_OK)
   {
@@ -267,6 +296,9 @@ void smart_home_sync_switch_states(void)
 
   // Free allocated memory
   free(switch_states);
+
+  // Final watchdog feed
+  esp_task_wdt_reset();
 }
 
 void smart_home_register_states_sync_callback(smart_home_states_sync_callback_t callback)
