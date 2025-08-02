@@ -119,3 +119,15 @@ void lvgl_lock_acquire(void);
  * @brief Release LVGL API lock (for thread safety)
  */
 void lvgl_lock_release(void);
+
+/**
+ * @brief Acquire LVGL API lock with timeout (for thread safety)
+ * @param timeout_ms Timeout in milliseconds (0 = no timeout)
+ * @return true if lock acquired, false if timeout
+ */
+bool lvgl_port_lock(int timeout_ms);
+
+/**
+ * @brief Release LVGL API lock (for thread safety)
+ */
+void lvgl_port_unlock(void);

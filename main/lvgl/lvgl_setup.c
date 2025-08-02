@@ -13,6 +13,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "gt911_touch.h"
 #include "utils/system_debug_utils.h"
 #include <stdio.h>
@@ -21,6 +22,7 @@
 #include <unistd.h>
 
 static _lock_t lvgl_api_lock;
+static SemaphoreHandle_t lvgl_timeout_mutex = NULL;
 
 // Static function prototypes (ordered by call sequence)
 static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config);
@@ -74,6 +76,18 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 {
   debug_log_event(DEBUG_TAG_LVGL_SETUP, "Initializing LVGL display");
   lv_init();
+
+  // Initialize timeout-capable mutex for LVGL locking
+  if (lvgl_timeout_mutex == NULL)
+  {
+    lvgl_timeout_mutex = xSemaphoreCreateMutex();
+    if (lvgl_timeout_mutex == NULL)
+    {
+      debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to create LVGL timeout mutex");
+      return NULL;
+    }
+    debug_log_info(DEBUG_TAG_LVGL_SETUP, "LVGL timeout mutex created successfully");
+  }
 
   lv_display_t *display = lv_display_create(LCD_H_RES, LCD_V_RES);
   if (!display)
@@ -172,25 +186,71 @@ void lvgl_setup_create_ui_safe(lv_display_t *display, void (*ui_create_func)(lv_
 // Thread safety functions
 void lvgl_lock_acquire(void)
 {
-  _lock_acquire(&lvgl_api_lock);
+  if (lvgl_timeout_mutex != NULL)
+  {
+    xSemaphoreTake(lvgl_timeout_mutex, portMAX_DELAY);
+  }
+  else
+  {
+    _lock_acquire(&lvgl_api_lock);
+  }
 }
 
 void lvgl_lock_release(void)
 {
-  _lock_release(&lvgl_api_lock);
+  if (lvgl_timeout_mutex != NULL)
+  {
+    xSemaphoreGive(lvgl_timeout_mutex);
+  }
+  else
+  {
+    _lock_release(&lvgl_api_lock);
+  }
 }
 
 // LVGL port locking with timeout
 bool lvgl_port_lock(int timeout_ms)
 {
-  // For now, use blocking lock - can be enhanced with timeout later
-  _lock_acquire(&lvgl_api_lock);
-  return true;
+  if (lvgl_timeout_mutex == NULL)
+  {
+    // Fallback to blocking lock if mutex not initialized
+    debug_log_warning(DEBUG_TAG_LVGL_SETUP, "LVGL timeout mutex not initialized, falling back to blocking lock");
+    _lock_acquire(&lvgl_api_lock);
+    return true;
+  }
+
+  if (timeout_ms <= 0)
+  {
+    // Use blocking semaphore for timeout <= 0
+    if (xSemaphoreTake(lvgl_timeout_mutex, portMAX_DELAY) == pdTRUE)
+    {
+      return true;
+    }
+    return false;
+  }
+
+  // Use timeout-capable semaphore
+  TickType_t timeout_ticks = pdMS_TO_TICKS(timeout_ms);
+  if (xSemaphoreTake(lvgl_timeout_mutex, timeout_ticks) == pdTRUE)
+  {
+    return true;
+  }
+
+  debug_log_warning_f(DEBUG_TAG_LVGL_SETUP, "LVGL lock timeout after %d ms", timeout_ms);
+  return false; // Timeout reached
 }
 
 void lvgl_port_unlock(void)
 {
-  _lock_release(&lvgl_api_lock);
+  if (lvgl_timeout_mutex != NULL)
+  {
+    xSemaphoreGive(lvgl_timeout_mutex);
+  }
+  else
+  {
+    // Fallback to original lock
+    _lock_release(&lvgl_api_lock);
+  }
 }
 
 // Static functions (implementation details)
