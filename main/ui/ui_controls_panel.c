@@ -262,7 +262,7 @@ void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char 
     return;
 
   // Try to acquire LVGL lock with timeout to avoid deadlocks
-  if (!lvgl_port_lock(100)) // 100ms timeout
+  if (!lvgl_port_lock(300)) // Increased timeout to 300ms
   {
     debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for HA status update (timeout)");
     return;

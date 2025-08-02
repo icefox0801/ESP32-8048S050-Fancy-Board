@@ -51,25 +51,14 @@ lv_obj_t *create_cpu_panel(lv_obj_t *parent)
 void update_cpu_panel(const void *cpu_data)
 {
   if (!cpu_data)
-  {
-    debug_log_warning("ui_cpu_panel", "⚠️ CPU panel update called with NULL data");
     return;
-  }
 
   // Cast void* to the actual struct type
   const struct cpu_info *cpu = (const struct cpu_info *)cpu_data;
 
-  debug_log_debug_f("ui_cpu_panel", "🔄 Updating CPU panel - Name: '%s', Usage: %d%%, Temp: %d°C, Fan: %d RPM", 
-                    cpu->name, cpu->usage, cpu->temp, cpu->fan);
-
   if (cpu_name_label)
   {
     lv_label_set_text(cpu_name_label, cpu->name);
-    debug_log_debug_f("ui_cpu_panel", "📝 CPU name set to: '%s'", cpu->name);
-  }
-  else
-  {
-    debug_log_error("ui_cpu_panel", "❌ CPU name label is NULL!");
   }
 
   if (cpu_usage_label)
@@ -92,8 +81,6 @@ void update_cpu_panel(const void *cpu_data)
     snprintf(fan_str, sizeof(fan_str), "%d", cpu->fan);
     lv_label_set_text(cpu_fan_label, fan_str);
   }
-  
-  debug_log_debug("ui_cpu_panel", "✅ CPU panel update completed");
 }
 
 /**

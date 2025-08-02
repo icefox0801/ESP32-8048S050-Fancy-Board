@@ -59,16 +59,19 @@ void ui_dashboard_create(lv_display_t *disp)
  */
 void ui_dashboard_update(const system_data_t *data)
 {
-  if (!data)
+  static uint32_t last_update_time = 0;
+  uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+  // Throttle updates to max 10 Hz (100ms minimum interval)
+  if (current_time - last_update_time < 100)
   {
-    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Dashboard update called with NULL data");
-    return;
+    return; // Skip update if too soon since last update
   }
 
-  debug_log_debug_f(DEBUG_TAG_UI_DASHBOARD, "🔄 Dashboard update - CPU: %s (%d%%), GPU: %s (%d%%), Memory: %.1f/%.1f GB", 
-                    data->cpu.name, data->cpu.usage, data->gpu.name, data->gpu.usage, data->mem.used, data->mem.total);
+  if (!data)
+    return;
 
-  if (!lvgl_port_lock(100)) // 100ms timeout
+  if (!lvgl_port_lock(500)) // Increased timeout to 500ms
   {
     debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Could not acquire LVGL lock for dashboard update (timeout)");
     return;
@@ -78,8 +81,8 @@ void ui_dashboard_update(const system_data_t *data)
   update_gpu_panel(&data->gpu);
   update_memory_panel(&data->mem);
   lvgl_port_unlock();
-  
-  debug_log_debug(DEBUG_TAG_UI_DASHBOARD, "✅ Dashboard panels updated successfully");
+
+  last_update_time = current_time;
 }
 
 /**
@@ -88,7 +91,7 @@ void ui_dashboard_update(const system_data_t *data)
  */
 void ui_dashboard_reset_to_defaults(void)
 {
-  if (!lvgl_port_lock(100)) // 100ms timeout
+  if (!lvgl_port_lock(500)) // Increased timeout to 500ms
   {
     debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Could not acquire LVGL lock for dashboard reset (timeout)");
     return;

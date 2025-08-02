@@ -45,15 +45,6 @@ static void serial_connection_status_callback(bool connected)
 
 static void serial_data_update_callback(const system_data_t *data)
 {
-  if (!data)
-  {
-    debug_log_warning("dashboard_main", "⚠️ Serial data callback called with NULL data");
-    return;
-  }
-  
-  debug_log_info_f("dashboard_main", "📊 Serial data received - CPU: '%s' (%d%%), GPU: '%s' (%d%%), Memory: %.1f GB used", 
-                   data->cpu.name, data->cpu.usage, data->gpu.name, data->gpu.usage, data->mem.used);
-  
   ui_dashboard_update(data);
 }
 

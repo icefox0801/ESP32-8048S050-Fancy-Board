@@ -46,7 +46,7 @@ void status_info_update_wifi_status(const char *status_text, bool connected)
     return;
 
   // Acquire LVGL lock with timeout
-  if (!lvgl_port_lock(100))
+  if (!lvgl_port_lock(200))
   {
     printf("⚠️ Failed to acquire LVGL lock for WiFi status update\n");
     return;
@@ -104,7 +104,7 @@ void status_info_update_serial_status(bool connected)
     return;
 
   // Acquire LVGL lock with timeout
-  if (!lvgl_port_lock(100))
+  if (!lvgl_port_lock(200))
   {
     printf("⚠️ Failed to acquire LVGL lock for serial status update\n");
     return;
