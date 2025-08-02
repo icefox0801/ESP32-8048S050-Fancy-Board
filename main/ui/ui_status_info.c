@@ -42,8 +42,15 @@ lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 
 void status_info_update_wifi_status(const char *status_text, bool connected)
 {
-  if (!status_text)
+  if (!status_text || !wifi_status_label)
     return;
+
+  // Acquire LVGL lock with timeout
+  if (!lvgl_port_lock(100))
+  {
+    printf("⚠️ Failed to acquire LVGL lock for WiFi status update\n");
+    return;
+  }
 
   // Create formatted status message
   char wifi_msg[128];
@@ -88,13 +95,20 @@ void status_info_update_wifi_status(const char *status_text, bool connected)
     lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(0xff4444), 0); // Red
   }
 
-  lvgl_lock_release();
+  lvgl_port_unlock();
 }
 
 void status_info_update_serial_status(bool connected)
 {
   if (!connection_status_label)
     return;
+
+  // Acquire LVGL lock with timeout
+  if (!lvgl_port_lock(100))
+  {
+    printf("⚠️ Failed to acquire LVGL lock for serial status update\n");
+    return;
+  }
 
   char combined_status[128];
   if (connected)
@@ -110,5 +124,5 @@ void status_info_update_serial_status(bool connected)
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
   }
 
-  lvgl_lock_release();
+  lvgl_port_unlock();
 }

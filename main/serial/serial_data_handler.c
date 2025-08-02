@@ -249,15 +249,29 @@ static void process_received_line(const char *line_buffer, system_data_t *system
 
     if (*end == '}')
     {
-      // Parse and update UI (reduce logging frequency)
+      // Parse and update UI
       if (parse_json_data(trimmed, system_data))
       {
+        debug_log_debug(DEBUG_TAG_SERIAL_DATA, "📊 System data parsed successfully");
         // Call data callback if registered
         if (data_callback)
         {
           data_callback(system_data);
+          debug_log_debug(DEBUG_TAG_SERIAL_DATA, "📡 Data callback executed");
+        }
+        else
+        {
+          debug_log_warning(DEBUG_TAG_SERIAL_DATA, "⚠️ No data callback registered");
         }
       }
+      else
+      {
+        debug_log_warning(DEBUG_TAG_SERIAL_DATA, "❌ Failed to parse JSON data");
+      }
+    }
+    else
+    {
+      debug_log_debug(DEBUG_TAG_SERIAL_DATA, "🔍 Invalid JSON format - missing closing brace");
     }
   }
 }
@@ -274,6 +288,8 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
     if (*line_pos > 0)
     {
       line_buffer[*line_pos] = '\0';
+      debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "📝 Processing line (%d chars): %.50s%s", 
+                       *line_pos, line_buffer, (*line_pos > 50) ? "..." : "");
       process_received_line(line_buffer, system_data);
       *line_pos = 0; // Reset for next line
       return true;
@@ -288,10 +304,11 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
     }
     else
     {
-      // Removed debug logging
+      debug_log_warning(DEBUG_TAG_SERIAL_DATA, "⚠️ Line buffer overflow, resetting");
       *line_pos = 0;
     }
   }
+  // Ignore other control characters without logging
 
   return false;
 }
@@ -305,9 +322,9 @@ static void check_connection_timeout(uint32_t current_time)
 
   if (current_time - last_data_time > connection_timeout_ms)
   {
-    if (!timeout_logged)
+    if (!is_connection_lost || !timeout_logged)
     {
-      // Removed debug logging
+      debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Serial connection timeout - no data received");
       // Call connection callback if registered
       if (connection_callback)
       {
@@ -320,17 +337,17 @@ static void check_connection_timeout(uint32_t current_time)
   else
   {
     // Reset timeout flag when data is received
-    if (timeout_logged && is_connection_lost)
+    if (is_connection_lost || timeout_logged)
     {
-      // Removed debug logging
+      debug_log_info(DEBUG_TAG_SERIAL_DATA, "Serial connection restored - data received");
       // Call connection callback to indicate connection restored
       if (connection_callback)
       {
         connection_callback(true);
       }
       is_connection_lost = false;
+      timeout_logged = false;
     }
-    timeout_logged = false;
   }
 }
 

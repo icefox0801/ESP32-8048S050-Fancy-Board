@@ -258,26 +258,15 @@ bool controls_panel_get_switch(int switch_id)
 
 void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char *status_text)
 {
-  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "🔄 HA status update called: ready=%d, syncing=%d, text='%s'", 
-                    is_ready, is_syncing, status_text ? status_text : "NULL");
-
   if (!ha_status_label || !status_text)
-  {
-    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Invalid parameters: ha_status_label=%p, status_text=%p", 
-                      ha_status_label, status_text);
     return;
-  }
 
-  debug_log_info(DEBUG_TAG_UI_CONTROLS, "🔒 Attempting to acquire LVGL lock...");
-  
   // Try to acquire LVGL lock with timeout to avoid deadlocks
   if (!lvgl_port_lock(100)) // 100ms timeout
   {
     debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for HA status update (timeout)");
     return;
   }
-
-  debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ LVGL lock acquired, updating UI...");
 
   lv_label_set_text(ha_status_label, status_text);
 
@@ -295,9 +284,7 @@ void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char 
     lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0xff4444), 0); // Red
   }
 
-  debug_log_info(DEBUG_TAG_UI_CONTROLS, "🔓 Releasing LVGL lock...");
   lvgl_port_unlock();
-  debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ HA status update completed successfully");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

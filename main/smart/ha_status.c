@@ -171,13 +171,7 @@ void ha_status_change(ha_status_t status)
   // Call callback outside of mutex to avoid deadlock
   if (callback_to_call != NULL)
   {
-    ESP_LOGI(TAG, "🔄 About to call status change callback...");
     callback_to_call(ha_status_is_ready(), ha_status_is_syncing(), status_text);
-    ESP_LOGI(TAG, "✅ Status change callback completed");
-  }
-  else
-  {
-    ESP_LOGI(TAG, "ℹ️ No status change callback registered");
   }
 }
 
