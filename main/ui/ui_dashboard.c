@@ -70,6 +70,22 @@ void ui_dashboard_update(const system_data_t *data)
 }
 
 /**
+ * @brief Reset dashboard display to default values when serial connection is lost
+ * @note This function is thread-safe and handles LVGL mutex locking
+ */
+void ui_dashboard_reset_to_defaults(void)
+{
+  // Use individual panel reset functions for cleaner implementation
+  lvgl_lock_acquire();
+  reset_cpu_panel();
+  reset_gpu_panel();
+  reset_memory_panel();
+  lvgl_lock_release();
+
+  debug_log_info(DEBUG_TAG_UI_DASHBOARD, "🔄 Dashboard reset to default values");
+}
+
+/**
  * @brief Register smart home control callbacks for UI decoupling
  * @param callbacks Pointer to smart home callback structure
  */

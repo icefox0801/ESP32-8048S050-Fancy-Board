@@ -23,3 +23,8 @@ lv_obj_t *create_memory_panel(lv_obj_t *parent);
  * @param memory_data Pointer to memory monitoring data
  */
 void update_memory_panel(const void *memory_data);
+
+/**
+ * @brief Reset memory panel to default values (no connection)
+ */
+void reset_memory_panel(void);

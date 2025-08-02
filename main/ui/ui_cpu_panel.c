@@ -34,7 +34,7 @@ lv_obj_t *create_cpu_panel(lv_obj_t *parent)
 
   // Create CPU fields - Temperature first
   cpu_temp_label = ui_create_field(cpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  cpu_usage_label = ui_create_field(cpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
+  cpu_usage_label = ui_create_field(cpu_panel, "Usage", "--%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4fc3f7);
   cpu_fan_label = ui_create_field(cpu_panel, "Fan (RPM)", "--", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
 
   // Create vertical separators between fields
@@ -80,5 +80,31 @@ void update_cpu_panel(const void *cpu_data)
     char fan_str[16];
     snprintf(fan_str, sizeof(fan_str), "%d", cpu->fan);
     lv_label_set_text(cpu_fan_label, fan_str);
+  }
+}
+
+/**
+ * @brief Reset CPU panel to default values (no connection)
+ */
+void reset_cpu_panel(void)
+{
+  if (cpu_name_label)
+  {
+    lv_label_set_text(cpu_name_label, "No Connection");
+  }
+
+  if (cpu_usage_label)
+  {
+    lv_label_set_text(cpu_usage_label, "--%");
+  }
+
+  if (cpu_temp_label)
+  {
+    lv_label_set_text(cpu_temp_label, "--°C");
+  }
+
+  if (cpu_fan_label)
+  {
+    lv_label_set_text(cpu_fan_label, "--");
   }
 }

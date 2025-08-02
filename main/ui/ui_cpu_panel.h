@@ -23,3 +23,8 @@ lv_obj_t *create_cpu_panel(lv_obj_t *parent);
  * @param cpu_data Pointer to CPU monitoring data
  */
 void update_cpu_panel(const void *cpu_data);
+
+/**
+ * @brief Reset CPU panel to default values (no connection)
+ */
+void reset_cpu_panel(void);

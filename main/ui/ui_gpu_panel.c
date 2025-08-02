@@ -34,8 +34,8 @@ lv_obj_t *create_gpu_panel(lv_obj_t *parent)
 
   // Create GPU fields - Temperature first
   gpu_temp_label = ui_create_field(gpu_panel, "Temp", "--°C", 10, font_normal, font_big_numbers, 0xaaaaaa, 0xff7043);
-  gpu_usage_label = ui_create_field(gpu_panel, "Usage", "0%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
-  gpu_mem_label = ui_create_field(gpu_panel, "Memory", "0%", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
+  gpu_usage_label = ui_create_field(gpu_panel, "Usage", "--%", 128, font_normal, font_big_numbers, 0xaaaaaa, 0x4caf50);
+  gpu_mem_label = ui_create_field(gpu_panel, "Memory", "--%", 246, font_normal, font_big_numbers, 0xaaaaaa, 0x81c784);
 
   // Create vertical separators between GPU fields
   ui_create_vertical_separator(gpu_panel, 118, 50, 60, 0x555555);
@@ -81,5 +81,31 @@ void update_gpu_panel(const void *gpu_data)
     char mem_str[32];
     snprintf(mem_str, sizeof(mem_str), "%d%%", mem_usage_pct);
     lv_label_set_text(gpu_mem_label, mem_str);
+  }
+}
+
+/**
+ * @brief Reset GPU panel to default values (no connection)
+ */
+void reset_gpu_panel(void)
+{
+  if (gpu_name_label)
+  {
+    lv_label_set_text(gpu_name_label, "No Connection");
+  }
+
+  if (gpu_usage_label)
+  {
+    lv_label_set_text(gpu_usage_label, "--%");
+  }
+
+  if (gpu_temp_label)
+  {
+    lv_label_set_text(gpu_temp_label, "--°C");
+  }
+
+  if (gpu_mem_label)
+  {
+    lv_label_set_text(gpu_mem_label, "--%");
   }
 }

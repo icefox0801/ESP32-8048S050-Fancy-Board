@@ -44,6 +44,11 @@ void ui_dashboard_create(lv_display_t *disp);
 void ui_dashboard_update(const system_data_t *data);
 
 /**
+ * @brief Reset dashboard display to default values when serial connection is lost
+ */
+void ui_dashboard_reset_to_defaults(void);
+
+/**
  * @brief Update connection status
  * @param connected True if receiving data, false if connection lost
  */

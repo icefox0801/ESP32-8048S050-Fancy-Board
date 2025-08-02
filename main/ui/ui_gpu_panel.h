@@ -23,3 +23,8 @@ lv_obj_t *create_gpu_panel(lv_obj_t *parent);
  * @param gpu_data Pointer to GPU monitoring data
  */
 void update_gpu_panel(const void *gpu_data);
+
+/**
+ * @brief Reset GPU panel to default values (no connection)
+ */
+void reset_gpu_panel(void);

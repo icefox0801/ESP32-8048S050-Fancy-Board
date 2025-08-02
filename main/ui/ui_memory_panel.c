@@ -37,7 +37,7 @@ lv_obj_t *create_memory_panel(lv_obj_t *parent)
 
   // Create memory usage value (without label)
   mem_usage_label = lv_label_create(mem_panel);
-  lv_label_set_text(mem_usage_label, "0%");
+  lv_label_set_text(mem_usage_label, "--%");
   lv_obj_set_style_text_font(mem_usage_label, font_big_numbers, 0);
   lv_obj_set_style_text_color(mem_usage_label, lv_color_hex(0xff7043), 0);
   lv_obj_align(mem_usage_label, LV_ALIGN_BOTTOM_LEFT, 10, -5);
@@ -77,5 +77,26 @@ void update_memory_panel(const void *memory_data)
     snprintf(mem_str, sizeof(mem_str), "(%.1f GB / %.1f GB)", // Updated format to match new compact layout
              mem->used, mem->total);
     lv_label_set_text(mem_info_label, mem_str);
+  }
+}
+
+/**
+ * @brief Reset memory panel to default values (no connection)
+ */
+void reset_memory_panel(void)
+{
+  if (mem_usage_bar)
+  {
+    lv_bar_set_value(mem_usage_bar, 0, LV_ANIM_OFF);
+  }
+
+  if (mem_usage_label)
+  {
+    lv_label_set_text(mem_usage_label, "--%");
+  }
+
+  if (mem_info_label)
+  {
+    lv_label_set_text(mem_info_label, "(-.- GB / -.- GB)");
   }
 }

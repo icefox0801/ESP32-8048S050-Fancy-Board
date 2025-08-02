@@ -35,6 +35,12 @@ static void wifi_connected_callback(void)
 static void serial_connection_status_callback(bool connected)
 {
   status_info_update_serial_status(connected);
+
+  // Reset dashboard to default values when serial connection is lost
+  if (!connected)
+  {
+    ui_dashboard_reset_to_defaults();
+  }
 }
 
 static void serial_data_update_callback(const system_data_t *data)

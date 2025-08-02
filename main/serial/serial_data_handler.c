@@ -288,8 +288,8 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
     if (*line_pos > 0)
     {
       line_buffer[*line_pos] = '\0';
-      debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "📝 Processing line (%d chars): %.50s%s", 
-                       *line_pos, line_buffer, (*line_pos > 50) ? "..." : "");
+      debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "📝 Processing line (%d chars): %.50s%s",
+                        *line_pos, line_buffer, (*line_pos > 50) ? "..." : "");
       process_received_line(line_buffer, system_data);
       *line_pos = 0; // Reset for next line
       return true;
