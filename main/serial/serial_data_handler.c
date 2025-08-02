@@ -55,20 +55,17 @@
 // STATIC VARIABLES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-static TaskHandle_t serial_task_handle = NULL; ///< Serial reception task handle
-static bool serial_running = false;            ///< Task running state flag
-static uint32_t last_data_time = 0;            ///< Last data reception timestamp
+static TaskHandle_t serial_task_handle = NULL;           ///< Serial reception task handle
+static TaskHandle_t connection_check_task_handle = NULL; ///< Connection check task handle
+static bool serial_running = false;                      ///< Task running state flag
+static uint32_t last_data_time = 0;                      ///< Last data reception timestamp
 
 // Callback function pointers
 static serial_connection_callback_t connection_callback = NULL; ///< Connection status callback
 static serial_data_callback_t data_callback = NULL;             ///< Data update callback
 
-// Connection state tracking
-static bool is_connection_lost = false; ///< Track if connection is currently lost
-
 // Static task resources for SPIRAM allocation
 static StackType_t *serial_task_stack = NULL; ///< Task stack allocated from SPIRAM
-static uint32_t connection_timeout_ms = 5000; ///< Connection timeout (5 seconds)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE FUNCTION PROTOTYPES
@@ -100,10 +97,15 @@ static void process_received_line(const char *line_buffer, system_data_t *system
 static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos, system_data_t *system_data);
 
 /**
- * @brief Check for connection timeout and update UI status
- * @param current_time Current timestamp
+ * @brief Trigger a connection check (non-blocking)
  */
-static void check_connection_timeout(uint32_t current_time);
+static void trigger_connection_check(void);
+
+/**
+ * @brief Connection check task that runs independently
+ * @param pvParameters Task parameters (unused)
+ */
+static void connection_check_task(void *pvParameters);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PRIVATE FUNCTION IMPLEMENTATIONS
@@ -273,6 +275,8 @@ static void process_received_line(const char *line_buffer, system_data_t *system
     {
       debug_log_debug(DEBUG_TAG_SERIAL_DATA, "🔍 Invalid JSON format - missing closing brace");
     }
+
+    trigger_connection_check();
   }
 }
 
@@ -313,44 +317,56 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
   return false;
 }
 
-/**
- * @brief Check for connection timeout and update UI status
- */
-static void check_connection_timeout(uint32_t current_time)
-{
-  static bool timeout_logged = false;
-  static bool connection_established = false; // Track if we've ever established connection
+// Static variable to track last check time
+static uint32_t last_check_time = 0;
 
-  if (current_time - last_data_time > connection_timeout_ms)
+// Static variable to track last connection status
+static bool last_connection_status = false;
+
+/**
+ * @brief Trigger a connection check (non-blocking)
+ */
+static void trigger_connection_check(void)
+{
+  // Simply update the trigger time - the connection check task will handle the delay
+  last_check_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+}
+
+/**
+ * @brief Connection check task that runs independently
+ */
+static void connection_check_task(void *pvParameters)
+{
+  while (serial_running)
   {
-    if (!is_connection_lost || !timeout_logged)
+    // Determine connection status based on data recency
+    uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    bool current_connection_status = false;
+
+    if (serial_running && last_data_time > 0)
     {
-      debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Serial connection timeout - no data received");
-      // Call connection callback if registered
+      uint32_t time_since_last_data = current_time - last_data_time;
+      current_connection_status = (time_since_last_data <= 5000); // Connected if data within 5 seconds
+    }
+
+    // Only call callback when status actually changed
+    if (current_connection_status != last_connection_status)
+    {
+      last_connection_status = current_connection_status;
+
       if (connection_callback)
       {
-        connection_callback(false);
+        connection_callback(current_connection_status);
+        debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "📞 Connection status changed: %s (last data: %lu ms ago)",
+                          current_connection_status ? "connected" : "disconnected",
+                          last_data_time > 0 ? (current_time - last_data_time) : 0);
       }
-      is_connection_lost = true;
-      timeout_logged = true;
     }
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
   }
-  else
-  {
-    // Call connection callback when connection is first established or restored
-    if (is_connection_lost || timeout_logged || !connection_established)
-    {
-      debug_log_info(DEBUG_TAG_SERIAL_DATA, "Serial connection established - data received");
-      // Call connection callback to indicate connection is active
-      if (connection_callback)
-      {
-        connection_callback(true);
-      }
-      is_connection_lost = false;
-      timeout_logged = false;
-      connection_established = true;
-    }
-  }
+
+  vTaskDelete(NULL);
 }
 
 /**
@@ -386,10 +402,7 @@ static void serial_data_task(void *pvParameters)
       }
     }
 
-    // Check for connection timeout
-    check_connection_timeout(current_time);
-
-    vTaskDelay(pdMS_TO_TICKS(5)); // Reduced delay for faster response
+    vTaskDelay(pdMS_TO_TICKS(20)); // Reduced delay for faster response
   }
 
   // Removed debug logging
@@ -423,6 +436,17 @@ void serial_data_start_task(void)
     debug_log_event(DEBUG_TAG_SERIAL_DATA, "Starting serial data task");
     serial_running = true;
     last_data_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+    // Create connection check task first
+    xTaskCreatePinnedToCore(
+        connection_check_task,         // Task function
+        "conn_check",                  // Task name
+        4096,                          // Stack size (increased from 2048 to prevent overflow)
+        NULL,                          // Parameters
+        1,                             // Priority (lower than serial task)
+        &connection_check_task_handle, // Task handle
+        1                              // Core ID (1, different from serial task)
+    );
 
     // Allocate task stack from SPIRAM for better internal RAM utilization
     serial_task_stack = (StackType_t *)heap_caps_malloc(
@@ -464,6 +488,15 @@ void serial_data_stop(void)
   if (serial_running)
   {
     serial_running = false;
+
+    // Stop connection check task first
+    if (connection_check_task_handle)
+    {
+      vTaskDelete(connection_check_task_handle);
+      connection_check_task_handle = NULL;
+    }
+
+    // Stop serial task
     if (serial_task_handle)
     {
       vTaskDelete(serial_task_handle);

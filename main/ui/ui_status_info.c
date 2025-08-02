@@ -25,7 +25,7 @@ lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 
   // Serial connection status with last update time (left side)
   connection_status_label = lv_label_create(status_panel);
-  lv_label_set_text(connection_status_label, "[SERIAL] Waiting... | Last: Never");
+  lv_label_set_text(connection_status_label, "[SERIAL] Connecting...");
   lv_obj_set_style_text_font(connection_status_label, font_small, 0);
   lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xffaa00), 0);
   lv_obj_set_pos(connection_status_label, 10, 11);
