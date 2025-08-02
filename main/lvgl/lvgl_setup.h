@@ -111,16 +111,6 @@ void *lvgl_setup_init_touch(void);
 void lvgl_setup_create_ui_safe(lv_display_t *display, void (*ui_create_func)(lv_display_t *));
 
 /**
- * @brief Acquire LVGL API lock (for thread safety)
- */
-void lvgl_lock_acquire(void);
-
-/**
- * @brief Release LVGL API lock (for thread safety)
- */
-void lvgl_lock_release(void);
-
-/**
  * @brief Acquire LVGL API lock with timeout (for thread safety)
  * @param timeout_ms Timeout in milliseconds (0 = no timeout)
  * @return true if lock acquired, false if timeout

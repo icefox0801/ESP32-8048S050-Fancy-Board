@@ -231,12 +231,17 @@ void controls_panel_set_switch(int switch_id, bool state)
   if (switch_id < 0 || switch_id >= SWITCH_COUNT || !*switch_configs[switch_id].switch_obj)
     return;
 
-  lvgl_lock_acquire();
+  if (!lvgl_port_lock(300)) // Use timeout-based lock to prevent deadlocks
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for switch set (timeout)");
+    return;
+  }
+
   if (state)
     lv_obj_add_state(*switch_configs[switch_id].switch_obj, LV_STATE_CHECKED);
   else
     lv_obj_clear_state(*switch_configs[switch_id].switch_obj, LV_STATE_CHECKED);
-  lvgl_lock_release();
+  lvgl_port_unlock();
 }
 
 /**
@@ -250,14 +255,28 @@ bool controls_panel_get_switch(int switch_id)
     return false;
 
   bool state = false;
-  lvgl_lock_acquire();
+  if (!lvgl_port_lock(300)) // Use timeout-based lock to prevent deadlocks
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for switch get (timeout)");
+    return false;
+  }
+
   state = lv_obj_has_state(*switch_configs[switch_id].switch_obj, LV_STATE_CHECKED);
-  lvgl_lock_release();
+  lvgl_port_unlock();
   return state;
 }
 
 void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char *status_text)
 {
+  static uint32_t last_update_time = 0;
+  uint32_t current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+
+  // Throttle HA status updates to max 5 Hz (200ms minimum interval) to reduce LVGL lock contention
+  if (current_time - last_update_time < 200)
+  {
+    return; // Skip update if too soon since last update
+  }
+
   if (!ha_status_label || !status_text)
     return;
 
@@ -285,6 +304,7 @@ void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char 
   }
 
   lvgl_port_unlock();
+  last_update_time = current_time;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -21,7 +21,6 @@
 #include <sys/lock.h>
 #include <unistd.h>
 
-static _lock_t lvgl_api_lock;
 static SemaphoreHandle_t lvgl_timeout_mutex = NULL;
 
 // Static function prototypes (ordered by call sequence)
@@ -178,33 +177,15 @@ void lvgl_setup_create_ui_safe(lv_display_t *display, void (*ui_create_func)(lv_
     return;
   }
 
-  _lock_acquire(&lvgl_api_lock);
-  ui_create_func(display);
-  _lock_release(&lvgl_api_lock);
-}
-
-// Thread safety functions
-void lvgl_lock_acquire(void)
-{
-  if (lvgl_timeout_mutex != NULL)
+  // Use the new mutex system for consistency
+  if (lvgl_port_lock(0)) // No timeout for UI creation
   {
-    xSemaphoreTake(lvgl_timeout_mutex, portMAX_DELAY);
+    ui_create_func(display);
+    lvgl_port_unlock();
   }
   else
   {
-    _lock_acquire(&lvgl_api_lock);
-  }
-}
-
-void lvgl_lock_release(void)
-{
-  if (lvgl_timeout_mutex != NULL)
-  {
-    xSemaphoreGive(lvgl_timeout_mutex);
-  }
-  else
-  {
-    _lock_release(&lvgl_api_lock);
+    debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to acquire LVGL lock for UI creation");
   }
 }
 
@@ -213,10 +194,8 @@ bool lvgl_port_lock(int timeout_ms)
 {
   if (lvgl_timeout_mutex == NULL)
   {
-    // Fallback to blocking lock if mutex not initialized
-    debug_log_warning(DEBUG_TAG_LVGL_SETUP, "LVGL timeout mutex not initialized, falling back to blocking lock");
-    _lock_acquire(&lvgl_api_lock);
-    return true;
+    debug_log_error(DEBUG_TAG_LVGL_SETUP, "LVGL timeout mutex not initialized!");
+    return false;
   }
 
   if (timeout_ms <= 0)
@@ -248,8 +227,7 @@ void lvgl_port_unlock(void)
   }
   else
   {
-    // Fallback to original lock
-    _lock_release(&lvgl_api_lock);
+    debug_log_error(DEBUG_TAG_LVGL_SETUP, "LVGL timeout mutex not initialized for unlock!");
   }
 }
 
@@ -341,9 +319,17 @@ static void lvgl_port_task(void *arg)
   uint32_t time_till_next_ms = 0;
   while (1)
   {
-    _lock_acquire(&lvgl_api_lock);
-    time_till_next_ms = lv_timer_handler();
-    _lock_release(&lvgl_api_lock);
+    // Use the same mutex system as other UI components to prevent deadlocks
+    if (lvgl_port_lock(0)) // No timeout for the main LVGL task
+    {
+      time_till_next_ms = lv_timer_handler();
+      lvgl_port_unlock();
+    }
+    else
+    {
+      // If we can't get the lock immediately, just wait a bit and try again
+      time_till_next_ms = 10;
+    }
 
     if (time_till_next_ms < 10)
     {
