@@ -87,21 +87,26 @@ static void switch_event_handler(lv_event_t *e)
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Switch state changed");
+    debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "🔄 Switch %s state changed to %s", config->label, state ? "ON" : "OFF");
 
     // Control the actual device via registered callback (decoupled)
     if (g_switch_control_callback != NULL)
     {
+      debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "📞 Calling switch control callback for %s", config->entity);
       esp_err_t ret = g_switch_control_callback(config->entity, state);
       if (ret != ESP_OK)
       {
         debug_log_error_f(DEBUG_TAG_UI_CONTROLS, "Switch %s control failed: %s", config->label, esp_err_to_name(ret));
         // TODO: Consider reverting the switch state on failure
       }
+      else
+      {
+        debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "✅ Switch %s control succeeded", config->label);
+      }
     }
     else
     {
-      debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Switch control callback not registered");
+      debug_log_error(DEBUG_TAG_UI_CONTROLS, "❌ Switch control callback not registered - touch events will not trigger HA requests!");
     }
   }
 }
@@ -117,11 +122,12 @@ static void scene_button_event_handler(lv_event_t *e)
 
   if (code == LV_EVENT_CLICKED)
   {
-    debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene button pressed");
+    debug_log_info(DEBUG_TAG_UI_CONTROLS, "🎬 Scene button pressed");
 
     // Trigger the scene via registered callback (decoupled)
     if (g_scene_trigger_callback != NULL)
     {
+      debug_log_info(DEBUG_TAG_UI_CONTROLS, "📞 Calling scene trigger callback");
       esp_err_t ret = g_scene_trigger_callback();
       if (ret != ESP_OK)
       {
@@ -129,12 +135,12 @@ static void scene_button_event_handler(lv_event_t *e)
       }
       else
       {
-        debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene triggered successfully");
+        debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ Scene triggered successfully");
       }
     }
     else
     {
-      debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Scene trigger callback not registered");
+      debug_log_error(DEBUG_TAG_UI_CONTROLS, "❌ Scene trigger callback not registered - touch events will not trigger HA requests!");
     }
   }
 }
@@ -252,10 +258,26 @@ bool controls_panel_get_switch(int switch_id)
 
 void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char *status_text)
 {
-  if (!ha_status_label || !status_text)
-    return;
+  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "🔄 HA status update called: ready=%d, syncing=%d, text='%s'", 
+                    is_ready, is_syncing, status_text ? status_text : "NULL");
 
-  lvgl_lock_acquire();
+  if (!ha_status_label || !status_text)
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Invalid parameters: ha_status_label=%p, status_text=%p", 
+                      ha_status_label, status_text);
+    return;
+  }
+
+  debug_log_info(DEBUG_TAG_UI_CONTROLS, "🔒 Attempting to acquire LVGL lock...");
+  
+  // Try to acquire LVGL lock with timeout to avoid deadlocks
+  if (!lvgl_port_lock(100)) // 100ms timeout
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for HA status update (timeout)");
+    return;
+  }
+
+  debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ LVGL lock acquired, updating UI...");
 
   lv_label_set_text(ha_status_label, status_text);
 
@@ -273,7 +295,9 @@ void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char 
     lv_obj_set_style_text_color(ha_status_label, lv_color_hex(0xff4444), 0); // Red
   }
 
-  lvgl_lock_release();
+  debug_log_info(DEBUG_TAG_UI_CONTROLS, "🔓 Releasing LVGL lock...");
+  lvgl_port_unlock();
+  debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ HA status update completed successfully");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -295,6 +319,25 @@ void controls_panel_register_event_callbacks(const smart_home_callbacks_t *callb
   g_switch_control_callback = callbacks->switch_callback;
   g_scene_trigger_callback = callbacks->scene_callback;
 
-  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "Event callbacks registered - switch: %p, scene: %p",
+  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "🔗 Event callbacks registered - switch: %p, scene: %p",
                    (void *)callbacks->switch_callback, (void *)callbacks->scene_callback);
+
+  // Additional verification logging
+  if (callbacks->switch_callback != NULL)
+  {
+    debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ Switch callback registered successfully");
+  }
+  else
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Switch callback is NULL");
+  }
+
+  if (callbacks->scene_callback != NULL)
+  {
+    debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ Scene callback registered successfully");
+  }
+  else
+  {
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Scene callback is NULL");
+  }
 }
