@@ -66,6 +66,13 @@ void app_main(void)
   esp_log_level_set("HTTP_CLIENT", ESP_LOG_WARN);
   esp_log_level_set("event", ESP_LOG_WARN);
 
+  // Register smart home callbacks BEFORE creating UI
+  // This ensures callbacks are available when controls are created
+  smart_home_callbacks_t callbacks = {
+      .switch_callback = smart_home_control_switch,
+      .scene_callback = smart_home_trigger_scene};
+  ui_dashboard_register_smart_home_callbacks(&callbacks);
+
   // Initialize LVGL
   lvgl_setup_init_backlight();
   lvgl_setup_set_backlight(LCD_BK_LIGHT_OFF_LEVEL);
@@ -95,12 +102,6 @@ void app_main(void)
   ha_api_init();
   ha_status_init();
   ha_status_register_change_callback(ha_status_change_callback);
-
-  // Register smart home callbacks with UI dashboard for decoupled control
-  smart_home_callbacks_t callbacks = {
-      .switch_callback = smart_home_control_switch,
-      .scene_callback = smart_home_trigger_scene};
-  ui_dashboard_register_smart_home_callbacks(&callbacks);
 
   debug_log_startup(DEBUG_TAG_SYSTEM, "System Monitor - Fully Initialized");
 
