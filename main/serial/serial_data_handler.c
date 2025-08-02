@@ -319,6 +319,7 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
 static void check_connection_timeout(uint32_t current_time)
 {
   static bool timeout_logged = false;
+  static bool connection_established = false; // Track if we've ever established connection
 
   if (current_time - last_data_time > connection_timeout_ms)
   {
@@ -336,17 +337,18 @@ static void check_connection_timeout(uint32_t current_time)
   }
   else
   {
-    // Reset timeout flag when data is received
-    if (is_connection_lost || timeout_logged)
+    // Call connection callback when connection is first established or restored
+    if (is_connection_lost || timeout_logged || !connection_established)
     {
-      debug_log_info(DEBUG_TAG_SERIAL_DATA, "Serial connection restored - data received");
-      // Call connection callback to indicate connection restored
+      debug_log_info(DEBUG_TAG_SERIAL_DATA, "Serial connection established - data received");
+      // Call connection callback to indicate connection is active
       if (connection_callback)
       {
         connection_callback(true);
       }
       is_connection_lost = false;
       timeout_logged = false;
+      connection_established = true;
     }
   }
 }
