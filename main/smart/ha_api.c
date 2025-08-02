@@ -85,6 +85,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
   switch (evt->event_id)
   {
   case HTTP_EVENT_ERROR:
+    debug_log_error(DEBUG_TAG_HA_API, "🚨 HTTP_EVENT_ERROR occurred");
     if (response)
     {
       snprintf(response->error_message, sizeof(response->error_message), "HTTP error occurred");
@@ -93,15 +94,15 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     break;
 
   case HTTP_EVENT_ON_CONNECTED:
-    // Connection established, no action needed
+    debug_log_info(DEBUG_TAG_HA_API, "🔗 HTTP_EVENT_ON_CONNECTED - Connection established");
     break;
 
   case HTTP_EVENT_HEADER_SENT:
-    // Headers sent, no action needed
+    debug_log_debug(DEBUG_TAG_HA_API, "📤 HTTP_EVENT_HEADER_SENT - Headers sent");
     break;
 
   case HTTP_EVENT_ON_HEADER:
-    // Receiving headers, no action needed
+    debug_log_debug_f(DEBUG_TAG_HA_API, "📥 HTTP_EVENT_ON_HEADER: %.*s", evt->data_len, (char *)evt->data);
     break;
 
   case HTTP_EVENT_ON_DATA:
@@ -109,6 +110,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     {
       if (response->response_data == NULL)
       {
+        debug_log_debug(DEBUG_TAG_HA_API, "📦 HTTP_EVENT_ON_DATA - First data chunk received, allocating buffer");
         response->response_data = malloc(HA_MAX_RESPONSE_SIZE);
         if (response->response_data == NULL)
         {
@@ -144,23 +146,26 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     break;
 
   case HTTP_EVENT_ON_FINISH:
+    debug_log_info(DEBUG_TAG_HA_API, "✅ HTTP_EVENT_ON_FINISH - Request completed");
     if (response)
     {
       response->status_code = esp_http_client_get_status_code((esp_http_client_handle_t)evt->client);
       response->success = (response->status_code >= 200 && response->status_code < 300);
+      debug_log_info_f(DEBUG_TAG_HA_API, "📊 Final status code: %d, success: %s",
+                       response->status_code, response->success ? "true" : "false");
     }
     break;
 
   case HTTP_EVENT_DISCONNECTED:
-    // Connection closed, no action needed
+    debug_log_info(DEBUG_TAG_HA_API, "🔌 HTTP_EVENT_DISCONNECTED - Connection closed");
     break;
 
   case HTTP_EVENT_REDIRECT:
-    // Redirect occurred, no action needed (client handles automatically)
+    debug_log_info(DEBUG_TAG_HA_API, "↩️ HTTP_EVENT_REDIRECT - Redirect occurred");
     break;
 
   default:
-    // Handle any other events silently
+    debug_log_debug_f(DEBUG_TAG_HA_API, "🔍 HTTP event: %d", evt->event_id);
     break;
   }
 
@@ -172,6 +177,9 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
  */
 static esp_http_client_handle_t create_http_client(const char *url)
 {
+  debug_log_info_f(DEBUG_TAG_HA_API, "🔧 Creating HTTP client for URL: %s", url);
+  debug_log_info_f(DEBUG_TAG_HA_API, "⏰ Timeout configured: %d ms", HA_HTTP_TIMEOUT_MS);
+
   esp_http_client_config_t config = {
       .url = url,
       .event_handler = http_event_handler,
@@ -190,7 +198,17 @@ static esp_http_client_handle_t create_http_client(const char *url)
       .skip_cert_common_name_check = true, // Skip SSL cert name check
   };
 
-  return esp_http_client_init(&config);
+  esp_http_client_handle_t client = esp_http_client_init(&config);
+  if (client)
+  {
+    debug_log_info(DEBUG_TAG_HA_API, "✅ HTTP client created successfully");
+  }
+  else
+  {
+    debug_log_error(DEBUG_TAG_HA_API, "❌ Failed to create HTTP client");
+  }
+
+  return client;
 }
 
 /**
@@ -261,13 +279,24 @@ static void cleanup_persistent_client(void)
  */
 static esp_err_t perform_http_request(const char *url, const char *method, const char *post_data, ha_api_response_t *response)
 {
+  debug_log_info(DEBUG_TAG_HA_API, "🚀 perform_http_request ENTRY");
+  debug_log_info_f(DEBUG_TAG_HA_API, "Method: %s, URL: %s", method, url);
+  if (post_data)
+  {
+    debug_log_info_f(DEBUG_TAG_HA_API, "POST data: %s", post_data);
+  }
+
+  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 1: Parameter validation");
   if (!ha_api_initialized)
   {
+    debug_log_error(DEBUG_TAG_HA_API, "❌ HA API not initialized!");
     return ESP_ERR_INVALID_STATE;
   }
 
+  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 2: About to change status to SYNCING");
   // Notify that we're starting a request (syncing)
   ha_status_change(HA_STATUS_SYNCING);
+  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 3: Status changed, about to check network");
 
   // Check network connectivity before attempting HTTP request
   if (!check_network_connectivity())
@@ -281,6 +310,8 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     }
     return ESP_ERR_NOT_FOUND;
   }
+
+  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 4: Network check passed, starting HTTP request setup");
 
   debug_log_info(DEBUG_TAG_HA_API, "=== HTTP REQUEST START ===");
   debug_log_info_f(DEBUG_TAG_HA_API, "Method: %s", method);
@@ -316,32 +347,62 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
       esp_task_wdt_reset();
     }
 
-    esp_http_client_handle_t client = get_persistent_client(url);
-    if (client == NULL)
+    esp_http_client_handle_t client;
+    bool use_fresh_client = (strcmp(method, "POST") == 0);
+
+    if (use_fresh_client)
     {
-      debug_log_error(DEBUG_TAG_HA_API, "Failed to get HTTP client");
-      vTaskDelay(pdMS_TO_TICKS(1000)); // Wait before retry
-      continue;
+      debug_log_info(DEBUG_TAG_HA_API, "🆕 Creating fresh HTTP client for POST request...");
+      client = create_http_client(url);
+      if (client == NULL)
+      {
+        debug_log_error(DEBUG_TAG_HA_API, "❌ Failed to create fresh HTTP client");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        continue;
+      }
     }
+    else
+    {
+      client = get_persistent_client(url);
+      if (client == NULL)
+      {
+        debug_log_error(DEBUG_TAG_HA_API, "❌ Failed to get HTTP client");
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Wait before retry
+        continue;
+      }
+    }
+    debug_log_info(DEBUG_TAG_HA_API, "✅ Got HTTP client successfully");
 
     // Set URL for this specific request (in case of persistent client)
+    debug_log_info_f(DEBUG_TAG_HA_API, "🎯 Setting request URL: %s", url);
     esp_http_client_set_url(client, url);
 
     // Set headers
+    debug_log_info(DEBUG_TAG_HA_API, "🔧 Setting headers...");
+    debug_log_info_f(DEBUG_TAG_HA_API, "🔐 Auth header: Bearer %s...", strlen(auth_header) > 7 ? "***REDACTED***" : "NULL");
     esp_http_client_set_header(client, "Authorization", auth_header);
-    esp_http_client_set_header(client, "Content-Type", CONTENT_TYPE_JSON);
+
+    if (strcmp(method, "POST") == 0)
+    {
+      debug_log_info(DEBUG_TAG_HA_API, "📝 Setting Content-Type for POST request...");
+      esp_http_client_set_header(client, "Content-Type", CONTENT_TYPE_JSON);
+    }
 
     // Set method
     if (strcmp(method, "POST") == 0)
     {
+      debug_log_info(DEBUG_TAG_HA_API, "🔧 Setting POST method...");
       esp_http_client_set_method(client, HTTP_METHOD_POST);
       if (post_data)
       {
+        debug_log_info_f(DEBUG_TAG_HA_API, "📤 Setting POST data (%d bytes)...", strlen(post_data));
+        debug_log_debug_f(DEBUG_TAG_HA_API, "📤 POST data content: %s", post_data);
         esp_http_client_set_post_field(client, post_data, strlen(post_data));
       }
     }
     else
     {
+      debug_log_info(DEBUG_TAG_HA_API, "🔧 Setting GET method...");
       esp_http_client_set_method(client, HTTP_METHOD_GET);
     }
 
@@ -350,11 +411,36 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     {
       memset(response, 0, sizeof(ha_api_response_t));
       esp_http_client_set_user_data(client, response);
+      debug_log_debug(DEBUG_TAG_HA_API, "📝 Response handler configured");
     }
 
-    // Perform request
-    debug_log_info_f(DEBUG_TAG_HA_API, "Sending HTTP request (attempt %d/%d)...", retry + 1, HA_SYNC_RETRY_COUNT);
+    // Perform request with timeout tracking
+    debug_log_info_f(DEBUG_TAG_HA_API, "🚀 Sending HTTP %s request (attempt %d/%d)...", method, retry + 1, HA_SYNC_RETRY_COUNT);
+
+    // Record start time for timeout monitoring
+    int64_t request_start_time = esp_timer_get_time();
+    debug_log_info_f(DEBUG_TAG_HA_API, "⏰ Request start time: %lld us", request_start_time);
+
+    // Perform the HTTP request
     err = esp_http_client_perform(client);
+
+    // Record completion time
+    int64_t request_end_time = esp_timer_get_time();
+    int64_t request_duration = (request_end_time - request_start_time) / 1000; // Convert to milliseconds
+
+    debug_log_info_f(DEBUG_TAG_HA_API, "📨 HTTP client perform completed with: %s", esp_err_to_name(err));
+    debug_log_info_f(DEBUG_TAG_HA_API, "⏱️ Request duration: %lld ms", request_duration);
+
+    // Log timeout-specific information
+    if (err == ESP_ERR_TIMEOUT)
+    {
+      debug_log_error_f(DEBUG_TAG_HA_API, "🚨 HTTP request timed out after %lld ms (timeout limit: %d ms)",
+                        request_duration, HA_HTTP_TIMEOUT_MS);
+    }
+    else if (request_duration > (HA_HTTP_TIMEOUT_MS / 2))
+    {
+      debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Slow HTTP request: %lld ms (more than half timeout)", request_duration);
+    }
 
     // Reset watchdog immediately after HTTP operation to prevent timeout
     if (task_watchdog_subscribed)
@@ -367,7 +453,15 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     debug_log_info_f(DEBUG_TAG_HA_API, "HTTP Status Code: %d", status_code);
 
     // Don't cleanup the persistent client, just disconnect
-    esp_http_client_close(client);
+    if (use_fresh_client)
+    {
+      debug_log_info(DEBUG_TAG_HA_API, "🗑️ Cleaning up fresh client...");
+      esp_http_client_cleanup(client);
+    }
+    else
+    {
+      esp_http_client_close(client);
+    }
 
     if (err == ESP_OK)
     {
@@ -941,12 +1035,15 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
   debug_log_info(DEBUG_TAG_HA_API, "=== SERVICE CALL START ===");
   debug_log_info_f(DEBUG_TAG_HA_API, "Service: %s.%s", service_call->domain, service_call->service);
   debug_log_info_f(DEBUG_TAG_HA_API, "Entity: %s", service_call->entity_id);
+  debug_log_info_f(DEBUG_TAG_HA_API, "URL: %s", url);
   debug_log_info_f(DEBUG_TAG_HA_API, "Service data: %s", json_string);
 
   ha_api_response_t local_response;
   ha_api_response_t *resp = response ? response : &local_response;
 
+  debug_log_info(DEBUG_TAG_HA_API, "About to call perform_http_request...");
   esp_err_t err = perform_http_request(url, "POST", json_string, resp);
+  debug_log_info_f(DEBUG_TAG_HA_API, "perform_http_request returned: %s", esp_err_to_name(err));
 
   if (err == ESP_OK && resp->success)
   {
