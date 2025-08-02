@@ -60,13 +60,26 @@ void ui_dashboard_create(lv_display_t *disp)
 void ui_dashboard_update(const system_data_t *data)
 {
   if (!data)
+  {
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Dashboard update called with NULL data");
     return;
+  }
 
-  lvgl_lock_acquire();
+  debug_log_debug_f(DEBUG_TAG_UI_DASHBOARD, "🔄 Dashboard update - CPU: %s (%d%%), GPU: %s (%d%%), Memory: %.1f/%.1f GB", 
+                    data->cpu.name, data->cpu.usage, data->gpu.name, data->gpu.usage, data->mem.used, data->mem.total);
+
+  if (!lvgl_port_lock(100)) // 100ms timeout
+  {
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Could not acquire LVGL lock for dashboard update (timeout)");
+    return;
+  }
+
   update_cpu_panel(&data->cpu);
   update_gpu_panel(&data->gpu);
   update_memory_panel(&data->mem);
-  lvgl_lock_release();
+  lvgl_port_unlock();
+  
+  debug_log_debug(DEBUG_TAG_UI_DASHBOARD, "✅ Dashboard panels updated successfully");
 }
 
 /**
@@ -75,12 +88,17 @@ void ui_dashboard_update(const system_data_t *data)
  */
 void ui_dashboard_reset_to_defaults(void)
 {
+  if (!lvgl_port_lock(100)) // 100ms timeout
+  {
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Could not acquire LVGL lock for dashboard reset (timeout)");
+    return;
+  }
+
   // Use individual panel reset functions for cleaner implementation
-  lvgl_lock_acquire();
   reset_cpu_panel();
   reset_gpu_panel();
   reset_memory_panel();
-  lvgl_lock_release();
+  lvgl_port_unlock();
 
   debug_log_info(DEBUG_TAG_UI_DASHBOARD, "🔄 Dashboard reset to default values");
 }
