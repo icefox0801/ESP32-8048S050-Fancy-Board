@@ -47,8 +47,6 @@ extern "C"
    */
   esp_err_t smart_home_deinit(void);
 
-  // Functions removed - were declared but not implemented or used
-
   /**
    * @brief Control any switch entity
    *

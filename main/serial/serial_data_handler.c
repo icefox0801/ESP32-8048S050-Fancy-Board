@@ -32,8 +32,6 @@
 // CONSTANTS AND CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// static const char *TAG = "serial_data"; // Removed - unused after debug cleanup
-
 // UART Hardware Configuration
 #define UART_PORT_NUM UART_NUM_0                ///< UART port number
 #define UART_BAUD_RATE 115200                   ///< Communication baud rate
@@ -254,12 +252,10 @@ static void process_received_line(const char *line_buffer, system_data_t *system
       // Parse and update UI
       if (parse_json_data(trimmed, system_data))
       {
-        // System data parsed successfully (debug logging removed for performance)
         // Call data callback if registered
         if (data_callback)
         {
           data_callback(system_data);
-          // Data callback executed (debug logging removed for performance)
         }
         else
         {
@@ -380,8 +376,6 @@ static void serial_data_task(void *pvParameters)
   system_data_t system_data = {0};
   uint32_t current_time;
 
-  // Removed debug logging
-
   while (serial_running)
   {
     // Read multiple bytes at once for better performance, but smaller buffer
@@ -405,7 +399,6 @@ static void serial_data_task(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(20)); // Reduced delay for faster response
   }
 
-  // Removed debug logging
   vTaskDelete(NULL);
 }
 
@@ -458,7 +451,6 @@ void serial_data_start_task(void)
       // Fallback to standard task creation
       xTaskCreatePinnedToCore(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
                               NULL, SERIAL_TASK_PRIORITY, &serial_task_handle, 0);
-      // Removed debug logging
     }
     else
     {
@@ -473,13 +465,10 @@ void serial_data_start_task(void)
           0                       // Core ID (0)
       );
 
-      // Removed debug logging
       // Free the SPIRAM allocation since we're not using it for static task
       heap_caps_free(serial_task_stack);
       serial_task_stack = NULL;
     }
-
-    // Removed debug logging
   }
 }
 
@@ -507,10 +496,8 @@ void serial_data_stop(void)
       {
         heap_caps_free(serial_task_stack);
         serial_task_stack = NULL;
-        // Removed debug logging
       }
     }
-    // Removed debug logging
   }
 }
 

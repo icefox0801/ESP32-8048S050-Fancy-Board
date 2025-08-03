@@ -91,14 +91,8 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     break;
 
   case HTTP_EVENT_ON_CONNECTED:
-    break;
-
   case HTTP_EVENT_HEADER_SENT:
-    // Header sent event (removed excessive logging)
-    break;
-
   case HTTP_EVENT_ON_HEADER:
-    // Header received event (removed excessive logging)
     break;
 
   case HTTP_EVENT_ON_DATA:
@@ -487,8 +481,6 @@ esp_err_t ha_api_init(void)
     return ESP_ERR_NO_MEM;
   }
 
-
-
   // Initialize async entity states parser
   esp_err_t parser_err = entity_states_parser_init();
   if (parser_err != ESP_OK)
@@ -496,7 +488,6 @@ esp_err_t ha_api_init(void)
     debug_log_error_f(DEBUG_TAG_HA_API, "Failed to initialize entity states parser: %s", esp_err_to_name(parser_err));
     return parser_err;
   }
-
 
   ha_api_initialized = true;
 
@@ -513,11 +504,8 @@ esp_err_t ha_api_deinit(void)
     return ESP_OK;
   }
 
-
-
   // Deinitialize async entity states parser
   entity_states_parser_deinit();
-
 
   // Clean up persistent HTTP client
   cleanup_persistent_client();
@@ -575,8 +563,6 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     return ESP_ERR_INVALID_ARG;
   }
 
-
-
   // Notify that we're starting a sync operation
   ha_status_change(HA_STATUS_SYNCING);
 
@@ -595,8 +581,6 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     {
       esp_task_wdt_reset();
     }
-
-  
 
     esp_err_t result = ha_api_get_entity_state(entity_ids[i], &states[i]);
     if (result == ESP_OK)
@@ -647,7 +631,6 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
 
   if (success_count == entity_count)
   {
-  
 
     // Notify successful sync completion
     ha_status_change(HA_STATUS_STATES_SYNCED);
@@ -686,8 +669,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
     return ESP_ERR_INVALID_ARG;
   }
 
-
-
   // Notify that we're starting a sync operation
   ha_status_change(HA_STATUS_SYNCING);
 
@@ -702,7 +683,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   esp_err_t err = perform_http_request(HA_API_STATES_URL, "GET", NULL, &response);
 
   int64_t request_time = esp_timer_get_time() - start_time;
-
 
   if (err != ESP_OK)
   {
@@ -724,7 +704,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   // Check response size and completeness
   size_t response_size = response.response_data ? strlen(response.response_data) : 0;
-
 
   if (response_size == 0)
   {
@@ -765,7 +744,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   if (use_async)
   {
-  
 
     // Reset watchdog before starting async parsing
     if (task_watchdog_subscribed)
@@ -835,7 +813,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
             esp_task_wdt_reset();
           }
         }
-      
       }
       else if (parse_err == ESP_ERR_TIMEOUT)
       {
@@ -855,7 +832,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   if (!use_async)
   {
-  
 
     // Reset watchdog before sync parsing
     if (task_watchdog_subscribed)
@@ -897,7 +873,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
           esp_task_wdt_reset();
         }
       }
-    
     }
     else
     {
@@ -917,14 +892,10 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   int64_t parse_time = esp_timer_get_time() - parse_start;
   int64_t total_time = esp_timer_get_time() - start_time;
 
-
-
-
-
   // Determine result based on success count
   if (success_count == entity_count)
   {
-  
+
     ha_status_change(HA_STATUS_STATES_SYNCED);
     return ESP_OK;
   }
@@ -969,14 +940,10 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
   char *json_string = cJSON_Print(json);
 
-
-
   ha_api_response_t local_response;
   ha_api_response_t *resp = response ? response : &local_response;
 
-
   esp_err_t err = perform_http_request(url, "POST", json_string, resp);
-
 
   if (err == ESP_OK && resp->success)
   {
@@ -1003,7 +970,6 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 esp_err_t ha_api_turn_on_switch(const char *entity_id)
 {
 
-
   ha_service_call_t service_call = {
       .domain = "switch",
       .service = "turn_on",
@@ -1015,7 +981,6 @@ esp_err_t ha_api_turn_on_switch(const char *entity_id)
 
   if (result == ESP_OK)
   {
-  
   }
   else
   {
@@ -1029,7 +994,6 @@ esp_err_t ha_api_turn_on_switch(const char *entity_id)
 esp_err_t ha_api_turn_off_switch(const char *entity_id)
 {
 
-
   ha_service_call_t service_call = {
       .domain = "switch",
       .service = "turn_off",
@@ -1041,7 +1005,6 @@ esp_err_t ha_api_turn_off_switch(const char *entity_id)
 
   if (result == ESP_OK)
   {
-  
   }
   else
   {

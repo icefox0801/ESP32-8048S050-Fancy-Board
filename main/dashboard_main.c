@@ -13,13 +13,9 @@
 #include "esp_log.h"
 #include <stdio.h>
 
-// static const char *TAG = "dashboard"; // Removed - unused after debug cleanup
-
-// Display health monitoring - removed redundant watchdog timer
 // LVGL task handles all timer processing automatically
 static esp_lcd_panel_handle_t global_panel_handle = NULL;
 
-// Removed redundant display watchdog - LVGL task handles timer processing
 // No additional display monitoring needed
 
 static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)

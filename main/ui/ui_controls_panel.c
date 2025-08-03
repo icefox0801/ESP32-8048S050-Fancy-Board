@@ -54,12 +54,6 @@ static const switch_config_t switch_configs[3] = {
 static void debug_touch_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
-
-  // Simplified touch debug - only log important events
-  if (code == LV_EVENT_CLICKED)
-  {
-    // Control pressed event (debug logging removed)
-  }
 }
 
 /**
@@ -117,8 +111,6 @@ static void switch_event_handler(lv_event_t *e)
 static void scene_button_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
-
-  // Scene button event (debug logging removed)
 
   if (code == LV_EVENT_CLICKED)
   {
@@ -179,7 +171,6 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  // Switch A created (debug logging removed)
 
   // Vertical separator after switch A
   ui_create_centered_vertical_separator(control_panel, 280, 60, 0x555555);
@@ -189,7 +180,6 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  // Switch B created (debug logging removed)
 
   // Vertical separator after switch B
   ui_create_centered_vertical_separator(control_panel, 420, 60, 0x555555);
@@ -199,7 +189,6 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  // Switch C created (debug logging removed)
 
   // Vertical separator before scene button
   ui_create_centered_vertical_separator(control_panel, 560, 60, 0x555555);
