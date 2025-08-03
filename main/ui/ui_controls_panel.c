@@ -246,7 +246,7 @@ bool controls_panel_get_switch(int switch_id)
   bool state = false;
   if (!lvgl_port_lock(300)) // Use timeout-based lock to prevent deadlocks
   {
-    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for switch get (timeout)");
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Could not acquire LVGL lock for switch get (timeout)");
     return false;
   }
 
@@ -272,7 +272,7 @@ void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char 
   // Try to acquire LVGL lock with timeout to avoid deadlocks
   if (!lvgl_port_lock(300)) // Increased timeout to 300ms
   {
-    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for HA status update (timeout)");
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Could not acquire LVGL lock for HA status update (timeout)");
     return;
   }
 
@@ -315,25 +315,25 @@ void controls_panel_register_event_callbacks(const smart_home_callbacks_t *callb
   g_switch_control_callback = callbacks->switch_callback;
   g_scene_trigger_callback = callbacks->scene_callback;
 
-  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "🔗 Event callbacks registered - switch: %p, scene: %p",
+  debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "Event callbacks registered - switch: %p, scene: %p",
                    (void *)callbacks->switch_callback, (void *)callbacks->scene_callback);
 
   // Additional verification logging
   if (callbacks->switch_callback != NULL)
   {
-    debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ Switch callback registered successfully");
+    debug_log_info(DEBUG_TAG_UI_CONTROLS, "Switch callback registered successfully");
   }
   else
   {
-    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Switch callback is NULL");
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Switch callback is NULL");
   }
 
   if (callbacks->scene_callback != NULL)
   {
-    debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ Scene callback registered successfully");
+    debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene callback registered successfully");
   }
   else
   {
-    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Scene callback is NULL");
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Scene callback is NULL");
   }
 }

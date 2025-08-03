@@ -117,6 +117,8 @@ void ha_status_register_change_callback(ha_status_change_callback_t callback)
   if (xSemaphoreTake(status_mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
   {
     status_callback = callback;
+    debug_log_info_f(DEBUG_TAG_HA_SYNC, "Status change callback %s",
+                     callback ? "registered" : "unregistered");
     xSemaphoreGive(status_mutex);
   }
   else
@@ -152,6 +154,9 @@ void ha_status_change(ha_status_t status)
       current_status = status;
       callback_to_call = status_callback;
 
+      debug_log_info_f(DEBUG_TAG_HA_SYNC, "Status changed: %s -> %s",
+                       ha_status_get_text(old_status),
+                       ha_status_get_text(status));
     }
     xSemaphoreGive(status_mutex);
   }

@@ -73,7 +73,7 @@ void ui_dashboard_update(const system_data_t *data)
 
   if (!lvgl_port_lock(500)) // Increased timeout to 500ms
   {
-    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Could not acquire LVGL lock for dashboard update (timeout)");
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "Could not acquire LVGL lock for dashboard update (timeout)");
     return;
   }
 
@@ -93,7 +93,7 @@ void ui_dashboard_reset_to_defaults(void)
 {
   if (!lvgl_port_lock(500)) // Increased timeout to 500ms
   {
-    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "⚠️ Could not acquire LVGL lock for dashboard reset (timeout)");
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "Could not acquire LVGL lock for dashboard reset (timeout)");
     return;
   }
 
@@ -103,7 +103,7 @@ void ui_dashboard_reset_to_defaults(void)
   reset_memory_panel();
   lvgl_port_unlock();
 
-  debug_log_info(DEBUG_TAG_UI_DASHBOARD, "🔄 Dashboard reset to default values");
+  debug_log_info(DEBUG_TAG_UI_DASHBOARD, "Dashboard reset to default values");
 }
 
 /**
