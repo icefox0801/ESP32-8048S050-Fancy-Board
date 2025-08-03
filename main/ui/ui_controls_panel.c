@@ -58,7 +58,7 @@ static void debug_touch_handler(lv_event_t *e)
   // Simplified touch debug - only log important events
   if (code == LV_EVENT_CLICKED)
   {
-    debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Control pressed");
+    // Control pressed event (debug logging removed)
   }
 }
 
@@ -87,12 +87,12 @@ static void switch_event_handler(lv_event_t *e)
   if (code == LV_EVENT_VALUE_CHANGED)
   {
     bool state = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "🔄 Switch %s state changed to %s", config->label, state ? "ON" : "OFF");
+    debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "Switch %s state changed to %s", config->label, state ? "ON" : "OFF");
 
     // Control the actual device via registered callback (decoupled)
     if (g_switch_control_callback != NULL)
     {
-      debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "📞 Calling switch control callback for %s", config->entity);
+      debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "Calling switch control callback for %s", config->entity);
       esp_err_t ret = g_switch_control_callback(config->entity, state);
       if (ret != ESP_OK)
       {
@@ -101,12 +101,12 @@ static void switch_event_handler(lv_event_t *e)
       }
       else
       {
-        debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "✅ Switch %s control succeeded", config->label);
+        debug_log_info_f(DEBUG_TAG_UI_CONTROLS, "Switch %s control succeeded", config->label);
       }
     }
     else
     {
-      debug_log_error(DEBUG_TAG_UI_CONTROLS, "❌ Switch control callback not registered - touch events will not trigger HA requests!");
+      debug_log_error(DEBUG_TAG_UI_CONTROLS, "Switch control callback not registered - touch events will not trigger HA requests");
     }
   }
 }
@@ -118,16 +118,16 @@ static void scene_button_event_handler(lv_event_t *e)
 {
   lv_event_code_t code = lv_event_get_code(e);
 
-  debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Scene button event");
+  // Scene button event (debug logging removed)
 
   if (code == LV_EVENT_CLICKED)
   {
-    debug_log_info(DEBUG_TAG_UI_CONTROLS, "🎬 Scene button pressed");
+    debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene button pressed");
 
     // Trigger the scene via registered callback (decoupled)
     if (g_scene_trigger_callback != NULL)
     {
-      debug_log_info(DEBUG_TAG_UI_CONTROLS, "📞 Calling scene trigger callback");
+      debug_log_info(DEBUG_TAG_UI_CONTROLS, "Calling scene trigger callback");
       esp_err_t ret = g_scene_trigger_callback();
       if (ret != ESP_OK)
       {
@@ -135,12 +135,12 @@ static void scene_button_event_handler(lv_event_t *e)
       }
       else
       {
-        debug_log_info(DEBUG_TAG_UI_CONTROLS, "✅ Scene triggered successfully");
+        debug_log_info(DEBUG_TAG_UI_CONTROLS, "Scene triggered successfully");
       }
     }
     else
     {
-      debug_log_error(DEBUG_TAG_UI_CONTROLS, "❌ Scene trigger callback not registered - touch events will not trigger HA requests!");
+      debug_log_error(DEBUG_TAG_UI_CONTROLS, "Scene trigger callback not registered - touch events will not trigger HA requests");
     }
   }
 }
@@ -179,7 +179,7 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(switch_a, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_a, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Switch A created");
+  // Switch A created (debug logging removed)
 
   // Vertical separator after switch A
   ui_create_centered_vertical_separator(control_panel, 280, 60, 0x555555);
@@ -189,7 +189,7 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(switch_b, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_b, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Switch B created");
+  // Switch B created (debug logging removed)
 
   // Vertical separator after switch B
   ui_create_centered_vertical_separator(control_panel, 420, 60, 0x555555);
@@ -199,7 +199,7 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent)
   lv_obj_add_event_cb(switch_c, debug_touch_handler, LV_EVENT_ALL, NULL);
   lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   lv_obj_add_event_cb(switch_c, switch_event_handler, LV_EVENT_CLICKED, NULL);
-  debug_log_debug(DEBUG_TAG_UI_CONTROLS, "Switch C created");
+  // Switch C created (debug logging removed)
 
   // Vertical separator before scene button
   ui_create_centered_vertical_separator(control_panel, 560, 60, 0x555555);
@@ -233,7 +233,7 @@ void controls_panel_set_switch(int switch_id, bool state)
 
   if (!lvgl_port_lock(300)) // Use timeout-based lock to prevent deadlocks
   {
-    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "⚠️ Could not acquire LVGL lock for switch set (timeout)");
+    debug_log_warning(DEBUG_TAG_UI_CONTROLS, "Could not acquire LVGL lock for switch set (timeout)");
     return;
   }
 

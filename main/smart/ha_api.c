@@ -60,18 +60,18 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
  */
 static bool check_network_connectivity(void)
 {
-  debug_log_info(DEBUG_TAG_HA_API, "🌐 Checking network connectivity to HA server");
+  debug_log_debug(DEBUG_TAG_HA_API, "Checking network connectivity to HA server");
 
   // Check WiFi connection first
   wifi_ap_record_t ap_info;
   esp_err_t ret = esp_wifi_sta_get_ap_info(&ap_info);
   if (ret != ESP_OK)
   {
-    debug_log_error(DEBUG_TAG_HA_API, "❌ WiFi not connected");
+    debug_log_error(DEBUG_TAG_HA_API, "WiFi not connected");
     return false;
   }
 
-  debug_log_info(DEBUG_TAG_HA_API, "✅ Network connectivity OK");
+  debug_log_debug(DEBUG_TAG_HA_API, "Network connectivity OK");
   return true;
 }
 
@@ -85,7 +85,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
   switch (evt->event_id)
   {
   case HTTP_EVENT_ERROR:
-    debug_log_error(DEBUG_TAG_HA_API, "🚨 HTTP_EVENT_ERROR occurred");
+    debug_log_error(DEBUG_TAG_HA_API, "HTTP_EVENT_ERROR occurred");
     if (response)
     {
       snprintf(response->error_message, sizeof(response->error_message), "HTTP error occurred");
@@ -94,15 +94,15 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     break;
 
   case HTTP_EVENT_ON_CONNECTED:
-    debug_log_info(DEBUG_TAG_HA_API, "🔗 HTTP_EVENT_ON_CONNECTED - Connection established");
+    debug_log_debug(DEBUG_TAG_HA_API, "HTTP_EVENT_ON_CONNECTED");
     break;
 
   case HTTP_EVENT_HEADER_SENT:
-    debug_log_debug(DEBUG_TAG_HA_API, "📤 HTTP_EVENT_HEADER_SENT - Headers sent");
+    // Header sent event (removed excessive logging)
     break;
 
   case HTTP_EVENT_ON_HEADER:
-    debug_log_debug_f(DEBUG_TAG_HA_API, "📥 HTTP_EVENT_ON_HEADER: %.*s", evt->data_len, (char *)evt->data);
+    // Header received event (removed excessive logging)
     break;
 
   case HTTP_EVENT_ON_DATA:
@@ -110,7 +110,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     {
       if (response->response_data == NULL)
       {
-        debug_log_debug(DEBUG_TAG_HA_API, "📦 HTTP_EVENT_ON_DATA - First data chunk received, allocating buffer");
+        debug_log_debug(DEBUG_TAG_HA_API, "First data chunk received, allocating response buffer");
         response->response_data = malloc(HA_MAX_RESPONSE_SIZE);
         if (response->response_data == NULL)
         {
@@ -130,13 +130,13 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
         // Log progress for large responses (every 10KB)
         if (response->response_len > 0 && (response->response_len % 10240) == 0)
         {
-          debug_log_info_f(DEBUG_TAG_HA_API, "📥 Received %zu KB so far...", response->response_len / 1024);
+          // Received data progress (debug logging removed for performance)
         }
       }
       else if (response->response_data)
       {
         // Log if we're hitting buffer size limits
-        debug_log_warning_f(DEBUG_TAG_HA_API, "⚠️ Response buffer limit reached: %zu + %d >= %d bytes",
+        debug_log_warning_f(DEBUG_TAG_HA_API, "Response buffer limit reached: %zu + %d >= %d bytes",
                             response->response_len, evt->data_len, HA_MAX_RESPONSE_SIZE - 1);
       }
 
@@ -146,26 +146,26 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     break;
 
   case HTTP_EVENT_ON_FINISH:
-    debug_log_info(DEBUG_TAG_HA_API, "✅ HTTP_EVENT_ON_FINISH - Request completed");
+    debug_log_debug(DEBUG_TAG_HA_API, "HTTP_EVENT_ON_FINISH - Request completed");
     if (response)
     {
       response->status_code = esp_http_client_get_status_code((esp_http_client_handle_t)evt->client);
       response->success = (response->status_code >= 200 && response->status_code < 300);
-      debug_log_info_f(DEBUG_TAG_HA_API, "📊 Final status code: %d, success: %s",
-                       response->status_code, response->success ? "true" : "false");
+      debug_log_debug_f(DEBUG_TAG_HA_API, "Final status code: %d, success: %s",
+                        response->status_code, response->success ? "true" : "false");
     }
     break;
 
   case HTTP_EVENT_DISCONNECTED:
-    debug_log_info(DEBUG_TAG_HA_API, "🔌 HTTP_EVENT_DISCONNECTED - Connection closed");
+    debug_log_debug(DEBUG_TAG_HA_API, "HTTP_EVENT_DISCONNECTED");
     break;
 
   case HTTP_EVENT_REDIRECT:
-    debug_log_info(DEBUG_TAG_HA_API, "↩️ HTTP_EVENT_REDIRECT - Redirect occurred");
+    debug_log_debug(DEBUG_TAG_HA_API, "HTTP_EVENT_REDIRECT");
     break;
 
   default:
-    debug_log_debug_f(DEBUG_TAG_HA_API, "🔍 HTTP event: %d", evt->event_id);
+    debug_log_debug_f(DEBUG_TAG_HA_API, "Unknown HTTP event: %d", evt->event_id);
     break;
   }
 
@@ -177,8 +177,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
  */
 static esp_http_client_handle_t create_http_client(const char *url)
 {
-  debug_log_info_f(DEBUG_TAG_HA_API, "🔧 Creating HTTP client for URL: %s", url);
-  debug_log_info_f(DEBUG_TAG_HA_API, "⏰ Timeout configured: %d ms", HA_HTTP_TIMEOUT_MS);
+  // HTTP client configuration (debug logging removed)
 
   esp_http_client_config_t config = {
       .url = url,
@@ -201,11 +200,11 @@ static esp_http_client_handle_t create_http_client(const char *url)
   esp_http_client_handle_t client = esp_http_client_init(&config);
   if (client)
   {
-    debug_log_info(DEBUG_TAG_HA_API, "✅ HTTP client created successfully");
+    // HTTP client created successfully (debug logging removed)
   }
   else
   {
-    debug_log_error(DEBUG_TAG_HA_API, "❌ Failed to create HTTP client");
+    debug_log_error(DEBUG_TAG_HA_API, "Failed to create HTTP client");
   }
 
   return client;
@@ -244,11 +243,11 @@ static esp_http_client_handle_t get_persistent_client(const char *url)
     // Clean up existing client if base URL changed
     if (persistent_client != NULL)
     {
-      debug_log_info(DEBUG_TAG_HA_API, "🔄 Base URL changed, cleaning up old client");
+      // Base URL changed, cleaning up old client (debug logging removed)
       cleanup_persistent_client();
     }
 
-    debug_log_info_f(DEBUG_TAG_HA_API, "🔗 Creating new persistent HTTP client for: %s", base_url);
+    // Creating new persistent HTTP client (debug logging removed)
     persistent_client = create_http_client(base_url);
     if (persistent_client)
     {
@@ -267,7 +266,7 @@ static void cleanup_persistent_client(void)
 {
   if (persistent_client != NULL)
   {
-    debug_log_info(DEBUG_TAG_HA_API, "🧹 Cleaning up persistent HTTP client");
+    // Cleaning up persistent HTTP client (debug logging removed)
     esp_http_client_cleanup(persistent_client);
     persistent_client = NULL;
     current_base_url[0] = '\0';
@@ -279,29 +278,26 @@ static void cleanup_persistent_client(void)
  */
 static esp_err_t perform_http_request(const char *url, const char *method, const char *post_data, ha_api_response_t *response)
 {
-  debug_log_info(DEBUG_TAG_HA_API, "🚀 perform_http_request ENTRY");
-  debug_log_info_f(DEBUG_TAG_HA_API, "Method: %s, URL: %s", method, url);
+  debug_log_debug_f(DEBUG_TAG_HA_API, "HTTP Request - Method: %s, URL: %s", method, url);
   if (post_data)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "POST data: %s", post_data);
+    debug_log_debug_f(DEBUG_TAG_HA_API, "POST data: %s", post_data);
   }
 
-  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 1: Parameter validation");
+  // Parameter validation
   if (!ha_api_initialized)
   {
-    debug_log_error(DEBUG_TAG_HA_API, "❌ HA API not initialized!");
+    debug_log_error(DEBUG_TAG_HA_API, "HA API not initialized");
     return ESP_ERR_INVALID_STATE;
   }
 
-  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 2: About to change status to SYNCING");
   // Notify that we're starting a request (syncing)
   ha_status_change(HA_STATUS_SYNCING);
-  debug_log_info(DEBUG_TAG_HA_API, "📍 CHECKPOINT 3: Status changed, about to check network");
 
   // Check network connectivity before attempting HTTP request
   if (!check_network_connectivity())
   {
-    debug_log_error(DEBUG_TAG_HA_API, "❌ Network connectivity check failed, skipping HTTP request");
+    debug_log_error(DEBUG_TAG_HA_API, "Network connectivity check failed, skipping HTTP request");
     ha_status_change(HA_STATUS_SYNC_FAILED);
     if (response)
     {
@@ -331,7 +327,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     if (wdt_err == ESP_OK)
     {
       task_watchdog_subscribed = true;
-      debug_log_debug(DEBUG_TAG_HA_API, "🐕 Task subscribed to watchdog");
+      debug_log_debug(DEBUG_TAG_HA_API, "Task subscribed to watchdog");
     }
     else if (wdt_err != ESP_ERR_INVALID_ARG) // Task already subscribed is OK
     {
@@ -396,7 +392,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
       if (post_data)
       {
         debug_log_info_f(DEBUG_TAG_HA_API, "📤 Setting POST data (%d bytes)...", strlen(post_data));
-        debug_log_debug_f(DEBUG_TAG_HA_API, "📤 POST data content: %s", post_data);
+        debug_log_debug_f(DEBUG_TAG_HA_API, "POST data content: %s", post_data);
         esp_http_client_set_post_field(client, post_data, strlen(post_data));
       }
     }
@@ -411,7 +407,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     {
       memset(response, 0, sizeof(ha_api_response_t));
       esp_http_client_set_user_data(client, response);
-      debug_log_debug(DEBUG_TAG_HA_API, "📝 Response handler configured");
+      debug_log_debug(DEBUG_TAG_HA_API, "Response handler configured");
     }
 
     // Perform request with timeout tracking

@@ -10,7 +10,7 @@
  */
 
 #include "ha_status.h"
-#include <esp_log.h>
+#include "utils/system_debug_utils.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
@@ -19,8 +19,6 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS AND MACROS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-static const char *TAG = "ha_status";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STATIC VARIABLES
@@ -64,7 +62,7 @@ esp_err_t ha_status_init(void)
 {
   if (initialized)
   {
-    ESP_LOGW(TAG, "Already initialized");
+    debug_log_warning(DEBUG_TAG_HA_SYNC, "Already initialized");
     return ESP_OK;
   }
 
@@ -72,14 +70,14 @@ esp_err_t ha_status_init(void)
   status_mutex = xSemaphoreCreateMutex();
   if (status_mutex == NULL)
   {
-    ESP_LOGE(TAG, "Failed to create status mutex");
+    debug_log_error(DEBUG_TAG_HA_SYNC, "Failed to create status mutex");
     return ESP_ERR_NO_MEM;
   }
 
   initialized = true;
   ha_status_change(HA_STATUS_OFFLINE);
 
-  ESP_LOGI(TAG, "HA status module initialized");
+  debug_log_startup(DEBUG_TAG_HA_SYNC, "HA Status Module");
   return ESP_OK;
 }
 
@@ -104,7 +102,7 @@ esp_err_t ha_status_deinit(void)
   }
 
   initialized = false;
-  ESP_LOGI(TAG, "HA status module deinitialized");
+  debug_log_info(DEBUG_TAG_HA_SYNC, "HA status module deinitialized");
   return ESP_OK;
 }
 
@@ -112,20 +110,20 @@ void ha_status_register_change_callback(ha_status_change_callback_t callback)
 {
   if (!initialized)
   {
-    ESP_LOGE(TAG, "Module not initialized");
+    debug_log_error(DEBUG_TAG_HA_SYNC, "Module not initialized");
     return;
   }
 
   if (xSemaphoreTake(status_mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
   {
     status_callback = callback;
-    ESP_LOGI(TAG, "Status change callback %s",
-             callback ? "registered" : "unregistered");
+    debug_log_info_f(DEBUG_TAG_HA_SYNC, "Status change callback %s",
+                     callback ? "registered" : "unregistered");
     xSemaphoreGive(status_mutex);
   }
   else
   {
-    ESP_LOGE(TAG, "Failed to acquire mutex for callback registration");
+    debug_log_error(DEBUG_TAG_HA_SYNC, "Failed to acquire mutex for callback registration");
   }
 }
 
@@ -133,14 +131,14 @@ void ha_status_change(ha_status_t status)
 {
   if (!initialized)
   {
-    ESP_LOGE(TAG, "Module not initialized");
+    debug_log_error(DEBUG_TAG_HA_SYNC, "Module not initialized");
     return;
   }
 
   // Validate status enum
   if (status >= sizeof(status_text_map) / sizeof(status_text_map[0]))
   {
-    ESP_LOGE(TAG, "Invalid status value: %d", status);
+    debug_log_error_f(DEBUG_TAG_HA_SYNC, "Invalid status value: %d", status);
     return;
   }
 
@@ -156,15 +154,15 @@ void ha_status_change(ha_status_t status)
       current_status = status;
       callback_to_call = status_callback;
 
-      ESP_LOGI(TAG, "Status changed: %s -> %s",
-               ha_status_get_text(old_status),
-               ha_status_get_text(status));
+      debug_log_info_f(DEBUG_TAG_HA_SYNC, "Status changed: %s -> %s",
+                       ha_status_get_text(old_status),
+                       ha_status_get_text(status));
     }
     xSemaphoreGive(status_mutex);
   }
   else
   {
-    ESP_LOGE(TAG, "Failed to acquire mutex for status change");
+    debug_log_error(DEBUG_TAG_HA_SYNC, "Failed to acquire mutex for status change");
     return;
   }
 

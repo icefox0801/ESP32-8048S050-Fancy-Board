@@ -254,26 +254,26 @@ static void process_received_line(const char *line_buffer, system_data_t *system
       // Parse and update UI
       if (parse_json_data(trimmed, system_data))
       {
-        debug_log_debug(DEBUG_TAG_SERIAL_DATA, "📊 System data parsed successfully");
+        // System data parsed successfully (debug logging removed for performance)
         // Call data callback if registered
         if (data_callback)
         {
           data_callback(system_data);
-          debug_log_debug(DEBUG_TAG_SERIAL_DATA, "📡 Data callback executed");
+          // Data callback executed (debug logging removed for performance)
         }
         else
         {
-          debug_log_warning(DEBUG_TAG_SERIAL_DATA, "⚠️ No data callback registered");
+          debug_log_warning(DEBUG_TAG_SERIAL_DATA, "No data callback registered");
         }
       }
       else
       {
-        debug_log_warning(DEBUG_TAG_SERIAL_DATA, "❌ Failed to parse JSON data");
+        debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Failed to parse JSON data");
       }
     }
     else
     {
-      debug_log_debug(DEBUG_TAG_SERIAL_DATA, "🔍 Invalid JSON format - missing closing brace");
+      debug_log_debug(DEBUG_TAG_SERIAL_DATA, "Invalid JSON format - missing closing brace");
     }
 
     trigger_connection_check();
@@ -292,7 +292,7 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
     if (*line_pos > 0)
     {
       line_buffer[*line_pos] = '\0';
-      debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "📝 Processing line (%d chars): %.50s%s",
+      debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "Processing line (%d chars): %.50s%s",
                         *line_pos, line_buffer, (*line_pos > 50) ? "..." : "");
       process_received_line(line_buffer, system_data);
       *line_pos = 0; // Reset for next line
@@ -308,7 +308,7 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
     }
     else
     {
-      debug_log_warning(DEBUG_TAG_SERIAL_DATA, "⚠️ Line buffer overflow, resetting");
+      debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Line buffer overflow, resetting");
       *line_pos = 0;
     }
   }
@@ -357,7 +357,7 @@ static void connection_check_task(void *pvParameters)
       if (connection_callback)
       {
         connection_callback(current_connection_status);
-        debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "📞 Connection status changed: %s (last data: %lu ms ago)",
+        debug_log_debug_f(DEBUG_TAG_SERIAL_DATA, "Connection status changed: %s (last data: %lu ms ago)",
                           current_connection_status ? "connected" : "disconnected",
                           last_data_time > 0 ? (current_time - last_data_time) : 0);
       }

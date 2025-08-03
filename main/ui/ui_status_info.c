@@ -11,6 +11,7 @@
 #include "ui_config.h"
 #include "ui_helpers.h"
 #include "lvgl_setup.h"
+#include "utils/system_debug_utils.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -48,7 +49,7 @@ void status_info_update_wifi_status(const char *status_text, bool connected)
   // Acquire LVGL lock with timeout
   if (!lvgl_port_lock(200))
   {
-    printf("⚠️ Failed to acquire LVGL lock for WiFi status update\n");
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "Failed to acquire LVGL lock for WiFi status update");
     return;
   }
 
@@ -106,7 +107,7 @@ void status_info_update_serial_status(bool connected)
   // Acquire LVGL lock with timeout
   if (!lvgl_port_lock(200))
   {
-    printf("⚠️ Failed to acquire LVGL lock for serial status update\n");
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "Failed to acquire LVGL lock for serial status update");
     return;
   }
 
