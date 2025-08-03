@@ -30,9 +30,9 @@
 #define AUTH_HEADER_TEMPLATE "Bearer %s"
 #define CONTENT_TYPE_JSON "application/json"
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PRIVATE VARIABLES
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static bool ha_api_initialized = false;
 static char auth_header[256];
@@ -40,9 +40,9 @@ static esp_http_client_handle_t persistent_client = NULL;
 static char current_base_url[256] = {0};
 static bool task_watchdog_subscribed = false;
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PRIVATE FUNCTION DECLARATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static esp_err_t http_event_handler(esp_http_client_event_t *evt);
 static esp_http_client_handle_t create_http_client(const char *url);
@@ -50,9 +50,9 @@ static esp_http_client_handle_t get_persistent_client(const char *url);
 static void cleanup_persistent_client(void);
 static esp_err_t perform_http_request(const char *url, const char *method, const char *post_data, ha_api_response_t *response);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PRIVATE FUNCTION IMPLEMENTATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 /**
  * @brief Check network connectivity to Home Assistant server
@@ -152,11 +152,9 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
     break;
 
   case HTTP_EVENT_REDIRECT:
-    debug_log_debug(DEBUG_TAG_HA_API, "HTTP_EVENT_REDIRECT");
     break;
 
   default:
-    debug_log_debug_f(DEBUG_TAG_HA_API, "Unknown HTTP event: %d", evt->event_id);
     break;
   }
 
@@ -266,7 +264,6 @@ static void cleanup_persistent_client(void)
  */
 static esp_err_t perform_http_request(const char *url, const char *method, const char *post_data, ha_api_response_t *response)
 {
-  debug_log_debug_f(DEBUG_TAG_HA_API, "HTTP Request - Method: %s, URL: %s", method, url);
   if (post_data)
   {
     // Large POST data logging skipped for performance
@@ -294,8 +291,6 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     }
     return ESP_ERR_NOT_FOUND;
   }
-
-  debug_log_info(DEBUG_TAG_HA_API, "Network check passed, starting HTTP request setup");
 
   esp_err_t err = ESP_FAIL;
   int status_code = 0;
@@ -327,7 +322,6 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
 
     if (use_fresh_client)
     {
-      debug_log_info(DEBUG_TAG_HA_API, "🆕 Creating fresh HTTP client for POST request...");
       client = create_http_client(url);
       if (client == NULL)
       {
@@ -346,37 +340,29 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
         continue;
       }
     }
-    debug_log_info(DEBUG_TAG_HA_API, "Got HTTP client successfully");
 
     // Set URL for this specific request (in case of persistent client)
-    debug_log_info_f(DEBUG_TAG_HA_API, "🎯 Setting request URL: %s", url);
     esp_http_client_set_url(client, url);
 
     // Set headers
-    debug_log_info(DEBUG_TAG_HA_API, "Setting headers...");
-    debug_log_info_f(DEBUG_TAG_HA_API, "🔐 Auth header: Bearer %s...", strlen(auth_header) > 7 ? "***REDACTED***" : "NULL");
     esp_http_client_set_header(client, "Authorization", auth_header);
 
     if (strcmp(method, "POST") == 0)
     {
-      debug_log_info(DEBUG_TAG_HA_API, "📝 Setting Content-Type for POST request...");
       esp_http_client_set_header(client, "Content-Type", CONTENT_TYPE_JSON);
     }
 
     // Set method
     if (strcmp(method, "POST") == 0)
     {
-      debug_log_info(DEBUG_TAG_HA_API, "Setting POST method...");
       esp_http_client_set_method(client, HTTP_METHOD_POST);
       if (post_data)
       {
-        debug_log_info_f(DEBUG_TAG_HA_API, "Setting POST data (%d bytes)...", strlen(post_data));
         esp_http_client_set_post_field(client, post_data, strlen(post_data));
       }
     }
     else
     {
-      debug_log_info(DEBUG_TAG_HA_API, "Setting GET method...");
       esp_http_client_set_method(client, HTTP_METHOD_GET);
     }
 
@@ -388,11 +374,7 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     }
 
     // Perform request with timeout tracking
-    debug_log_info_f(DEBUG_TAG_HA_API, "🚀 Sending HTTP %s request (attempt %d/%d)...", method, retry + 1, HA_SYNC_RETRY_COUNT);
-
-    // Record start time for timeout monitoring
     int64_t request_start_time = esp_timer_get_time();
-    debug_log_info_f(DEBUG_TAG_HA_API, "⏰ Request start time: %lld us", request_start_time);
 
     // Perform the HTTP request
     err = esp_http_client_perform(client);
@@ -401,13 +383,10 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     int64_t request_end_time = esp_timer_get_time();
     int64_t request_duration = (request_end_time - request_start_time) / 1000; // Convert to milliseconds
 
-    debug_log_info_f(DEBUG_TAG_HA_API, "📨 HTTP client perform completed with: %s", esp_err_to_name(err));
-    debug_log_info_f(DEBUG_TAG_HA_API, "Request duration: %lld ms", request_duration);
-
     // Log timeout-specific information
     if (err == ESP_ERR_TIMEOUT)
     {
-      debug_log_error_f(DEBUG_TAG_HA_API, "🚨 HTTP request timed out after %lld ms (timeout limit: %d ms)",
+      debug_log_error_f(DEBUG_TAG_HA_API, "HTTP request timed out after %lld ms (timeout limit: %d ms)",
                         request_duration, HA_HTTP_TIMEOUT_MS);
     }
     else if (request_duration > (HA_HTTP_TIMEOUT_MS / 2))
@@ -423,12 +402,10 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
 
     // Get status code for logging
     status_code = esp_http_client_get_status_code(client);
-    debug_log_info_f(DEBUG_TAG_HA_API, "HTTP Status Code: %d", status_code);
 
     // Don't cleanup the persistent client, just disconnect
     if (use_fresh_client)
     {
-      debug_log_info(DEBUG_TAG_HA_API, "Cleaning up fresh client...");
       esp_http_client_cleanup(client);
     }
     else
@@ -438,7 +415,6 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
 
     if (err == ESP_OK)
     {
-      debug_log_info_f(DEBUG_TAG_HA_API, "HTTP request successful (attempt %d)", retry + 1);
       break;
     }
     else
@@ -455,8 +431,6 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     // Wait before retry
     if (retry < HA_SYNC_RETRY_COUNT - 1)
     {
-      debug_log_info_f(DEBUG_TAG_HA_API, "Waiting 500ms before retry...");
-
       // Notify retry status
       {
         ha_status_change(HA_STATUS_SYNCING);
@@ -480,9 +454,9 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
   return err;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PUBLIC FUNCTION IMPLEMENTATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 esp_err_t ha_api_init(void)
 {
@@ -491,8 +465,6 @@ esp_err_t ha_api_init(void)
     debug_log_warning(DEBUG_TAG_HA_API, "Home Assistant API already initialized");
     return ESP_OK;
   }
-
-  debug_log_info(DEBUG_TAG_HA_API, "Initializing Home Assistant API client...");
 
   // Check if constants are properly defined
   if (HA_API_TOKEN == NULL || strlen(HA_API_TOKEN) == 0)
@@ -507,9 +479,6 @@ esp_err_t ha_api_init(void)
     return ESP_ERR_INVALID_ARG;
   }
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "HA Server: %s:%d", HA_SERVER_HOST_NAME, HA_SERVER_PORT);
-  debug_log_info_f(DEBUG_TAG_HA_API, "Token length: %d", strlen(HA_API_TOKEN));
-
   // Format authorization header with error checking
   int ret = snprintf(auth_header, sizeof(auth_header), AUTH_HEADER_TEMPLATE, HA_API_TOKEN);
   if (ret < 0 || ret >= sizeof(auth_header))
@@ -518,7 +487,7 @@ esp_err_t ha_api_init(void)
     return ESP_ERR_NO_MEM;
   }
 
-  debug_log_info(DEBUG_TAG_HA_API, "Authorization header formatted successfully");
+
 
   // Initialize async entity states parser
   esp_err_t parser_err = entity_states_parser_init();
@@ -527,13 +496,9 @@ esp_err_t ha_api_init(void)
     debug_log_error_f(DEBUG_TAG_HA_API, "Failed to initialize entity states parser: %s", esp_err_to_name(parser_err));
     return parser_err;
   }
-  debug_log_info(DEBUG_TAG_HA_API, "Async entity states parser initialized");
+
 
   ha_api_initialized = true;
-
-  debug_log_info_f(DEBUG_TAG_HA_API, "Home Assistant API client initialized (Server: %s:%d)",
-                   HA_SERVER_HOST_NAME, HA_SERVER_PORT);
-  debug_log_info_f(DEBUG_TAG_HA_API, "Base URL: %s", HA_API_BASE_URL);
 
   // Notify status callback about initialization
   ha_status_change(HA_STATUS_READY);
@@ -548,11 +513,11 @@ esp_err_t ha_api_deinit(void)
     return ESP_OK;
   }
 
-  debug_log_info(DEBUG_TAG_HA_API, "Deinitializing Home Assistant API client");
+
 
   // Deinitialize async entity states parser
   entity_states_parser_deinit();
-  debug_log_info(DEBUG_TAG_HA_API, "🔌 Async entity states parser deinitialized");
+
 
   // Clean up persistent HTTP client
   cleanup_persistent_client();
@@ -610,7 +575,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
     return ESP_ERR_INVALID_ARG;
   }
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states individually (optimized)", entity_count);
+
 
   // Notify that we're starting a sync operation
   ha_status_change(HA_STATUS_SYNCING);
@@ -631,7 +596,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
       esp_task_wdt_reset();
     }
 
-    debug_log_info_f(DEBUG_TAG_HA_API, "Fetching entity %d/%d: %s", i + 1, entity_count, entity_ids[i]);
+  
 
     esp_err_t result = ha_api_get_entity_state(entity_ids[i], &states[i]);
     if (result == ESP_OK)
@@ -682,7 +647,7 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
 
   if (success_count == entity_count)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "Successfully fetched all %d entity states", entity_count);
+  
 
     // Notify successful sync completion
     ha_status_change(HA_STATUS_STATES_SYNCED);
@@ -721,7 +686,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
     return ESP_ERR_INVALID_ARG;
   }
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "Fetching %d entity states using BULK API request", entity_count);
+
 
   // Notify that we're starting a sync operation
   ha_status_change(HA_STATUS_SYNCING);
@@ -737,7 +702,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   esp_err_t err = perform_http_request(HA_API_STATES_URL, "GET", NULL, &response);
 
   int64_t request_time = esp_timer_get_time() - start_time;
-  debug_log_info_f(DEBUG_TAG_HA_API, "Bulk HTTP request took: %lld ms", request_time / 1000);
+
 
   if (err != ESP_OK)
   {
@@ -746,7 +711,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
     // Provide more specific error information
     if (err == ESP_ERR_TIMEOUT)
     {
-      debug_log_error(DEBUG_TAG_HA_API, "⏰ Request timed out - Home Assistant may be slow or response too large");
+      debug_log_error(DEBUG_TAG_HA_API, "�?Request timed out - Home Assistant may be slow or response too large");
     }
     else if (err == ESP_ERR_NOT_FOUND)
     {
@@ -759,7 +724,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   // Check response size and completeness
   size_t response_size = response.response_data ? strlen(response.response_data) : 0;
-  debug_log_info_f(DEBUG_TAG_HA_API, "Bulk response size: %zu bytes", response_size);
+
 
   if (response_size == 0)
   {
@@ -800,7 +765,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   if (use_async)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "📡 Using async parser for large response (%zu bytes)", response_size);
+  
 
     // Reset watchdog before starting async parsing
     if (task_watchdog_subscribed)
@@ -870,11 +835,11 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
             esp_task_wdt_reset();
           }
         }
-        debug_log_info_f(DEBUG_TAG_HA_API, "Async parsing completed, found %d/%d entities", success_count, entity_count);
+      
       }
       else if (parse_err == ESP_ERR_TIMEOUT)
       {
-        debug_log_error(DEBUG_TAG_HA_API, "⏰ Async parsing timed out");
+        debug_log_error(DEBUG_TAG_HA_API, "�?Async parsing timed out");
       }
       else
       {
@@ -890,7 +855,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   if (!use_async)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "Using sync parser for response (%zu bytes)", response_size);
+  
 
     // Reset watchdog before sync parsing
     if (task_watchdog_subscribed)
@@ -932,7 +897,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
           esp_task_wdt_reset();
         }
       }
-      debug_log_info_f(DEBUG_TAG_HA_API, "Sync parsing completed, found %d/%d entities", success_count, entity_count);
+    
     }
     else
     {
@@ -952,14 +917,14 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   int64_t parse_time = esp_timer_get_time() - parse_start;
   int64_t total_time = esp_timer_get_time() - start_time;
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "JSON parsing took: %lld ms", parse_time / 1000);
-  debug_log_info_f(DEBUG_TAG_HA_API, "Total bulk operation took: %lld ms", total_time / 1000);
-  debug_log_info_f(DEBUG_TAG_HA_API, "📊 Response size: %zu bytes", response_size);
+
+
+
 
   // Determine result based on success count
   if (success_count == entity_count)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "🎯 Successfully fetched all %d entity states via bulk request", entity_count);
+  
     ha_status_change(HA_STATUS_STATES_SYNCED);
     return ESP_OK;
   }
@@ -1004,19 +969,17 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
   char *json_string = cJSON_Print(json);
 
-  debug_log_info_f(DEBUG_TAG_HA_API, "Service call: %s.%s for %s", service_call->domain, service_call->service, service_call->entity_id);
+
 
   ha_api_response_t local_response;
   ha_api_response_t *resp = response ? response : &local_response;
 
-  debug_log_info(DEBUG_TAG_HA_API, "About to call perform_http_request...");
+
   esp_err_t err = perform_http_request(url, "POST", json_string, resp);
-  debug_log_info_f(DEBUG_TAG_HA_API, "perform_http_request returned: %s", esp_err_to_name(err));
+
 
   if (err == ESP_OK && resp->success)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "Service %s.%s executed successfully for %s",
-                     service_call->domain, service_call->service, service_call->entity_id);
   }
   else
   {
@@ -1039,7 +1002,7 @@ esp_err_t ha_api_call_service(const ha_service_call_t *service_call, ha_api_resp
 
 esp_err_t ha_api_turn_on_switch(const char *entity_id)
 {
-  debug_log_info_f(DEBUG_TAG_HA_API, ">>> TURN ON SWITCH: %s", entity_id);
+
 
   ha_service_call_t service_call = {
       .domain = "switch",
@@ -1052,7 +1015,7 @@ esp_err_t ha_api_turn_on_switch(const char *entity_id)
 
   if (result == ESP_OK)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "<<< TURN ON SUCCESS: %s", entity_id);
+  
   }
   else
   {
@@ -1065,7 +1028,7 @@ esp_err_t ha_api_turn_on_switch(const char *entity_id)
 
 esp_err_t ha_api_turn_off_switch(const char *entity_id)
 {
-  debug_log_info_f(DEBUG_TAG_HA_API, ">>> TURN OFF SWITCH: %s", entity_id);
+
 
   ha_service_call_t service_call = {
       .domain = "switch",
@@ -1078,7 +1041,7 @@ esp_err_t ha_api_turn_off_switch(const char *entity_id)
 
   if (result == ESP_OK)
   {
-    debug_log_info_f(DEBUG_TAG_HA_API, "<<< TURN OFF SUCCESS: %s", entity_id);
+  
   }
   else
   {
