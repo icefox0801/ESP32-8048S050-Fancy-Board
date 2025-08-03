@@ -16,22 +16,22 @@
 #include <freertos/semphr.h>
 #include <string.h>
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // CONSTANTS AND MACROS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // STATIC VARIABLES
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static ha_status_t current_status = HA_STATUS_OFFLINE;
 static ha_status_change_callback_t status_callback = NULL;
 static SemaphoreHandle_t status_mutex = NULL;
 static bool initialized = false;
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // STATUS TEXT MAPPING
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 static const char *status_text_map[] = {
     [HA_STATUS_OFFLINE] = "Offline",
@@ -54,9 +54,9 @@ static bool ha_status_is_syncing(void)
   return (status == HA_STATUS_SYNCING);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 // PUBLIC FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════�?
 
 esp_err_t ha_status_init(void)
 {
@@ -102,7 +102,7 @@ esp_err_t ha_status_deinit(void)
   }
 
   initialized = false;
-  debug_log_info(DEBUG_TAG_HA_SYNC, "HA status module deinitialized");
+
   return ESP_OK;
 }
 
@@ -117,8 +117,6 @@ void ha_status_register_change_callback(ha_status_change_callback_t callback)
   if (xSemaphoreTake(status_mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
   {
     status_callback = callback;
-    debug_log_info_f(DEBUG_TAG_HA_SYNC, "Status change callback %s",
-                     callback ? "registered" : "unregistered");
     xSemaphoreGive(status_mutex);
   }
   else
@@ -154,9 +152,6 @@ void ha_status_change(ha_status_t status)
       current_status = status;
       callback_to_call = status_callback;
 
-      debug_log_info_f(DEBUG_TAG_HA_SYNC, "Status changed: %s -> %s",
-                       ha_status_get_text(old_status),
-                       ha_status_get_text(status));
     }
     xSemaphoreGive(status_mutex);
   }
