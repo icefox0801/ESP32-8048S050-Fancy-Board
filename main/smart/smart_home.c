@@ -52,13 +52,10 @@ static void sync_task_function(void *pvParameters)
   // Subscribe to task watchdog
   esp_task_wdt_add(NULL);
 
-
   while (1)
   {
     // Feed the watchdog before starting sync
     esp_task_wdt_reset();
-
-
 
     // Add error handling to prevent task crashes
     smart_home_sync_switch_states();
@@ -95,7 +92,6 @@ static esp_err_t run_sync_states_task(void)
     debug_log_error(DEBUG_TAG_SMART_HOME, "Failed to create sync states task");
     return ESP_FAIL;
   }
-
 
   return ESP_OK;
 }
@@ -159,7 +155,6 @@ esp_err_t smart_home_deinit(void)
     // Task will unsubscribe from watchdog automatically when deleted
     vTaskDelete(sync_task_handle);
     sync_task_handle = NULL;
-
   }
 
   // Cleanup Home Assistant API
@@ -180,6 +175,8 @@ esp_err_t smart_home_control_switch(const char *entity_id, bool turn_on)
     return ESP_ERR_INVALID_ARG;
   }
 
+  const char *action = turn_on ? "ON" : "OFF";
+
   esp_err_t result;
   if (turn_on)
   {
@@ -192,11 +189,10 @@ esp_err_t smart_home_control_switch(const char *entity_id, bool turn_on)
 
   if (result == ESP_OK)
   {
-
   }
   else
   {
-    debug_log_error_f(DEBUG_TAG_SMART_HOME, "�?Failed to turn %s switch %s: %s", action, entity_id, esp_err_to_name(result));
+    debug_log_error_f(DEBUG_TAG_SMART_HOME, "Failed to turn %s switch %s: %s", action, entity_id, esp_err_to_name(result));
   }
 
   return result;
@@ -225,7 +221,6 @@ esp_err_t smart_home_trigger_scene(void)
 
 void smart_home_sync_switch_states(void)
 {
-
 
   // Feed watchdog before network operations
   esp_task_wdt_reset();
@@ -259,7 +254,6 @@ void smart_home_sync_switch_states(void)
   // Feed watchdog before potentially long HTTP operation
   esp_task_wdt_reset();
 
-
   esp_err_t ret = ha_api_get_multiple_entity_states_bulk(switch_entity_ids, switch_count, switch_states);
 
   // Feed watchdog after HTTP operation completes
@@ -278,6 +272,11 @@ void smart_home_sync_switch_states(void)
       bool switch_state_array[3] = {switch_a_on, switch_b_on, switch_c_on};
       states_sync_callback(switch_state_array, 3);
     }
+
+    debug_log_info_f(DEBUG_TAG_HA_SYNC, "Immediate sync completed: %s=%s, %s=%s, %s=%s",
+                     switch_entity_ids[0], switch_states[0].state,
+                     switch_entity_ids[1], switch_states[1].state,
+                     switch_entity_ids[2], switch_states[2].state);
   }
   else
   {
@@ -294,5 +293,4 @@ void smart_home_sync_switch_states(void)
 void smart_home_register_states_sync_callback(smart_home_states_sync_callback_t callback)
 {
   states_sync_callback = callback;
-
 }

@@ -691,11 +691,11 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
     // Provide more specific error information
     if (err == ESP_ERR_TIMEOUT)
     {
-      debug_log_error(DEBUG_TAG_HA_API, "�?Request timed out - Home Assistant may be slow or response too large");
+      debug_log_error(DEBUG_TAG_HA_API, "Request timed out - Home Assistant may be slow or response too large");
     }
     else if (err == ESP_ERR_NOT_FOUND)
     {
-      debug_log_error(DEBUG_TAG_HA_API, "🌐 Network connectivity issue - check Home Assistant server");
+      debug_log_error(DEBUG_TAG_HA_API, "Network connectivity issue - check Home Assistant server");
     }
 
     ha_status_change(HA_STATUS_SYNC_FAILED);
@@ -816,7 +816,7 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
       }
       else if (parse_err == ESP_ERR_TIMEOUT)
       {
-        debug_log_error(DEBUG_TAG_HA_API, "�?Async parsing timed out");
+        debug_log_error(DEBUG_TAG_HA_API, "Async parsing timed out");
       }
       else
       {
