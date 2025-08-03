@@ -64,10 +64,6 @@ void app_main(void)
 {
   debug_log_startup(DEBUG_TAG_DASHBOARD, "Dashboard");
 
-  // Reduce HTTP client debug noise
-  esp_log_level_set("HTTP_CLIENT", ESP_LOG_WARN);
-  esp_log_level_set("event", ESP_LOG_WARN);
-
   // Register smart home callbacks BEFORE creating UI
   // This ensures callbacks are available when controls are created
   smart_home_callbacks_t callbacks = {

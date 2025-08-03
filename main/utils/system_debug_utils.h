@@ -1,8 +1,18 @@
 /**
  * @file system_debug_utils.h
- * @brief Minimal Debug Utilities
+ * @brief ESP-IDF Compliant Debug Utilities
  *
  * Minimal debug functions controlled by CONFIG_SYSTEM_DEBUG_ENABLED.
+ * 
+ * LOGGING FORMAT GUIDELINES:
+ * - Use UPPERCASE tag names following ESP-IDF conventions
+ * - For multi-line function calls, align parameters consistently:
+ *   debug_log_info_f(DEBUG_TAG_EXAMPLE, 
+ *                    "Multi-line message with param %d and %s", 
+ *                    param1, param2);
+ * - Keep log messages concise but informative
+ * - Use appropriate log levels: ERROR for failures, WARN for issues, INFO for events
+ * - Prefer formatted functions (*_f) for dynamic content
  */
 
 #ifndef SYSTEM_DEBUG_UTILS_H
@@ -10,6 +20,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include "esp_log.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -131,6 +142,18 @@ extern "C"
    * @param ... Variable arguments
    */
   void debug_log_debug_f(debug_tag_t tag, const char *format, ...);
+
+  /**
+   * @brief Multi-line logging helper with proper ESP-IDF formatting
+   * @param level ESP log level (ESP_LOG_INFO, ESP_LOG_ERROR, etc.)
+   * @param tag Debug tag identifying the component
+   * @param format Printf-style format string with proper line continuation
+   * @param ... Variable arguments
+   * 
+   * Use this for long log messages that need to wrap across multiple lines
+   * while maintaining ESP-IDF logging format consistency.
+   */
+  void debug_log_multiline(esp_log_level_t level, debug_tag_t tag, const char *format, ...);
 
 #ifdef __cplusplus
 }
