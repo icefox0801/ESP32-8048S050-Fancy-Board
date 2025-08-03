@@ -98,9 +98,7 @@ esp_err_t entity_states_parser_init(void)
   memset(&parser_stats, 0, sizeof(parser_stats));
 
   parser_initialized = true;
-  debug_log_info(DEBUG_TAG_PARSER, "🔄 Entity states parser initialized");
-  debug_log_info_f(DEBUG_TAG_PARSER, "📋 Queue size: %d jobs, Task core: %d, Priority: %d",
-                   ENTITY_PARSER_MAX_JOBS, ENTITY_PARSER_TASK_CORE, ENTITY_PARSER_TASK_PRIORITY);
+  debug_log_startup(DEBUG_TAG_PARSER, "Entity States Parser");
 
   return ESP_OK;
 }
@@ -127,7 +125,7 @@ void entity_states_parser_deinit(void)
   }
 
   parser_initialized = false;
-  debug_log_info(DEBUG_TAG_PARSER, "🔌 Entity states parser deinitialized");
+  debug_log_info(DEBUG_TAG_PARSER, "Entity states parser deinitialized");
 }
 
 esp_err_t entity_states_parser_submit_async(
@@ -178,9 +176,6 @@ esp_err_t entity_states_parser_submit_async(
     return ESP_ERR_NO_MEM;
   }
 
-  debug_log_info_f(DEBUG_TAG_PARSER, "📤 Submitted async parse job (%zu bytes, %d entities)",
-                   json_size, entity_count);
-
   return ESP_OK;
 }
 
@@ -199,11 +194,10 @@ esp_err_t entity_states_parser_wait_completion(uint32_t timeout_ms)
 
   if (notification_value == 0)
   {
-    debug_log_warning_f(DEBUG_TAG_PARSER, "⏰ Parse operation timed out after %lu ms", timeout_ms);
+    debug_log_warning_f(DEBUG_TAG_PARSER, "Parse operation timed out after %lu ms", timeout_ms);
     return ESP_ERR_TIMEOUT;
   }
 
-  debug_log_info(DEBUG_TAG_PARSER, "✅ Async parse completed");
   return ESP_OK;
 }
 
@@ -218,17 +212,12 @@ esp_err_t entity_states_parser_parse_sync(
     return ESP_ERR_INVALID_ARG;
   }
 
-  debug_log_info_f(DEBUG_TAG_PARSER, "🔄 Starting synchronous parse (%d entities)", entity_count);
-
   int64_t start_time = esp_timer_get_time();
 
   // Parse entities synchronously
   int found_count = parse_entity_states_from_json(json_data, entity_ids, entity_count, states);
 
   int64_t parse_time = esp_timer_get_time() - start_time;
-
-  debug_log_info_f(DEBUG_TAG_PARSER, "⏱️ Sync parse completed in %lld ms (%d/%d entities found)",
-                   parse_time / 1000, found_count, entity_count);
 
   // Update statistics
   parser_stats.jobs_processed++;
@@ -254,7 +243,6 @@ esp_err_t entity_states_parser_get_stats(entity_parser_stats_t *stats)
 void entity_states_parser_reset_stats(void)
 {
   memset(&parser_stats, 0, sizeof(parser_stats));
-  debug_log_info(DEBUG_TAG_PARSER, "📊 Parser statistics reset");
 }
 
 bool entity_states_parser_is_ready(void)
@@ -280,16 +268,11 @@ static void entity_parse_task(void *pvParameters)
 {
   entity_parse_job_t job;
 
-  debug_log_info(DEBUG_TAG_PARSER, "🔄 Entity parse task started");
-
   while (1)
   {
     // Wait for parse jobs
     if (xQueueReceive(parse_queue, &job, portMAX_DELAY) == pdTRUE)
     {
-      debug_log_info_f(DEBUG_TAG_PARSER, "🔄 Processing parse job (%zu bytes, %d entities)",
-                       job.json_size, job.entity_count);
-
       int64_t start_time = esp_timer_get_time();
 
       // Parse entities from JSON
@@ -300,9 +283,6 @@ static void entity_parse_task(void *pvParameters)
           job.states);
 
       int64_t parse_time = esp_timer_get_time() - start_time;
-
-      debug_log_info_f(DEBUG_TAG_PARSER, "⏱️ Async parse completed in %lld ms (%d/%d entities found)",
-                       parse_time / 1000, found_count, job.entity_count);
 
       // Update statistics
       parser_stats.jobs_processed++;
@@ -367,8 +347,6 @@ static int parse_entity_states_from_json(
   int total_entities = cJSON_GetArraySize(json);
   int success_count = 0;
 
-  debug_log_info_f(DEBUG_TAG_PARSER, "📦 Processing %d entities from JSON response", total_entities);
-
   // Clear all states first
   memset(states, 0, sizeof(ha_entity_state_t) * entity_count);
 
@@ -401,7 +379,7 @@ static int parse_entity_states_from_json(
         cJSON *state_json = cJSON_GetObjectItem(entity, "state");
         if (!state_json || !cJSON_IsString(state_json))
         {
-          debug_log_warning_f(DEBUG_TAG_PARSER, "Entity %s has no valid state", entity_ids[i]);
+          // Entity has no valid state - skip without verbose logging
           break;
         }
 
@@ -433,15 +411,8 @@ static int parse_entity_states_from_json(
 
         success_count++;
         found = true;
-        debug_log_info_f(DEBUG_TAG_PARSER, "✅ Found entity %s: %s (%s)",
-                         entity_ids[i], state->state, state->friendly_name);
         break;
       }
-    }
-
-    if (!found)
-    {
-      debug_log_warning_f(DEBUG_TAG_PARSER, "❌ Entity %s not found in JSON response", entity_ids[i]);
     }
   }
 

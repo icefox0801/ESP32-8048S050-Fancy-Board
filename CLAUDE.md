@@ -171,6 +171,29 @@ Other Peripherals:
 USER_LED: GPIO17    BOOT: GPIO0    USB_D-: GPIO19   USB_D+: GPIO20
 ```
 
+## Code Standards & Logging Patterns
+
+### Centralized Logging System
+Use `system_debug_utils.h` for all logging:
+
+```c
+#include "system_debug_utils.h"
+
+// Standard functions
+debug_log_startup(DEBUG_TAG_*, "Component");
+debug_log_info(DEBUG_TAG_*, "Message");
+debug_log_error_f(DEBUG_TAG_*, "Error: %s", msg);
+
+// Available tags: DEBUG_TAG_MAIN, DEBUG_TAG_WIFI, DEBUG_TAG_HA,
+// DEBUG_TAG_UI, DEBUG_TAG_TOUCH, DEBUG_TAG_PARSER, DEBUG_TAG_SERIAL
+```
+
+**Best Practices:**
+- ✅ Use `debug_log_*()` functions only
+- ❌ Avoid `printf()`, `ESP_LOG*()`, emojis
+- ❌ Remove verbose logging in performance-critical loops
+- ✅ Keep essential error/warning messages
+
 ## Configuration Management
 
 ### SDK Configuration Hierarchy
