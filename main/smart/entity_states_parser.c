@@ -30,7 +30,6 @@ static QueueHandle_t parse_queue = NULL;
 static TaskHandle_t parse_task_handle = NULL;
 static bool parser_initialized = false;
 static entity_parser_stats_t parser_stats = {0};
-static bool parser_watchdog_subscribed = false;
 
 // ══════════════════════════════════════════════════════════════════════════════�?
 // PRIVATE FUNCTION DECLARATIONS
@@ -268,39 +267,33 @@ static void entity_parse_task(void *pvParameters)
 {
   entity_parse_job_t job;
 
-  // Subscribe to task watchdog for this parsing task
-  esp_err_t wdt_err = esp_task_wdt_add(xTaskGetCurrentTaskHandle());
-  if (wdt_err == ESP_OK)
+  // NOTE: Do NOT subscribe this task to watchdog - it's designed for on-demand
+  // background processing and may have long idle periods between jobs
+  
+  // Explicitly remove this task from watchdog in case it was auto-subscribed
+  esp_err_t wdt_remove_err = esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
+  if (wdt_remove_err == ESP_OK)
   {
-    parser_watchdog_subscribed = true;
-    debug_log_info(DEBUG_TAG_PARSER, "Entity parser task subscribed to watchdog");
+    debug_log_info(DEBUG_TAG_PARSER, "Entity parser task removed from watchdog monitoring");
   }
-  else if (wdt_err == ESP_ERR_INVALID_ARG)
+  else if (wdt_remove_err == ESP_ERR_NOT_FOUND)
   {
-    // Task is already subscribed to watchdog - this is actually OK
-    parser_watchdog_subscribed = true;
-    debug_log_info(DEBUG_TAG_PARSER, "Entity parser task already subscribed to watchdog");
+    debug_log_info(DEBUG_TAG_PARSER, "Entity parser task was not subscribed to watchdog");
   }
   else
   {
-    debug_log_warning_f(DEBUG_TAG_PARSER, "Failed to subscribe parser task to watchdog: %s", esp_err_to_name(wdt_err));
-    parser_watchdog_subscribed = false;
+    debug_log_warning(DEBUG_TAG_PARSER, "Failed to remove task from watchdog");
   }
+  
+  debug_log_info(DEBUG_TAG_PARSER, "Entity parser task started (watchdog monitoring disabled)");
 
   while (1)
   {
-    // Wait for parse jobs
-    if (xQueueReceive(parse_queue, &job, portMAX_DELAY) == pdTRUE)
+    // Wait for parse jobs with a timeout to allow periodic cleanup
+    const TickType_t QUEUE_TIMEOUT_MS = pdMS_TO_TICKS(10000); // 10 second timeout
+
+    if (xQueueReceive(parse_queue, &job, QUEUE_TIMEOUT_MS) == pdTRUE)
     {
-      // Reset watchdog at start of each parsing job
-      if (parser_watchdog_subscribed)
-      {
-        esp_err_t wdt_reset_err = esp_task_wdt_reset();
-        if (wdt_reset_err != ESP_OK && wdt_reset_err != ESP_ERR_NOT_FOUND)
-        {
-          debug_log_warning_f(DEBUG_TAG_PARSER, "Job start watchdog reset failed: %s", esp_err_to_name(wdt_reset_err));
-        }
-      }
 
       int64_t start_time = esp_timer_get_time();
 
@@ -332,19 +325,10 @@ static void entity_parse_task(void *pvParameters)
         heap_caps_free(job.json_data);
       }
 
-      // Reset watchdog after completing job
-      if (parser_watchdog_subscribed)
-      {
-        esp_err_t wdt_reset_err = esp_task_wdt_reset();
-        if (wdt_reset_err != ESP_OK && wdt_reset_err != ESP_ERR_NOT_FOUND)
-        {
-          debug_log_warning_f(DEBUG_TAG_PARSER, "Job completion watchdog reset failed: %s", esp_err_to_name(wdt_reset_err));
-        }
-      }
-
       // Notify caller that processing is complete
       xTaskNotifyGive(job.caller_task);
     }
+    // No else clause needed - timeout is just for periodic cleanup
   }
 }
 
@@ -396,30 +380,11 @@ static int parse_entity_states_from_json(
   // Look for our requested entities in the JSON response
   for (int i = 0; i < entity_count; i++)
   {
-    // Reset watchdog before searching for each entity
-    if (parser_watchdog_subscribed)
-    {
-      esp_err_t wdt_reset_err = esp_task_wdt_reset();
-      if (wdt_reset_err != ESP_OK && wdt_reset_err != ESP_ERR_NOT_FOUND)
-      {
-        debug_log_warning_f(DEBUG_TAG_PARSER, "Parser watchdog reset failed: %s", esp_err_to_name(wdt_reset_err));
-      }
-    }
-
     // Search through all entities in JSON response
     int entity_index = 0;
     cJSON *entity = NULL;
     cJSON_ArrayForEach(entity, json)
     {
-      // Reset watchdog every 20 entities during JSON array traversal
-      if (entity_index % 20 == 0 && parser_watchdog_subscribed)
-      {
-        esp_err_t wdt_reset_err = esp_task_wdt_reset();
-        if (wdt_reset_err != ESP_OK && wdt_reset_err != ESP_ERR_NOT_FOUND)
-        {
-          debug_log_warning_f(DEBUG_TAG_PARSER, "Array traversal watchdog reset failed: %s", esp_err_to_name(wdt_reset_err));
-        }
-      }
       entity_index++;
 
       if (!cJSON_IsObject(entity))
