@@ -678,12 +678,15 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   // Measure timing
   int64_t start_time = esp_timer_get_time();
+  int64_t request_time = 0; // Will be set after HTTP request completes
 
   // Make single bulk request to get ALL states
   ha_api_response_t response = {0};
   esp_err_t err = perform_http_request(HA_API_STATES_URL, "GET", NULL, &response);
 
-  int64_t request_time = esp_timer_get_time() - start_time;
+  request_time = esp_timer_get_time() - start_time;
+
+  debug_log_debug_f(DEBUG_TAG_HA_API, "Bulk request completed in %lld ms", request_time / 1000);
 
   if (err != ESP_OK)
   {
@@ -892,6 +895,9 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   int64_t parse_time = esp_timer_get_time() - parse_start;
   int64_t total_time = esp_timer_get_time() - start_time;
+
+  debug_log_debug_f(DEBUG_TAG_HA_API, "Performance: Request %lld ms, Parse %lld ms, Total %lld ms",
+                    (request_time / 1000), (parse_time / 1000), (total_time / 1000));
 
   // Determine result based on success count
   if (success_count == entity_count)
