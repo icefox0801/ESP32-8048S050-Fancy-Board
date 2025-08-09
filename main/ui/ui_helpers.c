@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ui_helpers.c
  * @brief Common UI Helper Functions Implementation
  *
@@ -10,9 +10,9 @@
 #include "ui_helpers.h"
 #include "ui_config.h"
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // HELPER FUNCTIONS FOR UI CREATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Create a device name label with consistent styling

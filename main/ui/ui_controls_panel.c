@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ui_controls_panel.c
  * @brief Control Panel Implementation for Smart Home Integration
  *
@@ -20,16 +20,16 @@ static lv_obj_t *switch_c = NULL;
 static lv_obj_t *scene_button = NULL;
 static lv_obj_t *ha_status_label = NULL;
 
-// ══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // CALLBACK FUNCTION POINTERS (DECOUPLING)
-// ══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 static switch_control_callback_t g_switch_control_callback = NULL;
 static scene_trigger_callback_t g_scene_trigger_callback = NULL;
 
-// ══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // SWITCH ENUMERATION AND HELPER TYPES
-// ══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 typedef struct
 {
@@ -44,16 +44,16 @@ static const switch_config_t switch_configs[3] = {
     {&switch_b, UI_CONTROLS_LABEL_B, HA_ENTITY_B_ID},
     {&switch_c, UI_CONTROLS_LABEL_C, HA_ENTITY_C_ID}};
 
-// ══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // LOCAL EVENT HANDLERS
-// ══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Debug touch handler for logging UI touch events
  */
 static void debug_touch_handler(lv_event_t *e)
 {
-  lv_event_code_t code = lv_event_get_code(e);
+  (void)e; // Suppress unused parameter warning
 }
 
 /**
@@ -296,9 +296,9 @@ void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char 
   last_update_time = current_time;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // CALLBACK REGISTRATION FUNCTIONS (DECOUPLING)
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Register event callbacks to decouple UI from smart home logic

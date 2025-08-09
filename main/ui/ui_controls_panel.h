@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ui_controls_panel.h
  * @brief Control Panel Header for Smart Home Integration
  *
@@ -35,9 +35,9 @@ lv_obj_t *create_controls_panel(lv_obj_t *parent);
  */
 void controls_panel_update_ha_status(bool is_ready, bool is_syncing, const char *status_text);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // SMART HOME CONTROL FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Set the state of any switch
@@ -53,9 +53,9 @@ void controls_panel_set_switch(int switch_id, bool state);
  */
 bool controls_panel_get_switch(int switch_id);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // EVENT CALLBACK REGISTRATION (DECOUPLING)
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Callback function type for switch control

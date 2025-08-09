@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file serial_data_handler.c
  * @brief Serial Data Handler Implementation for System Monitor Dashboard
  *
@@ -12,9 +12,9 @@
  * @date 2024
  */
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // STANDARD INCLUDES
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 #include "serial_data_handler.h"
 
@@ -28,9 +28,9 @@
 #include <string.h>
 #include <time.h>
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // CONSTANTS AND CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // UART Hardware Configuration
 #define UART_PORT_NUM UART_NUM_0                ///< UART port number
@@ -49,9 +49,9 @@
 #define SERIAL_TASK_STACK_SIZE 12288 ///< Task stack size in bytes (increased for JSON parsing)
 #define SERIAL_TASK_PRIORITY 2       ///< FreeRTOS task priority (lowered for LVGL priority)
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // STATIC VARIABLES
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 static TaskHandle_t serial_task_handle = NULL;           ///< Serial reception task handle
 static TaskHandle_t connection_check_task_handle = NULL; ///< Connection check task handle
@@ -65,9 +65,9 @@ static serial_data_callback_t data_callback = NULL;             ///< Data update
 // Static task resources for SPIRAM allocation
 static StackType_t *serial_task_stack = NULL; ///< Task stack allocated from SPIRAM
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // PRIVATE FUNCTION PROTOTYPES
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Parse JSON string and extract system monitoring data
@@ -105,9 +105,9 @@ static void trigger_connection_check(void);
  */
 static void connection_check_task(void *pvParameters);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // PRIVATE FUNCTION IMPLEMENTATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 static bool parse_json_data(const char *json_str, system_data_t *data)
 {
   cJSON *json = cJSON_Parse(json_str);
@@ -117,9 +117,9 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
     return false;
   }
 
-  // ─────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
   // Parse Timestamp
-  // ─────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------
 
   cJSON *ts = cJSON_GetObjectItem(json, "ts");
   if (cJSON_IsNumber(ts))
@@ -501,9 +501,9 @@ void serial_data_stop(void)
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // CALLBACK REGISTRATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Register callback for connection status changes

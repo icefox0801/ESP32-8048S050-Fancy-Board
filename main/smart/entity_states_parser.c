@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file entity_states_parser.c
  * @brief Async Entity States JSON Parser Implementation
  *
@@ -18,22 +18,22 @@
 #include <cJSON.h>
 #include <string.h>
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // CONSTANTS AND MACROS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // STATIC VARIABLES
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 static QueueHandle_t parse_queue = NULL;
 static TaskHandle_t parse_task_handle = NULL;
 static bool parser_initialized = false;
 static entity_parser_stats_t parser_stats = {0};
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PRIVATE FUNCTION DECLARATIONS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 /**
  * @brief Main async JSON parsing task
@@ -55,9 +55,9 @@ static int parse_entity_states_from_json(
     int entity_count,
     ha_entity_state_t *states);
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PUBLIC FUNCTION IMPLEMENTATIONS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 esp_err_t entity_states_parser_init(void)
 {
@@ -259,9 +259,9 @@ int entity_states_parser_get_queue_size(void)
   return uxQueueMessagesWaiting(parse_queue);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PRIVATE FUNCTION IMPLEMENTATIONS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 static void entity_parse_task(void *pvParameters)
 {
@@ -269,7 +269,7 @@ static void entity_parse_task(void *pvParameters)
 
   // NOTE: Do NOT subscribe this task to watchdog - it's designed for on-demand
   // background processing and may have long idle periods between jobs
-  
+
   // Explicitly remove this task from watchdog in case it was auto-subscribed
   esp_err_t wdt_remove_err = esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
   if (wdt_remove_err == ESP_OK)
@@ -284,7 +284,7 @@ static void entity_parse_task(void *pvParameters)
   {
     debug_log_warning(DEBUG_TAG_PARSER, "Failed to remove task from watchdog");
   }
-  
+
   debug_log_info(DEBUG_TAG_PARSER, "Entity parser task started (watchdog monitoring disabled)");
 
   while (1)

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file serial_data_handler.h
  * @brief Serial Data Handler for System Monitor Dashboard
  *
@@ -13,18 +13,18 @@
 
 #pragma once
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // STANDARD INCLUDES
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 #include "esp_err.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include "dashboard_data.h"
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // CALLBACK FUNCTION TYPES
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Callback function type for connection status changes
@@ -38,9 +38,9 @@ typedef void (*serial_connection_callback_t)(bool connected);
  */
 typedef void (*serial_data_callback_t)(const system_data_t *data);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // PUBLIC FUNCTION PROTOTYPES
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Initialize serial data receiver system
@@ -75,3 +75,5 @@ void serial_data_register_connection_callback(serial_connection_callback_t callb
  * @note Pass NULL to unregister the callback
  */
 void serial_data_register_data_callback(serial_data_callback_t callback);
+
+

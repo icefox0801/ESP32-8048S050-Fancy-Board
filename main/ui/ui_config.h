@@ -1,4 +1,4 @@
-
+﻿
 /**
  * @file ui_config.h
  * @brief UI Configuration and Font Definitions
@@ -12,17 +12,17 @@
 #include "lvgl.h"
 #include "smart_config.h"
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // FONT DECLARATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 extern const lv_font_t *font_title;       // Large title font
 extern const lv_font_t *font_normal;      // Normal text
 extern const lv_font_t *font_small;       // Small text
 extern const lv_font_t *font_big_numbers; // Large numbers
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // UI CONSTANTS
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // UI Control Labels
 #define UI_CONTROLS_LABEL_A HA_ENTITY_A_LABEL

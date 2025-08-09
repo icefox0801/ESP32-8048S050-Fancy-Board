@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file ha_api.c
  * @brief Home Assistant REST API Client Implementation
  *
@@ -30,9 +30,9 @@
 #define AUTH_HEADER_TEMPLATE "Bearer %s"
 #define CONTENT_TYPE_JSON "application/json"
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PRIVATE VARIABLES
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 static bool ha_api_initialized = false;
 static char auth_header[256];
@@ -40,9 +40,9 @@ static esp_http_client_handle_t persistent_client = NULL;
 static char current_base_url[256] = {0};
 static bool task_watchdog_subscribed = false;
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PRIVATE FUNCTION DECLARATIONS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 static esp_err_t http_event_handler(esp_http_client_event_t *evt);
 static esp_http_client_handle_t create_http_client(const char *url);
@@ -50,9 +50,9 @@ static esp_http_client_handle_t get_persistent_client(const char *url);
 static void cleanup_persistent_client(void);
 static esp_err_t perform_http_request(const char *url, const char *method, const char *post_data, ha_api_response_t *response);
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PRIVATE FUNCTION IMPLEMENTATIONS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 /**
  * @brief Check network connectivity to Home Assistant server
@@ -449,9 +449,9 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
   return err;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 // PUBLIC FUNCTION IMPLEMENTATIONS
-// ══════════════════════════════════════════════════════════════════════════════�?
+// =======================================================================
 
 esp_err_t ha_api_init(void)
 {

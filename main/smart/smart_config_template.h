@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file smart_config_template.h
  * @brief Smart Home Configuration Template
  *
@@ -10,9 +10,9 @@
 #ifndef SMART_CONFIG_H
 #define SMART_CONFIG_H
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // HOME ASSISTANT CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // Home Assistant Server Settings
 #define HA_SERVER_HOST_NAME "homeassistant"              // Your Home Assistant hostname (or IP)
@@ -28,9 +28,9 @@
 #define HA_API_STATES_URL HA_API_BASE_URL "/states"
 #define HA_API_SERVICES_URL HA_API_BASE_URL "/services"
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // SMART HOME ENTITY CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // Smart Switches (Replace with your actual entity IDs)
 #define HA_ENTITY_A_ID "switch.your_switch_a_entity_id" // Switch A Control
@@ -45,9 +45,9 @@
 #define HA_ENTITY_C_LABEL "Switch C"
 #define HA_ENTITY_D_LABEL "Scene"
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // HTTP CLIENT CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // HTTP Request Configuration
 #define HA_HTTP_TIMEOUT_MS 15000
