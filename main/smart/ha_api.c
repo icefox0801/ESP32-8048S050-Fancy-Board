@@ -439,11 +439,6 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     debug_log_error_f(DEBUG_TAG_HA_API, "HTTP request failed (Final status: %d, Error: %s)", status_code, esp_err_to_name(err));
     ha_status_change(HA_STATUS_SYNC_FAILED);
   }
-  else
-  {
-    // Notify success status
-    ha_status_change(HA_STATUS_READY);
-  }
 
   return err;
 }
