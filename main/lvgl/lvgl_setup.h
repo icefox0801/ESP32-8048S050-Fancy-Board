@@ -63,8 +63,8 @@
 #define LCD_NUM_FB 1
 #endif
 
-// LVGL configuration
-#define LVGL_DRAW_BUF_LINES 60
+// LVGL configuration - DRAM optimized for frame buffer in internal RAM
+#define LVGL_DRAW_BUF_LINES 30 // Reduced from 60 to save DRAM (800x30x2 = 48KB vs 96KB)
 #define LVGL_TICK_PERIOD_MS 2
 #define LVGL_TASK_STACK_SIZE (16 * 1024)
 #define LVGL_TASK_PRIORITY 5

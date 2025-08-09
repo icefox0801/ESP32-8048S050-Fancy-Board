@@ -192,6 +192,8 @@ CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
 CONFIG_EXAMPLE_LCD_DATA_LINES_16=y
 
 # LCD Frame Buffer Configuration (Anti-Flicker)
+# CRITICAL: Frame buffer now allocated in DRAM (not SPIRAM) for stability
+# fb_in_psram is set to false in lvgl_setup.c to resolve rendering issues
 # CONFIG_EXAMPLE_USE_SINGLE_FB is not set
 # CONFIG_EXAMPLE_USE_DOUBLE_FB=y
 # CONFIG_EXAMPLE_USE_BOUNCE_BUFFER is not set

@@ -18,6 +18,9 @@
 #include "esp_timer.h"
 #include "utils/system_debug_utils.h"
 #include <esp_err.h>
+
+// External callback from dashboard_main.c
+extern void ha_status_change_callback(bool is_ready, bool is_syncing, const char *status_text);
 #include "esp_task_wdt.h"
 #include <string.h>
 #include <freertos/FreeRTOS.h>
@@ -49,19 +52,31 @@ static void sync_task_function(void *pvParameters)
 
   vTaskDelay(pdMS_TO_TICKS(10000));
 
-  // Subscribe to task watchdog
-  esp_task_wdt_add(NULL);
+  // Subscribe current task to task watchdog
+  esp_err_t wdt_err = esp_task_wdt_add(xTaskGetCurrentTaskHandle());
+  if (wdt_err != ESP_OK && wdt_err != ESP_ERR_INVALID_ARG)
+  {
+    debug_log_warning_f(DEBUG_TAG_SMART_HOME, "Failed to subscribe sync task to watchdog: %s", esp_err_to_name(wdt_err));
+  }
 
   while (1)
   {
     // Feed the watchdog before starting sync
-    esp_task_wdt_reset();
+    esp_err_t wdt_reset_err = esp_task_wdt_reset();
+    if (wdt_reset_err != ESP_OK && wdt_reset_err != ESP_ERR_NOT_FOUND)
+    {
+      debug_log_warning_f(DEBUG_TAG_SMART_HOME, "Sync task watchdog reset failed: %s", esp_err_to_name(wdt_reset_err));
+    }
 
     // Add error handling to prevent task crashes
     smart_home_sync_switch_states();
 
     // Feed watchdog after sync completion
-    esp_task_wdt_reset();
+    esp_err_t wdt_reset_err2 = esp_task_wdt_reset();
+    if (wdt_reset_err2 != ESP_OK && wdt_reset_err2 != ESP_ERR_NOT_FOUND)
+    {
+      debug_log_warning_f(DEBUG_TAG_SMART_HOME, "Post-sync watchdog reset failed: %s", esp_err_to_name(wdt_reset_err2));
+    }
 
     // Wait for 30 seconds before next sync (longer interval due to connection issues)
     // Break the delay into smaller chunks to feed watchdog periodically
@@ -128,6 +143,10 @@ esp_err_t smart_home_init(void)
 
   smart_home_initialized = true;
   debug_log_event(DEBUG_TAG_SMART_HOME, "Smart Home integration initialized successfully");
+
+  // Register the status change callback now that HA status module is initialized
+  ha_status_register_change_callback(ha_status_change_callback);
+  debug_log_info(DEBUG_TAG_SMART_HOME, "HA status change callback registered");
 
   // Start periodic sync task
   ret = run_sync_states_task();

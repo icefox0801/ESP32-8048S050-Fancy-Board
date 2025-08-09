@@ -23,6 +23,15 @@
 
 static SemaphoreHandle_t lvgl_timeout_mutex = NULL;
 
+// Memory debugging helper function
+static void log_memory_status(const char *context)
+{
+  size_t dram_free = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+  size_t spiram_free = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+  debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "%s - DRAM free: %zu bytes, SPIRAM free: %zu bytes",
+                   context, dram_free, spiram_free);
+}
+
 // Static function prototypes (ordered by call sequence)
 static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config);
 static bool lvgl_notify_flush_ready(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_ctx);
@@ -67,6 +76,15 @@ esp_lcd_panel_handle_t lvgl_setup_create_lcd_panel(void)
   ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
   ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
+  log_memory_status("After LCD panel creation");
+
+  // Calculate and log memory usage
+  size_t frame_buffer_size = LCD_H_RES * LCD_V_RES * LCD_PIXEL_SIZE * LCD_NUM_FB;
+  size_t draw_buffer_size = LCD_H_RES * LVGL_DRAW_BUF_LINES * LCD_PIXEL_SIZE;
+  debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "Memory allocation - Frame buffer: %zu KB (%d buffers), Draw buffer: %zu KB",
+                   frame_buffer_size / 1024, LCD_NUM_FB, draw_buffer_size / 1024);
+  debug_log_info(DEBUG_TAG_LVGL_SETUP, "LCD RGB panel created with frame buffer in SPIRAM");
+
   return panel_handle;
 }
 
@@ -74,6 +92,15 @@ esp_lcd_panel_handle_t lvgl_setup_create_lcd_panel(void)
 lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
 {
   debug_log_event(DEBUG_TAG_LVGL_SETUP, "Initializing LVGL display");
+
+  /*
+   * CRITICAL RENDERING STABILITY FIX:
+   * - Using single frame buffer mode in SPIRAM
+   * - Frame buffer in SPIRAM (~768KB), avoiding bounce buffer complexity
+   * - LVGL draw buffer in DRAM (48KB)
+   * - This provides stability while conserving DRAM (48KB vs 816KB)
+   */
+
   lv_init();
 
   // Initialize timeout-capable mutex for LVGL locking
@@ -109,26 +136,28 @@ lv_display_t *lvgl_setup_init(esp_lcd_panel_handle_t panel_handle)
   debug_log_info(DEBUG_TAG_LVGL_SETUP, "Using double framebuffer mode");
 #else
   size_t draw_buffer_sz = LCD_H_RES * LVGL_DRAW_BUF_LINES * LCD_PIXEL_SIZE;
-  // Use internal RAM for smaller draw buffer
+  // CRITICAL FIX: Use internal DRAM for draw buffer to avoid rendering issues
   buf1 = heap_caps_malloc(draw_buffer_sz, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (!buf1)
   {
-    debug_log_warning(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer in PSRAM, trying internal RAM");
-    // Fallback to larger buffer in SPI RAM
-    size_t fallback_buffer_sz = LCD_H_RES * LCD_V_RES * LCD_PIXEL_SIZE; // 10 lines instead of 50
+    debug_log_warning(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer in DRAM, trying SPIRAM fallback");
+    // Fallback to SPIRAM with smaller buffer to reduce memory pressure
+    size_t fallback_buffer_sz = LCD_H_RES * (LVGL_DRAW_BUF_LINES / 2) * LCD_PIXEL_SIZE; // Half the lines for fallback
     buf1 = heap_caps_malloc(fallback_buffer_sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!buf1)
     {
-      debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer");
+      debug_log_error(DEBUG_TAG_LVGL_SETUP, "Failed to allocate LVGL draw buffer in both DRAM and SPIRAM");
       return NULL;
     }
     draw_buffer_sz = fallback_buffer_sz;
-    debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "Using fallback buffer: %zu bytes in internal RAM", draw_buffer_sz);
+    debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "Using fallback SPIRAM buffer: %zu bytes", draw_buffer_sz);
   }
   else
   {
-    debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "LVGL draw buffer allocated in PSRAM: %zu bytes", draw_buffer_sz);
+    debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "LVGL draw buffer allocated in DRAM: %zu bytes", draw_buffer_sz);
   }
+
+  log_memory_status("After draw buffer allocation");
 
   debug_log_info_f(DEBUG_TAG_LVGL_SETUP, "LVGL draw buffer allocated: %zu bytes", draw_buffer_sz);
   lv_display_set_buffers(display, buf1, buf2, draw_buffer_sz, LV_DISPLAY_RENDER_MODE_PARTIAL);
@@ -234,16 +263,19 @@ void lvgl_port_unlock(void)
 // Static functions (implementation details)
 static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config)
 {
+  log_memory_status("Before panel config init");
+
   memset(panel_config, 0, sizeof(esp_lcd_rgb_panel_config_t));
 
   panel_config->data_width = LCD_DATA_BUS_WIDTH;
   panel_config->dma_burst_size = 64;
   panel_config->num_fbs = LCD_NUM_FB;
   panel_config->clk_src = LCD_CLK_SRC_DEFAULT;
-  panel_config->flags.fb_in_psram = true;
+  // CRITICAL FIX: Single frame buffer mode - frame buffer in SPIRAM
+  panel_config->flags.fb_in_psram = true; // Frame buffer in SPIRAM for stability
 
 #if CONFIG_EXAMPLE_USE_BOUNCE_BUFFER
-  panel_config->bounce_buffer_size_px = 20 * LCD_H_RES;
+  panel_config->bounce_buffer_size_px = 10 * LCD_H_RES; // Reduced from 20 to 10 lines for DRAM conservation
 #endif
 
   // GPIO pins

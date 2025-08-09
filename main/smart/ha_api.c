@@ -297,7 +297,13 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     {
       task_watchdog_subscribed = true;
     }
-    else if (wdt_err != ESP_ERR_INVALID_ARG) // Task already subscribed is OK
+    else if (wdt_err == ESP_ERR_INVALID_ARG)
+    {
+      // Task already subscribed (probably by calling sync task) - this is OK
+      debug_log_info(DEBUG_TAG_HA_API, "Task already subscribed to watchdog by caller");
+      task_watchdog_subscribed = true; // Mark as subscribed so we can reset it
+    }
+    else
     {
       debug_log_warning_f(DEBUG_TAG_HA_API, "Failed to subscribe to watchdog: %s", esp_err_to_name(wdt_err));
     }

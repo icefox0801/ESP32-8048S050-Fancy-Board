@@ -44,7 +44,7 @@ static void serial_data_update_callback(const system_data_t *data)
   ui_dashboard_update(data);
 }
 
-static void ha_status_change_callback(bool is_ready, bool is_syncing, const char *status_text)
+void ha_status_change_callback(bool is_ready, bool is_syncing, const char *status_text)
 {
   controls_panel_update_ha_status(is_ready, is_syncing, status_text);
 }
@@ -95,11 +95,14 @@ void app_main(void)
   serial_data_register_data_callback(serial_data_update_callback);
   serial_data_start_task();
 
-  // Initialize Home Assistant API
+  // Register Smart Home callbacks
   smart_home_register_states_sync_callback(smart_home_states_sync_callback);
-  ha_api_init();
-  ha_status_init();
-  ha_status_register_change_callback(ha_status_change_callback);
+
+  // Note: smart_home_init() will be called from wifi_connected_callback()
+  // and will initialize ha_status_init(). We'll register the callback
+  // from within the smart home module to ensure proper timing.
+
+  debug_log_startup(DEBUG_TAG_SYSTEM, "System Monitor - Fully Initialized");
 
   debug_log_startup(DEBUG_TAG_SYSTEM, "System Monitor - Fully Initialized");
 
