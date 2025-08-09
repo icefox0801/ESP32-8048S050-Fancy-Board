@@ -86,18 +86,14 @@ CONFIG_LV_MEM_SIZE=5242880  # 5MB for smooth UI
 - **SPIRAM**: LVGL buffers, graphics data (5MB+)
 - **DRAM**: System tasks, networking, real-time operations
 
-## Development Guidelines
-
-### Commit Messages
-``**Types**: feat, fix, refactor, docs, config
-**Git Emojis**: ✨ feat, 🐛 fix, ♻️ refactor, 📝 docs, ⚙️ config, 🚀 perf, 💄 ui, 🔧 hardware
+## Commit Messages
++ **Types**: feat, fix, refactor, docs, config
++ **Git Emojis**: ✨ feat, 🐛 fix, ♻️ refactor, 📝 docs, ⚙️ config, 🚀 perf, 💄 ui, 🔧 hardware
++ **No commit body required - keep messages concise in title only**
 
 ### Format
-
 ```
 <type>(<scope>): <emoji> <message title>
-
-<bullet points summarizing what was updated>
 ```
 
 
