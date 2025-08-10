@@ -12,7 +12,9 @@
 #include "ui/ui_dashboard.h"
 #include "ui/ui_status_info.h"
 #include "utils/system_debug_utils.h"
+#include "utils/crash_handler.h"
 #include "wifi/wifi_manager.h"
+#include "nvs_flash.h"
 
 // LVGL task handles all timer processing automatically
 static esp_lcd_panel_handle_t global_panel_handle = NULL;
@@ -92,7 +94,19 @@ static void smart_home_states_sync_callback(bool switch_states[3], int state_cou
 
 void app_main(void)
 {
-  debug_log_startup(DEBUG_TAG_DASHBOARD, "Dashboard");
+  debug_log_startup(DEBUG_TAG_SYSTEM, "Dashboard");
+
+  // Initialize NVS first for crash log storage
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+  {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ret = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK(ret);
+
+  // Initialize crash handler early to capture any startup crashes
+  ESP_ERROR_CHECK(crash_handler_init());
 
   // Register smart home callbacks BEFORE creating UI
   // This ensures callbacks are available when controls are created

@@ -35,7 +35,7 @@ lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 
   // Runtime display (center-left)
   runtime_label = lv_label_create(status_panel);
-  lv_label_set_text(runtime_label, "Running: 0M");
+  lv_label_set_text(runtime_label, "Running: --");
   lv_obj_set_style_text_font(runtime_label, font_small, 0);
   lv_obj_set_style_text_color(runtime_label, lv_color_hex(0xbbbbbb), 0);
   lv_obj_align(runtime_label, LV_ALIGN_CENTER, -80, 0);

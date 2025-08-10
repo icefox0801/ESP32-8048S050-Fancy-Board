@@ -16,5 +16,7 @@ idf_component_register(SRCS "dashboard_main.c"
                            "smart/smart_home.c"
                            "smart/entity_states_parser.c"
                            "utils/system_debug_utils.c"
+                           "utils/crash_log_manager.c"
+                           "utils/crash_handler.c"
                        INCLUDE_DIRS "." "lvgl" "ui" "serial" "touch" "wifi" "smart" "utils"
-                       REQUIRES lvgl__lvgl esp_lcd driver json esp_wifi esp_netif esp_http_client nvs_flash mbedtls)
+                       REQUIRES lvgl__lvgl esp_lcd driver json esp_wifi esp_netif esp_http_client nvs_flash mbedtls espcoredump)

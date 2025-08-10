@@ -27,6 +27,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "utils/system_debug_utils.h"
+#include "utils/crash_handler.h"
 
 // =======================================================================
 // CONSTANTS AND CONFIGURATION
@@ -98,6 +99,12 @@ static bool handle_incoming_byte(uint8_t byte, char *line_buffer, int *line_pos,
  * @brief Trigger a connection check (non-blocking)
  */
 static void trigger_connection_check(void);
+
+/**
+ * @brief Process crash test commands
+ * @param command The command string to process
+ */
+static void process_crash_test_command(const char *command);
 
 /**
  * @brief Connection check task that runs independently
@@ -226,11 +233,74 @@ static bool parse_json_data(const char *json_str, system_data_t *data)
 }
 
 /**
+ * @brief Process crash test commands received via serial
+ * @param command The crash test command string (e.g., "TEST_CRASH_NULL")
+ */
+static void process_crash_test_command(const char *command)
+{
+  debug_log_info_f(DEBUG_TAG_SERIAL_DATA, "Processing crash test command: %s", command);
+
+  // Acknowledge the command
+  printf("ACK: %s\n", command);
+
+  // Add a small delay for acknowledgment to be transmitted
+  vTaskDelay(pdMS_TO_TICKS(100));
+
+  // Trigger the appropriate crash based on command
+  if (strcmp(command, "TEST_CRASH_NULL") == 0)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Triggering null pointer dereference crash");
+    crash_handler_trigger_null_pointer();
+  }
+  else if (strcmp(command, "TEST_CRASH_STACK") == 0)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Triggering stack overflow crash");
+    crash_handler_trigger_stack_overflow();
+  }
+  else if (strcmp(command, "TEST_CRASH_HEAP") == 0)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Triggering heap corruption crash");
+    crash_handler_trigger_heap_corruption();
+  }
+  else if (strcmp(command, "TEST_CRASH_ASSERT") == 0)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Triggering assertion failure crash");
+    crash_handler_trigger_assert_fail();
+  }
+  else if (strcmp(command, "TEST_CRASH_WATCHDOG") == 0)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Triggering watchdog timeout crash");
+    crash_handler_trigger_watchdog_timeout();
+  }
+  else if (strcmp(command, "TEST_CRASH_ABORT") == 0)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "Triggering abort crash");
+    crash_handler_trigger_abort();
+  }
+  else
+  {
+    debug_log_warning_f(DEBUG_TAG_SERIAL_DATA, "Unknown crash test command: %s", command);
+    printf("ERROR: Unknown crash test command: %s\n", command);
+  }
+}
+
+/**
  * @brief Process a complete line of received data
  */
 static void process_received_line(const char *line_buffer, system_data_t *system_data)
 {
   // Skip empty lines
+  if (strlen(line_buffer) < 3)
+    return;
+
+  // Check if this is a crash test command
+  if (strncmp(line_buffer, "TEST_CRASH_", 11) == 0)
+  {
+    process_crash_test_command(line_buffer);
+    return;
+  }
+
+  // Skip lines that are too short for JSON
   if (strlen(line_buffer) < 5)
     return;
 

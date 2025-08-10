@@ -53,7 +53,51 @@ idf.py build flash monitor
 - **Top Panel**: Smart home controls (Water Pump, Wave Maker, Light, Feed Button)
 - **Middle Panels**: CPU and GPU monitoring with temperature and usage
 - **Memory Panel**: System memory usage with progress bar
-- **Status Bar**: Serial connection and WiFi status
+- **Status Bar**: Serial connection, runtime display, and WiFi status
+
+## Crash Log Management
+
+The system includes an automatic crash log manager that stores crash information in flash memory for debugging purposes.
+
+### Features
+- **Automatic Crash Detection**: Captures crashes, watchdog timeouts, and brownout resets
+- **Persistent Storage**: Stores up to 5 crash logs in NVS flash memory
+- **Startup Reporting**: Displays previous crash logs at system startup
+- **Detailed Information**: Timestamp, uptime, crash reason, heap status
+
+### Crash Log Operations
+
+**View Stored Crash Logs:**
+Crash logs are automatically displayed at startup in the console output. Look for:
+```
+=== PREVIOUS CRASH LOGS ===
+--- CRASH LOG 1 ---
+Timestamp: 1693123456
+Uptime: 3600 seconds
+Reason: Previous: Kernel panic
+...
+=== END CRASH LOGS ===
+```
+
+**Clear All Crash Logs:**
+To clear stored crash logs, you can call the management function from code:
+```c
+#include "utils/crash_log_manager.h"
+crash_log_clear_all();
+```
+
+**Test Crash Logging:**
+For testing purposes, you can trigger a test crash log:
+```c
+#include "utils/crash_handler.h"
+crash_handler_trigger_test("Manual test crash");
+```
+
+**Storage Details:**
+- Maximum 5 crash logs stored (circular buffer)
+- Each log contains: timestamp, uptime, crash reason, heap info
+- Stored in NVS partition for persistence across power cycles
+- Automatic cleanup when storage limit reached
 
 ## Troubleshooting
 
@@ -61,6 +105,7 @@ idf.py build flash monitor
 - **Touch Not Working**: Verify GT911 I2C connections (SDA: GPIO19, SCL: GPIO20)
 - **WiFi Connection**: Check credentials in `wifi_config.h`
 - **Memory Errors**: Enable PSRAM in menuconfig for framebuffer allocation
+- **System Crashes**: Check crash logs at startup for debugging information
 
 ## Security Notes
 
