@@ -20,17 +20,25 @@
 // Status and Info Elements
 static lv_obj_t *connection_status_label = NULL;
 static lv_obj_t *wifi_status_label = NULL;
+static lv_obj_t *runtime_label = NULL;
 
 lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 {
   lv_obj_t *status_panel = ui_create_status_panel(parent, 780, 50, 10, 410, 0x0f0f0f, 0x222222);
 
-  // Serial connection status with last update time (left side)
+  // Serial connection status (left side)
   connection_status_label = lv_label_create(status_panel);
   lv_label_set_text(connection_status_label, "[SERIAL] No connection");
   lv_obj_set_style_text_font(connection_status_label, font_small, 0);
   lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xffaa00), 0);
   lv_obj_set_pos(connection_status_label, 10, 11);
+
+  // Runtime display (center-left)
+  runtime_label = lv_label_create(status_panel);
+  lv_label_set_text(runtime_label, "Running: 0M");
+  lv_obj_set_style_text_font(runtime_label, font_small, 0);
+  lv_obj_set_style_text_color(runtime_label, lv_color_hex(0xbbbbbb), 0);
+  lv_obj_align(runtime_label, LV_ALIGN_CENTER, -50, 0);
 
   // WiFi status (right side)
   wifi_status_label = lv_label_create(status_panel);
@@ -125,6 +133,46 @@ void status_info_update_serial_status(bool connected)
     lv_label_set_text(connection_status_label, combined_status);
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
   }
+
+  lvgl_port_unlock();
+}
+
+void status_info_update_runtime(uint32_t runtime_seconds)
+{
+  if (!runtime_label)
+    return;
+
+  // Acquire LVGL lock with timeout
+  if (!lvgl_port_lock(200))
+  {
+    debug_log_warning(DEBUG_TAG_UI_DASHBOARD, "Failed to acquire LVGL lock for runtime update");
+    return;
+  }
+
+  char runtime_msg[64];
+
+  // Convert seconds to appropriate time format
+  uint32_t days = runtime_seconds / 86400;
+  uint32_t hours = (runtime_seconds % 86400) / 3600;
+  uint32_t minutes = (runtime_seconds % 3600) / 60;
+
+  if (days > 0)
+  {
+    // Format: "Running: xd xh" for days
+    snprintf(runtime_msg, sizeof(runtime_msg), "Running: %lud %luh", days, hours);
+  }
+  else if (hours > 0)
+  {
+    // Format: "Running: xh xm" for hours
+    snprintf(runtime_msg, sizeof(runtime_msg), "Running: %luh %lum", hours, minutes);
+  }
+  else
+  {
+    // Format: "Running: xm" for minutes only
+    snprintf(runtime_msg, sizeof(runtime_msg), "Running: %lum", minutes);
+  }
+
+  lv_label_set_text(runtime_label, runtime_msg);
 
   lvgl_port_unlock();
 }

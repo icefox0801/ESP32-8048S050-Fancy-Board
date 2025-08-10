@@ -10,13 +10,22 @@
 #include "smart/smart_home.h"
 #include "ui/ui_controls_panel.h"
 #include "ui/ui_dashboard.h"
+#include "ui/ui_status_info.h"
 #include "utils/system_debug_utils.h"
 #include "wifi/wifi_manager.h"
 
 // LVGL task handles all timer processing automatically
 static esp_lcd_panel_handle_t global_panel_handle = NULL;
+static TimerHandle_t runtime_timer = NULL;
+static uint32_t runtime_seconds = 0;
 
 // No additional display monitoring needed
+
+static void runtime_timer_callback(TimerHandle_t xTimer)
+{
+  runtime_seconds++;
+  status_info_update_runtime(runtime_seconds);
+}
 
 static void wifi_status_callback(bool is_connected, const char *status_text, wifi_status_t status, const wifi_info_t *info)
 {
@@ -97,6 +106,24 @@ void app_main(void)
 
   // Register Smart Home callbacks
   smart_home_register_states_sync_callback(smart_home_states_sync_callback);
+
+  // Create and start runtime timer (1 second interval)
+  runtime_timer = xTimerCreate(
+      "RuntimeTimer",
+      pdMS_TO_TICKS(1000), // 1 second interval
+      pdTRUE,              // Auto-reload
+      NULL,                // Timer ID (not used)
+      runtime_timer_callback);
+
+  if (runtime_timer != NULL)
+  {
+    xTimerStart(runtime_timer, 0);
+    debug_log_info(DEBUG_TAG_SYSTEM, "Runtime timer started");
+  }
+  else
+  {
+    debug_log_error(DEBUG_TAG_SYSTEM, "Failed to create runtime timer");
+  }
 
   // Note: smart_home_init() will be called from wifi_connected_callback()
   // and will initialize ha_status_init(). We'll register the callback

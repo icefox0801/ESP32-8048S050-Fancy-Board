@@ -30,3 +30,9 @@ void status_info_update_wifi_status(const char *status_text, bool connected);
  * @param connected True if serial is connected, false otherwise
  */
 void status_info_update_serial_status(bool connected);
+
+/**
+ * @brief Update runtime display in the status panel
+ * @param runtime_seconds Total runtime in seconds since boot
+ */
+void status_info_update_runtime(uint32_t runtime_seconds);

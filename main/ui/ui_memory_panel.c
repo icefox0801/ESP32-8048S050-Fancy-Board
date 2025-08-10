@@ -34,7 +34,7 @@ lv_obj_t *create_memory_panel(lv_obj_t *parent)
   lv_label_set_text(mem_info_label, "(-.- GB / -.- GB)");
   lv_obj_set_style_text_font(mem_info_label, font_small, 0);
   lv_obj_set_style_text_color(mem_info_label, lv_color_hex(0xcccccc), 0);
-  lv_obj_set_pos(mem_info_label, 240, 8);
+  lv_obj_set_pos(mem_info_label, 180, 8);
 
   // Create memory usage value (without label)
   mem_usage_label = lv_label_create(mem_panel);
