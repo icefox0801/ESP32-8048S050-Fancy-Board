@@ -15,13 +15,11 @@
 
 #pragma once
 
-#include "lvgl.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include "lvgl.h"
 #include "dashboard_data.h"
 #include "ui_controls_panel.h"
-
-// Include panel headers for LVGL UI functions only
 #include "ui_cpu_panel.h"
 #include "ui_gpu_panel.h"
 #include "ui_memory_panel.h"

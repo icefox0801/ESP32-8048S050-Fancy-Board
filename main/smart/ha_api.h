@@ -19,12 +19,12 @@
 #ifndef HA_API_H
 #define HA_API_H
 
-#include <esp_err.h>
-#include <esp_http_client.h>
-#include <cJSON.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#include "cJSON.h"
+#include "esp_err.h"
+#include "esp_http_client.h"
 #include "ha_status.h"
 
 #ifdef __cplusplus

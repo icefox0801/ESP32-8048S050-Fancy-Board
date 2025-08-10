@@ -7,12 +7,13 @@
  */
 
 #include "ui_controls_panel.h"
-#include "ui_config.h"
-#include "ui_helpers.h"
+
+#include <stdio.h>
 #include "lvgl_setup.h"
 #include "smart/smart_config.h"
 #include "system_debug_utils.h"
-#include <stdio.h>
+#include "ui_config.h"
+#include "ui_helpers.h"
 
 static lv_obj_t *switch_a = NULL;
 static lv_obj_t *switch_b = NULL;

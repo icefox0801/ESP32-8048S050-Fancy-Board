@@ -11,12 +11,13 @@
  */
 
 #include "entity_states_parser.h"
-#include "system_debug_utils.h"
-#include <esp_timer.h>
-#include <esp_task_wdt.h>
-#include <esp_heap_caps.h>
-#include <cJSON.h>
+
 #include <string.h>
+#include "cJSON.h"
+#include "esp_heap_caps.h"
+#include "esp_task_wdt.h"
+#include "esp_timer.h"
+#include "system_debug_utils.h"
 
 // =======================================================================
 // CONSTANTS AND MACROS

@@ -8,11 +8,12 @@
  */
 
 #include "ui_status_info.h"
+
+#include <stdio.h>
+#include "lvgl_setup.h"
 #include "ui_config.h"
 #include "ui_helpers.h"
-#include "lvgl_setup.h"
 #include "utils/system_debug_utils.h"
-#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
@@ -26,7 +27,7 @@ lv_obj_t *create_status_info_panel(lv_obj_t *parent)
 
   // Serial connection status with last update time (left side)
   connection_status_label = lv_label_create(status_panel);
-  lv_label_set_text(connection_status_label, "[SERIAL] Connecting...");
+  lv_label_set_text(connection_status_label, "[SERIAL] No connection");
   lv_obj_set_style_text_font(connection_status_label, font_small, 0);
   lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xffaa00), 0);
   lv_obj_set_pos(connection_status_label, 10, 11);
@@ -120,7 +121,7 @@ void status_info_update_serial_status(bool connected)
   }
   else
   {
-    snprintf(combined_status, sizeof(combined_status), "[SERIAL] Connection Lost");
+    snprintf(combined_status, sizeof(combined_status), "[SERIAL] No connection");
     lv_label_set_text(connection_status_label, combined_status);
     lv_obj_set_style_text_color(connection_status_label, lv_color_hex(0xff4444), 0); // Red
   }

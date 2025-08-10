@@ -5,6 +5,10 @@
 
 #include "lvgl_setup.h"
 
+#include <stdio.h>
+#include <string.h>
+#include <sys/lock.h>
+#include <unistd.h>
 #include "driver/gpio.h"
 #include "esp_err.h"
 #include "esp_heap_caps.h"
@@ -12,14 +16,10 @@
 #include "esp_lcd_panel_rgb.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "freertos/task.h"
 #include "gt911_touch.h"
 #include "utils/system_debug_utils.h"
-#include <stdio.h>
-#include <string.h>
-#include <sys/lock.h>
-#include <unistd.h>
 
 static SemaphoreHandle_t lvgl_timeout_mutex = NULL;
 

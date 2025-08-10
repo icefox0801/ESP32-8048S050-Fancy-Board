@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include "lvgl.h"
 
 // Switch identifiers for generic functions
@@ -18,7 +19,6 @@ typedef enum
   SWITCH_C = 2,
   SWITCH_COUNT
 } switch_id_t;
-#include <stdbool.h>
 
 /**
  * @brief Create the control panel with smart home switches and scene button

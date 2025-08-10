@@ -1,19 +1,20 @@
 #include "wifi_manager.h"
-#include "wifi_config.h"
-#include "system_debug_utils.h"
+
 #include <string.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/event_groups.h>
-#include <esp_wifi.h>
-#include <esp_event.h>
-#include <esp_netif.h>
-#include <esp_http_client.h>
-#include <nvs_flash.h>
-#include <lwip/err.h>
-#include <lwip/sys.h>
-#include <lwip/sockets.h>
-#include <lwip/netdb.h>
+#include "esp_event.h"
+#include "esp_http_client.h"
+#include "esp_netif.h"
+#include "esp_wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "freertos/task.h"
+#include "lwip/err.h"
+#include "lwip/netdb.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "nvs_flash.h"
+#include "system_debug_utils.h"
+#include "wifi_config.h"
 
 // Static variables
 typedef struct

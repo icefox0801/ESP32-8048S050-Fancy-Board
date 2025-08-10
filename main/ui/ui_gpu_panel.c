@@ -8,9 +8,10 @@
  */
 
 #include "ui_gpu_panel.h"
+
+#include <stdio.h>
 #include "ui_config.h"
 #include "ui_helpers.h"
-#include <stdio.h>
 
 static lv_obj_t *gpu_name_label = NULL;
 static lv_obj_t *gpu_usage_label = NULL;

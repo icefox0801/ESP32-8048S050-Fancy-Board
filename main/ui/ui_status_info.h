@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "lvgl.h"
 #include <stdbool.h>
+#include "lvgl.h"
 
 /**
  * @brief Create the status information panel

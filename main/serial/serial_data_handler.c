@@ -18,6 +18,8 @@
 
 #include "serial_data_handler.h"
 
+#include <string.h>
+#include <time.h>
 #include "cjson.h"
 #include "driver/uart.h"
 #include "esp_heap_caps.h"
@@ -25,8 +27,6 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "utils/system_debug_utils.h"
-#include <string.h>
-#include <time.h>
 
 // =======================================================================
 // CONSTANTS AND CONFIGURATION

@@ -10,11 +10,12 @@
  */
 
 #include "ha_status.h"
-#include "utils/system_debug_utils.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/semphr.h>
+
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/task.h"
+#include "utils/system_debug_utils.h"
 
 // =======================================================================
 // CONSTANTS AND MACROS

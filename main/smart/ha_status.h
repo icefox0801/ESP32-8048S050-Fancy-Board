@@ -12,8 +12,8 @@
 #ifndef HA_STATUS_H
 #define HA_STATUS_H
 
-#include <esp_err.h>
 #include <stdbool.h>
+#include "esp_err.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -96,5 +96,3 @@ extern "C"
 #endif
 
 #endif // HA_STATUS_H
-
-

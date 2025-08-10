@@ -17,17 +17,17 @@
 
 #include "ui_dashboard.h"
 
-#include "system_debug_utils.h"
+#include <stdio.h>
 #include "lvgl_setup.h"
-#include "ui_config.h"
-#include "ui_helpers.h"
-#include "ui_cpu_panel.h"
-#include "ui_gpu_panel.h"
-#include "ui_memory_panel.h"
-#include "ui_status_info.h"
 #include "smart/ha_api.h"
 #include "smart/smart_config.h"
-#include <stdio.h>
+#include "system_debug_utils.h"
+#include "ui_config.h"
+#include "ui_cpu_panel.h"
+#include "ui_gpu_panel.h"
+#include "ui_helpers.h"
+#include "ui_memory_panel.h"
+#include "ui_status_info.h"
 #include <time.h>
 
 /**

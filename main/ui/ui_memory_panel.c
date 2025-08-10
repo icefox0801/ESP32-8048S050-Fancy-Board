@@ -8,9 +8,10 @@
  */
 
 #include "ui_memory_panel.h"
+
+#include <stdio.h>
 #include "ui_config.h"
 #include "ui_helpers.h"
-#include <stdio.h>
 
 static lv_obj_t *mem_usage_bar = NULL;
 static lv_obj_t *mem_usage_label = NULL;

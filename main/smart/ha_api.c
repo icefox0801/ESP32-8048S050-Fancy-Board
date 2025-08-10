@@ -9,19 +9,20 @@
  */
 
 #include "ha_api.h"
-#include "ha_status.h"
-#include "smart_config.h"
-#include "entity_states_parser.h"
-#include "system_debug_utils.h"
-#include <esp_http_client.h>
-#include <esp_netif.h>
-#include <esp_wifi.h>
-#include <esp_task_wdt.h>
-#include <esp_timer.h>
-#include <cJSON.h>
-#include <lwip/netdb.h>
-#include <string.h>
+
 #include <stdio.h>
+#include <string.h>
+#include "cJSON.h"
+#include "entity_states_parser.h"
+#include "esp_http_client.h"
+#include "esp_netif.h"
+#include "esp_task_wdt.h"
+#include "esp_timer.h"
+#include "esp_wifi.h"
+#include "ha_status.h"
+#include "lwip/netdb.h"
+#include "smart_config.h"
+#include "system_debug_utils.h"
 
 /** HTTP User-Agent string */
 #define USER_AGENT "ESP32-SystemMonitor/1.0"

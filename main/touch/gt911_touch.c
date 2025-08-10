@@ -14,12 +14,12 @@
  */
 
 #include "gt911_touch.h"
-#include "system_debug_utils.h"
 
+#include <string.h>
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <string.h>
+#include "system_debug_utils.h"
 
 // Static variables
 static bool gt911_initialized = false;

@@ -10,22 +10,23 @@
  */
 
 #include "smart_home.h"
-#include "smart_config.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include "esp_err.h"
+#include "esp_task_wdt.h"
+#include "esp_timer.h"
+#include "esp_wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "ha_api.h"
 #include "ha_status.h"
+#include "smart_config.h"
 #include "ui/ui_controls_panel.h"
-#include <stdlib.h>
-#include "esp_timer.h"
 #include "utils/system_debug_utils.h"
-#include <esp_err.h>
 
 // External callback from dashboard_main.c
 extern void ha_status_change_callback(bool is_ready, bool is_syncing, const char *status_text);
-#include "esp_task_wdt.h"
-#include <string.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <esp_wifi.h>
 
 // =======================================================================
 // PRIVATE VARIABLES

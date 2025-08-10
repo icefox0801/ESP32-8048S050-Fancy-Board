@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "lvgl.h"
 #include <stdint.h>
+#include "lvgl.h"
 
 // =======================================================================
 // UI HELPER FUNCTION DECLARATIONS

@@ -1,17 +1,17 @@
+#include <stdio.h>
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/timers.h"
 #include "lvgl.h"
 #include "lvgl/lvgl_setup.h"
 #include "serial/serial_data_handler.h"
-#include "wifi/wifi_manager.h"
-#include "smart/smart_home.h"
 #include "smart/ha_status.h"
+#include "smart/smart_home.h"
 #include "ui/ui_controls_panel.h"
 #include "ui/ui_dashboard.h"
 #include "utils/system_debug_utils.h"
-#include "esp_log.h"
-#include <stdio.h>
+#include "wifi/wifi_manager.h"
 
 // LVGL task handles all timer processing automatically
 static esp_lcd_panel_handle_t global_panel_handle = NULL;
@@ -101,8 +101,6 @@ void app_main(void)
   // Note: smart_home_init() will be called from wifi_connected_callback()
   // and will initialize ha_status_init(). We'll register the callback
   // from within the smart home module to ensure proper timing.
-
-  debug_log_startup(DEBUG_TAG_SYSTEM, "System Monitor - Fully Initialized");
 
   debug_log_startup(DEBUG_TAG_SYSTEM, "System Monitor - Fully Initialized");
 

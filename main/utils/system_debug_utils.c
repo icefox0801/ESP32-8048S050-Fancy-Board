@@ -10,13 +10,14 @@
  */
 
 #include "system_debug_utils.h"
-#include "esp_log.h"
+
+#include <stdarg.h>
+#include <stdio.h>
 #include "esp_heap_caps.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
-#include <stdarg.h>
-#include <stdio.h>
 
 #ifdef CONFIG_SYSTEM_DEBUG_ENABLED
 
