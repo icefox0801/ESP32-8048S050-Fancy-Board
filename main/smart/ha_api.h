@@ -45,6 +45,22 @@ extern "C"
 /** Maximum length for friendly names */
 #define HA_MAX_FRIENDLY_NAME_LEN 64
 
+// =======================================================================
+// HTTP CLIENT CONFIGURATION
+// =======================================================================
+
+/** HTTP request timeout in milliseconds */
+#define HA_HTTP_TIMEOUT_MS 5000
+
+/** Maximum response buffer size for HA API responses */
+#define HA_MAX_RESPONSE_SIZE 65536
+
+/** Number of retry attempts for failed HTTP requests */
+#define HA_SYNC_RETRY_COUNT 2
+
+/** Status update interval in milliseconds */
+#define HA_STATUS_UPDATE_INTERVAL_MS 30000
+
   // =======================================================================
   // DATA STRUCTURES
   // =======================================================================
@@ -206,5 +222,3 @@ extern "C"
 #endif
 
 #endif
-
-

@@ -52,41 +52,55 @@ static void sync_task_function(void *pvParameters)
 
   vTaskDelay(pdMS_TO_TICKS(10000));
 
-  // Subscribe current task to task watchdog
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
+  // Subscribe current task to task watchdog (disabled for large HA installations)
   esp_err_t wdt_err = esp_task_wdt_add(xTaskGetCurrentTaskHandle());
   if (wdt_err != ESP_OK && wdt_err != ESP_ERR_INVALID_ARG)
   {
     debug_log_warning_f(DEBUG_TAG_SMART_HOME, "Failed to subscribe sync task to watchdog: %s", esp_err_to_name(wdt_err));
   }
+  else
+  {
+    debug_log_info(DEBUG_TAG_SMART_HOME, "Sync task subscribed to watchdog monitoring");
+  }
+#else
+  debug_log_info(DEBUG_TAG_SMART_HOME, "Sync task watchdog monitoring disabled for large HA responses");
+#endif
 
   while (1)
   {
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
     // Feed the watchdog before starting sync
     esp_err_t wdt_reset_err = esp_task_wdt_reset();
     if (wdt_reset_err != ESP_OK && wdt_reset_err != ESP_ERR_NOT_FOUND)
     {
       debug_log_warning_f(DEBUG_TAG_SMART_HOME, "Sync task watchdog reset failed: %s", esp_err_to_name(wdt_reset_err));
     }
+#endif
 
     // Add error handling to prevent task crashes
     smart_home_sync_switch_states();
 
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
     // Feed watchdog after sync completion
     esp_err_t wdt_reset_err2 = esp_task_wdt_reset();
     if (wdt_reset_err2 != ESP_OK && wdt_reset_err2 != ESP_ERR_NOT_FOUND)
     {
       debug_log_warning_f(DEBUG_TAG_SMART_HOME, "Post-sync watchdog reset failed: %s", esp_err_to_name(wdt_reset_err2));
     }
+#endif
 
     // Wait for 30 seconds before next sync (longer interval due to connection issues)
     // Break the delay into smaller chunks to feed watchdog periodically
     for (int i = 0; i < 30; i++)
     {
       vTaskDelay(pdMS_TO_TICKS(1000)); // 1 second delay
-      if (i % 10 == 0)                 // Feed watchdog every 10 seconds during wait
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
+      if (i % 10 == 0) // Feed watchdog every 10 seconds during wait
       {
         esp_task_wdt_reset();
       }
+#endif
     }
   }
 }
@@ -270,13 +284,17 @@ void smart_home_sync_switch_states(void)
     return;
   }
 
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
   // Feed watchdog before potentially long HTTP operation
   esp_task_wdt_reset();
+#endif
 
-  esp_err_t ret = ha_api_get_multiple_entity_states_bulk(switch_entity_ids, switch_count, switch_states);
+  esp_err_t ret = ha_api_get_multiple_entity_states(switch_entity_ids, switch_count, switch_states);
 
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
   // Feed watchdog after HTTP operation completes
   esp_task_wdt_reset();
+#endif
 
   if (ret == ESP_OK)
   {
@@ -305,8 +323,10 @@ void smart_home_sync_switch_states(void)
   // Free allocated memory
   free(switch_states);
 
+#ifndef HA_DISABLE_SYNC_TASK_WATCHDOG
   // Final watchdog feed
   esp_task_wdt_reset();
+#endif
 }
 
 void smart_home_register_states_sync_callback(smart_home_states_sync_callback_t callback)

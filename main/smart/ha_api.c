@@ -403,14 +403,15 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     // Get status code for logging
     status_code = esp_http_client_get_status_code(client);
 
-    // Don't cleanup the persistent client, just disconnect
+    // Handle client cleanup/connection management
     if (use_fresh_client)
     {
       esp_http_client_cleanup(client);
     }
     else
     {
-      esp_http_client_close(client);
+      // For persistent client, DON'T close the connection - keep it alive for reuse
+      // esp_http_client_close(client); // REMOVED - this was breaking keep-alive
     }
 
     if (err == ESP_OK)

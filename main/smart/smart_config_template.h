@@ -45,18 +45,4 @@
 #define HA_ENTITY_C_LABEL "Switch C"
 #define HA_ENTITY_D_LABEL "Scene"
 
-// =======================================================================
-// HTTP CLIENT CONFIGURATION
-// =======================================================================
-
-// HTTP Request Configuration
-#define HA_HTTP_TIMEOUT_MS 15000
-#define HA_MAX_RESPONSE_SIZE 131072
-
-// API Call Intervals
-#define HA_STATUS_UPDATE_INTERVAL_MS 5000 // Status check every 5 seconds
-
-// Sync Configuration
-#define HA_SYNC_RETRY_COUNT 3 // Number of sync attempts before disabling
-
 #endif // SMART_CONFIG_H
