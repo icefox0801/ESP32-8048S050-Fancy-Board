@@ -38,7 +38,6 @@ static bool ha_api_initialized = false;
 static char auth_header[256];
 static esp_http_client_handle_t persistent_client = NULL;
 static char current_base_url[256] = {0};
-static bool task_watchdog_subscribed = false;
 
 // =======================================================================
 // PRIVATE FUNCTION DECLARATIONS
@@ -128,9 +127,6 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt)
         debug_log_warning_f(DEBUG_TAG_HA_API, "Response buffer limit reached: %zu + %d >= %d bytes",
                             response->response_len, evt->data_len, HA_MAX_RESPONSE_SIZE - 1);
       }
-
-      // Feed the task watchdog to prevent timeout during large responses
-      esp_task_wdt_reset();
     }
     break;
 
@@ -289,36 +285,10 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
   esp_err_t err = ESP_FAIL;
   int status_code = 0;
 
-  // Subscribe to watchdog only once per task lifecycle
-  if (!task_watchdog_subscribed)
-  {
-    esp_err_t wdt_err = esp_task_wdt_add(xTaskGetCurrentTaskHandle());
-    if (wdt_err == ESP_OK)
-    {
-      task_watchdog_subscribed = true;
-    }
-    else if (wdt_err == ESP_ERR_INVALID_ARG)
-    {
-      // Task already subscribed (probably by calling sync task) - this is OK
-      debug_log_info(DEBUG_TAG_HA_API, "Task already subscribed to watchdog by caller");
-      task_watchdog_subscribed = true; // Mark as subscribed so we can reset it
-    }
-    else
-    {
-      debug_log_warning_f(DEBUG_TAG_HA_API, "Failed to subscribe to watchdog: %s", esp_err_to_name(wdt_err));
-    }
-  }
-
   for (int retry = 0; retry < HA_SYNC_RETRY_COUNT; retry++)
   {
-    // Feed watchdog before each retry
-    if (task_watchdog_subscribed)
-    {
-      esp_task_wdt_reset();
-    }
-
     esp_http_client_handle_t client;
-    bool use_fresh_client = (strcmp(method, "POST") == 0);
+    bool use_fresh_client = true; // Always use fresh clients to avoid connection issues
 
     if (use_fresh_client)
     {
@@ -392,12 +362,6 @@ static esp_err_t perform_http_request(const char *url, const char *method, const
     else if (request_duration > (HA_HTTP_TIMEOUT_MS / 2))
     {
       debug_log_warning_f(DEBUG_TAG_HA_API, "Slow HTTP request: %lld ms (more than half timeout)", request_duration);
-    }
-
-    // Reset watchdog immediately after HTTP operation to prevent timeout
-    if (task_watchdog_subscribed)
-    {
-      esp_task_wdt_reset();
     }
 
     // Get status code for logging
@@ -512,21 +476,6 @@ esp_err_t ha_api_deinit(void)
   // Clean up persistent HTTP client
   cleanup_persistent_client();
 
-  // Clean up watchdog subscription if active
-  if (task_watchdog_subscribed)
-  {
-    esp_err_t wdt_err = esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
-    if (wdt_err == ESP_OK)
-    {
-      task_watchdog_subscribed = false;
-      // Task unsubscribed from watchdog
-    }
-    else
-    {
-      debug_log_warning_f(DEBUG_TAG_HA_API, "Failed to unsubscribe from watchdog: %s", esp_err_to_name(wdt_err));
-    }
-  }
-
   ha_api_initialized = false;
   memset(auth_header, 0, sizeof(auth_header));
 
@@ -578,12 +527,6 @@ esp_err_t ha_api_get_multiple_entity_states(const char **entity_ids, int entity_
   // Fetch each entity state individually but with early exit on consecutive failures
   for (int i = 0; i < entity_count; i++)
   {
-    // Reset watchdog during long sync operations
-    if (task_watchdog_subscribed)
-    {
-      esp_task_wdt_reset();
-    }
-
     esp_err_t result = ha_api_get_entity_state(entity_ids[i], &states[i]);
     if (result == ESP_OK)
     {
@@ -734,12 +677,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
   // Start JSON parsing timing
   int64_t parse_start = esp_timer_get_time();
 
-  // Reset watchdog before JSON parsing since it can take time
-  if (task_watchdog_subscribed)
-  {
-    esp_task_wdt_reset();
-  }
-
   // Parse JSON response using entity states parser
   const size_t ASYNC_THRESHOLD = 16384; // 16KB threshold
   bool use_async = (response_size > ASYNC_THRESHOLD) && entity_states_parser_is_ready();
@@ -749,13 +686,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   if (use_async)
   {
-
-    // Reset watchdog before starting async parsing
-    if (task_watchdog_subscribed)
-    {
-      esp_task_wdt_reset();
-    }
-
     // Submit for async parsing
     parse_err = entity_states_parser_submit_async(
         response.response_data,
@@ -775,12 +705,6 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
       {
         parse_err = entity_states_parser_wait_completion(check_interval_ms);
 
-        // Reset watchdog during wait
-        if (task_watchdog_subscribed)
-        {
-          esp_task_wdt_reset();
-        }
-
         if (parse_err != ESP_ERR_TIMEOUT)
         {
           break; // Completed or failed
@@ -790,32 +714,14 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
         // Async parsing still in progress
       }
 
-      // Final watchdog reset after potentially long async operation
-      if (task_watchdog_subscribed)
-      {
-        esp_task_wdt_reset();
-      }
-
       if (parse_err == ESP_OK)
       {
-        // Reset watchdog before counting entities
-        if (task_watchdog_subscribed)
-        {
-          esp_task_wdt_reset();
-        }
-
         // Count successful entities (states with non-empty entity_id)
         for (int i = 0; i < entity_count; i++)
         {
           if (strlen(states[i].entity_id) > 0)
           {
             success_count++;
-          }
-
-          // Reset watchdog periodically during counting for very large entity lists
-          if (i > 0 && (i % 50) == 0 && task_watchdog_subscribed)
-          {
-            esp_task_wdt_reset();
           }
         }
       }
@@ -837,45 +743,20 @@ esp_err_t ha_api_get_multiple_entity_states_bulk(const char **entity_ids, int en
 
   if (!use_async)
   {
-
-    // Reset watchdog before sync parsing
-    if (task_watchdog_subscribed)
-    {
-      esp_task_wdt_reset();
-    }
-
     parse_err = entity_states_parser_parse_sync(
         response.response_data,
         entity_ids,
         entity_count,
         states);
 
-    // Reset watchdog after sync parsing
-    if (task_watchdog_subscribed)
-    {
-      esp_task_wdt_reset();
-    }
-
     if (parse_err == ESP_OK)
     {
-      // Reset watchdog before counting entities
-      if (task_watchdog_subscribed)
-      {
-        esp_task_wdt_reset();
-      }
-
       // Count successful entities (states with non-empty entity_id)
       for (int i = 0; i < entity_count; i++)
       {
         if (strlen(states[i].entity_id) > 0)
         {
           success_count++;
-        }
-
-        // Reset watchdog periodically during counting for very large entity lists
-        if (i > 0 && (i % 50) == 0 && task_watchdog_subscribed)
-        {
-          esp_task_wdt_reset();
         }
       }
     }

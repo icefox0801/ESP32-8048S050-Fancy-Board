@@ -251,7 +251,8 @@ static void wifi_update_connection_info(void)
 
 static const char *wifi_status_to_text(wifi_status_t status, const wifi_info_t *info)
 {
-  static char status_text[128];
+  // Use a larger thread-local buffer to avoid race conditions
+  static _Thread_local char status_text[128];
 
   switch (status)
   {

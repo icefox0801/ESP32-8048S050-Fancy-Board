@@ -267,26 +267,6 @@ static void entity_parse_task(void *pvParameters)
 {
   entity_parse_job_t job;
 
-  // NOTE: Do NOT subscribe this task to watchdog - it's designed for on-demand
-  // background processing and may have long idle periods between jobs
-
-  // Explicitly remove this task from watchdog in case it was auto-subscribed
-  esp_err_t wdt_remove_err = esp_task_wdt_delete(xTaskGetCurrentTaskHandle());
-  if (wdt_remove_err == ESP_OK)
-  {
-    debug_log_info(DEBUG_TAG_PARSER, "Entity parser task removed from watchdog monitoring");
-  }
-  else if (wdt_remove_err == ESP_ERR_NOT_FOUND)
-  {
-    debug_log_info(DEBUG_TAG_PARSER, "Entity parser task was not subscribed to watchdog");
-  }
-  else
-  {
-    debug_log_warning(DEBUG_TAG_PARSER, "Failed to remove task from watchdog");
-  }
-
-  debug_log_info(DEBUG_TAG_PARSER, "Entity parser task started (watchdog monitoring disabled)");
-
   while (1)
   {
     // Wait for parse jobs with a timeout to allow periodic cleanup
