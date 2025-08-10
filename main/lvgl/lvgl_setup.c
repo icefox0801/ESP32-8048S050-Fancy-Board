@@ -324,11 +324,12 @@ static esp_err_t init_panel_config(esp_lcd_rgb_panel_config_t *panel_config)
   panel_config->timings.vsync_back_porch = LCD_VBP;
   panel_config->timings.vsync_front_porch = LCD_VFP;
   panel_config->timings.vsync_pulse_width = LCD_VSYNC;
+  panel_config->timings.flags.pclk_active_neg = true;
 
   return ESP_OK;
 }
 
-static bool IRAM_ATTR lvgl_notify_flush_ready(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_ctx)
+static bool lvgl_notify_flush_ready(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_ctx)
 {
   lv_display_t *disp = (lv_display_t *)user_ctx;
   lv_display_flush_ready(disp);

@@ -38,10 +38,10 @@ extern "C"
 #define WIFI_CONNECT_TIMEOUT_MS 30000
 
 /** Maximum number of connection retry attempts */
-#define WIFI_MAX_RETRY_COUNT 5
+#define WIFI_MAXIMUM_RETRY_COUNT 5
 
 /** WiFi reconnection delay in milliseconds */
-#define WIFI_RETRY_DELAY_MS 5000
+#define WIFI_RECONNECT_DELAY_MS 10000
 
 /** WiFi scan timeout in milliseconds */
 #define WIFI_SCAN_TIMEOUT_MS 10000

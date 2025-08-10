@@ -6,15 +6,15 @@
 
 // LCD panel configuration for ESP32-8048S050
 // Conservative settings for maximum stability and zero flicker
-#define LCD_PIXEL_CLOCK_HZ (20 * 1000 * 1000) // Conservative 20MHz for rock-solid stability
+#define LCD_PIXEL_CLOCK_HZ (18 * 1000 * 1000) // Conservative 18MHz for rock-solid stability
 #define LCD_H_RES 800
 #define LCD_V_RES 480
-#define LCD_HSYNC 10
+#define LCD_HSYNC 1
 #define LCD_HBP 40
 #define LCD_HFP 20
-#define LCD_VSYNC 10
-#define LCD_VBP 30
-#define LCD_VFP 15
+#define LCD_VSYNC 1
+#define LCD_VBP 10
+#define LCD_VFP 5
 
 // Backlight control
 #define LCD_BK_LIGHT_ON_LEVEL 1
