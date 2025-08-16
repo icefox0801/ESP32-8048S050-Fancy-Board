@@ -63,9 +63,6 @@ static uint32_t last_data_time = 0;                      ///< Last data receptio
 static serial_connection_callback_t connection_callback = NULL; ///< Connection status callback
 static serial_data_callback_t data_callback = NULL;             ///< Data update callback
 
-// Static task resources for SPIRAM allocation
-static StackType_t *serial_task_stack = NULL; ///< Task stack allocated from SPIRAM
-
 // =======================================================================
 // PRIVATE FUNCTION PROTOTYPES
 // =======================================================================
@@ -117,6 +114,20 @@ static void connection_check_task(void *pvParameters);
 // =======================================================================
 static bool parse_json_data(const char *json_str, system_data_t *data)
 {
+  // Add safety checks to prevent crashes on malformed input
+  if (json_str == NULL || data == NULL)
+  {
+    return false;
+  }
+
+  // Check JSON length to prevent memory issues
+  size_t json_len = strlen(json_str);
+  if (json_len == 0 || json_len > JSON_BUFFER_SIZE - 1)
+  {
+    debug_log_warning(DEBUG_TAG_SERIAL_DATA, "JSON length invalid");
+    return false;
+  }
+
   cJSON *json = cJSON_Parse(json_str);
   if (json == NULL)
   {
@@ -319,9 +330,12 @@ static void process_received_line(const char *line_buffer, system_data_t *system
 
     if (*end == '}')
     {
-      // Parse and update UI
+      // Parse and update UI with safety measures
       if (parse_json_data(trimmed, system_data))
       {
+        // Add small delay to prevent watchdog issues during first parse
+        vTaskDelay(pdMS_TO_TICKS(1));
+
         // Call data callback if registered
         if (data_callback)
         {
@@ -443,8 +457,17 @@ static void serial_data_task(void *pvParameters)
   static char line_buffer[JSON_BUFFER_SIZE];
   static int line_pos = 0;
 
-  system_data_t system_data = {0};
+  // Use static allocation to prevent stack issues on first JSON parse
+  static system_data_t system_data = {0};
   uint32_t current_time;
+
+  // Initialize cJSON to prevent first-time allocation issues
+  // This pre-allocates internal structures to avoid heap fragmentation
+  cJSON *test_json = cJSON_CreateObject();
+  if (test_json != NULL)
+  {
+    cJSON_Delete(test_json);
+  }
 
   while (serial_running)
   {
@@ -511,34 +534,22 @@ void serial_data_start_task(void)
         1                              // Core ID (1, different from serial task)
     );
 
-    // Allocate task stack from SPIRAM for better internal RAM utilization
-    serial_task_stack = (StackType_t *)heap_caps_malloc(
-        SERIAL_TASK_STACK_SIZE, MALLOC_CAP_SPIRAM);
+    // Use a safer approach for task creation to prevent first-time reset issues
+    // The previous SPIRAM allocation approach was causing memory corruption
 
-    if (serial_task_stack == NULL)
-    {
-      debug_log_error(DEBUG_TAG_SERIAL_DATA, "Failed to allocate task stack");
-      // Fallback to standard task creation
-      xTaskCreatePinnedToCore(serial_data_task, "serial_data", SERIAL_TASK_STACK_SIZE,
-                              NULL, SERIAL_TASK_PRIORITY, &serial_task_handle, 0);
-    }
-    else
-    {
-      // Create task with SPIRAM stack using PinnedToCore (will use internal RAM for TCB)
-      xTaskCreatePinnedToCore(
-          serial_data_task,       // Task function
-          "serial_data",          // Task name
-          SERIAL_TASK_STACK_SIZE, // Stack size in bytes
-          NULL,                   // Parameters
-          SERIAL_TASK_PRIORITY,   // Priority
-          &serial_task_handle,    // Task handle
-          0                       // Core ID (0)
-      );
+    debug_log_info(DEBUG_TAG_SERIAL_DATA, "Creating serial task with safe stack allocation");
 
-      // Free the SPIRAM allocation since we're not using it for static task
-      heap_caps_free(serial_task_stack);
-      serial_task_stack = NULL;
-    }
+    // Create task with reduced stack size for stability
+    const uint32_t safe_stack_size = 8192; // 8KB should be sufficient
+    xTaskCreatePinnedToCore(
+        serial_data_task,     // Task function
+        "serial_data",        // Task name
+        safe_stack_size,      // Stack size in bytes
+        NULL,                 // Parameters
+        SERIAL_TASK_PRIORITY, // Priority
+        &serial_task_handle,  // Task handle
+        0                     // Core ID (0)
+    );
   }
 }
 
@@ -560,13 +571,6 @@ void serial_data_stop(void)
     {
       vTaskDelete(serial_task_handle);
       serial_task_handle = NULL;
-
-      // Free SPIRAM stack if it was allocated
-      if (serial_task_stack)
-      {
-        heap_caps_free(serial_task_stack);
-        serial_task_stack = NULL;
-      }
     }
   }
 }

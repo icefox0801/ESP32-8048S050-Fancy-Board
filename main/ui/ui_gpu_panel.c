@@ -78,7 +78,12 @@ void update_gpu_panel(const void *gpu_data)
 
   if (gpu_mem_label)
   {
-    uint8_t mem_usage_pct = (gpu->mem_used * 100) / gpu->mem_total;
+    // Prevent division by zero crash - check for valid mem_total first
+    uint8_t mem_usage_pct = 0;
+    if (gpu->mem_total > 0)
+    {
+      mem_usage_pct = (gpu->mem_used * 100) / gpu->mem_total;
+    }
     char mem_str[32];
     snprintf(mem_str, sizeof(mem_str), "%d%%", mem_usage_pct);
     lv_label_set_text(gpu_mem_label, mem_str);
