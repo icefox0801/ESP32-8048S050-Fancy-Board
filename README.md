@@ -2,6 +2,8 @@
 
 A comprehensive system monitor and smart home control dashboard for ESP32-S3-8048S050 with 5.0" RGB LCD display.
 
+<img width="2788" height="1761" alt="IMG_8007" src="https://github.com/user-attachments/assets/fe84db54-325c-47a1-8fd6-047b6ff72a80" />
+
 ## Features
 
 - **Real-time System Monitoring**: CPU, GPU, and memory usage display
@@ -112,3 +114,4 @@ crash_handler_trigger_test("Manual test crash");
 - Configuration files `wifi_config.h` and `smart_config.h` are git-ignored
 - Never commit sensitive credentials to version control
 - Use template files as configuration reference
+
