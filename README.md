@@ -13,6 +13,10 @@ A comprehensive system monitor and smart home control dashboard for ESP32-S3-804
 - **Home Assistant Integration**: REST API client for IoT device control
 - **Professional UI**: Multi-panel dashboard with LVGL graphics
 
+## 🖥️ System Performance Integration
+
+This dashboard integrates with **[SystemPerformanceNotifierService](https://github.com/icefox0801/SystemPerformanceNotifierService)** - A Windows background service that collects and transmits real-time system performance data (CPU, GPU, memory usage) via serial connection to the ESP32 dashboard.
+
 ## 💻 Tech Stack
 
 ### Hardware
@@ -70,7 +74,7 @@ idf.py monitor
 
 ### VS Code Tasks (Recommended)
 - **Build**: `Ctrl+Shift+P` → `Tasks: Run Task` → `ESP-IDF Build`
-- **Flash**: `ESP-IDF Flash` 
+- **Flash**: `ESP-IDF Flash`
 - **Monitor**: `ESP-IDF Monitor`
 - **Clean**: `ESP-IDF Full Clean`
 
@@ -91,7 +95,7 @@ idf.py menuconfig
 
 ### Core Components
 - **Main App**: System initialization and task coordination
-- **Display Driver**: LVGL with PSRAM framebuffers  
+- **Display Driver**: LVGL with PSRAM framebuffers
 - **Touch Interface**: GT911 I2C with calibration
 - **WiFi Manager**: Auto-connect with retry logic
 - **Smart Home API**: HTTP client for Home Assistant
