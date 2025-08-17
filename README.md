@@ -13,93 +13,132 @@ A comprehensive system monitor and smart home control dashboard for ESP32-S3-804
 - **Home Assistant Integration**: REST API client for IoT device control
 - **Professional UI**: Multi-panel dashboard with LVGL graphics
 
-## Hardware Support
+## 💻 Tech Stack
 
-- **Display**: ESP32-S3-8048S050 (800×480 RGB565 LCD)
-- **Touch**: GT911 capacitive touch controller
-- **Memory**: 8MB PSRAM for framebuffer allocation
-- **Connectivity**: WiFi with automatic reconnection
+### Hardware
+- **Board**: ESP32-S3-8048S050 (Waveshare)
+- **Display**: 5.0" IPS LCD (800×480, RGB565)
+- **Touch**: GT911 capacitive controller
+- **Memory**: 8MB PSRAM, 512KB SRAM
+- **Storage**: 16MB Flash
+- **Connectivity**: WiFi 802.11 b/g/n
 
-## Quick Start
+### Software
+- **Framework**: ESP-IDF v5.5
+- **Graphics**: LVGL v9.2.0
+- **Language**: C17
+- **Build System**: CMake + Ninja
+- **IDE**: VS Code with ESP-IDF extension
 
-### 1. Hardware Setup
-Connect your ESP32-S3-8048S050 development board via USB for power and programming.
+## 🚀 Quick Start
 
-### 2. Configuration Setup
-**WiFi & Home Assistant Setup (Required):**
+### Prerequisites
+- **ESP-IDF v5.5** installed and configured
+- **VS Code** with ESP-IDF extension
+- **Git** for version control
+
+### 1. Clone and Setup
 ```bash
-# Copy and edit WiFi credentials
-cp main/wifi/wifi_config_template.h main/wifi/wifi_config.h
-
-# Copy and edit Home Assistant settings
-cp main/smart/smart_config_template.h main/smart/smart_config.h
+git clone <repository-url>
+cd fancy-board
 ```
-**Get HA Token:** Profile → Long-Lived Access Tokens → Create "ESP32 System Monitor" → Add to smart_config.h
+
+### 2. Configuration
+```bash
+# Configure WiFi credentials
+cp main/wifi/wifi_config_template.h main/wifi/wifi_config.h
+# Edit wifi_config.h with your network details
+
+# Configure Home Assistant
+cp main/smart/smart_config_template.h main/smart/smart_config.h
+# Edit smart_config.h with your HA URL and token
+```
 
 ### 3. Build and Flash
 ```bash
+# Build project
+idf.py build
+
+# Flash to device (ensure ESP32 is connected)
+idf.py flash
+
+# Monitor output
+idf.py monitor
+```
+
+## 🔧 Development Scripts
+
+### VS Code Tasks (Recommended)
+- **Build**: `Ctrl+Shift+P` → `Tasks: Run Task` → `ESP-IDF Build`
+- **Flash**: `ESP-IDF Flash` 
+- **Monitor**: `ESP-IDF Monitor`
+- **Clean**: `ESP-IDF Full Clean`
+
+### Command Line
+```bash
+# Full development cycle
 idf.py build flash monitor
+
+# Clean rebuild
+idf.py fullclean
+idf.py build
+
+# Configuration menu
+idf.py menuconfig
 ```
 
-## Architecture
+## 🏗️ Architecture
 
+### Core Components
 - **Main App**: System initialization and task coordination
-- **LVGL Setup**: Display driver with PSRAM framebuffers
-- **Touch Driver**: GT911 I2C communication with calibration
+- **Display Driver**: LVGL with PSRAM framebuffers  
+- **Touch Interface**: GT911 I2C with calibration
 - **WiFi Manager**: Auto-connect with retry logic
-- **Smart Home API**: HTTP client for Home Assistant REST API
-- **UI Components**: Multi-panel dashboard with real-time updates
+- **Smart Home API**: HTTP client for Home Assistant
+- **Serial Monitor**: System performance data reception
 
-## Display Layout
+### UI Layout
+- **Top Panel**: Smart home controls (Water Pump, Wave Maker, Light, Feed)
+- **CPU/GPU Panels**: Real-time monitoring with temperature and usage
+- **Memory Panel**: System memory usage with progress indicators
+- **Status Bar**: Connection status, runtime, and system info
 
-- **Top Panel**: Smart home controls (Water Pump, Wave Maker, Light, Feed Button)
-- **Middle Panels**: CPU and GPU monitoring with temperature and usage
-- **Memory Panel**: System memory usage with progress bar
-- **Status Bar**: Serial connection, runtime display, and WiFi status
+## 🛠️ Hardware Pinout
 
-## Crash Log Management
+| Component | Pin | Function |
+|-----------|-----|----------|
+| **Display** | GPIO2 | Backlight PWM |
+| | GPIO8-21 | RGB Data Bus |
+| | GPIO39-42 | Control Signals |
+| **Touch** | GPIO19/20 | I2C SDA/SCL |
+| | GPIO18/38 | INT/RST |
+| **System** | GPIO17 | User LED |
+| | GPIO0 | Boot Button |
 
-The system includes an automatic crash log manager that stores crash information in flash memory for debugging purposes.
+## 📚 Documentation
 
-### Features
-- **Automatic Crash Detection**: Captures crashes, watchdog timeouts, and brownout resets
-- **Persistent Storage**: Stores up to 5 crash logs in NVS flash memory
-- **Startup Reporting**: Displays previous crash logs at system startup
-- **Detailed Information**: Timestamp, uptime, crash reason, heap status
+- **[CLAUDE.md](CLAUDE.md)** - Development workflows, code patterns, and technical details
+- **[Home Assistant Setup Guide](docs/ha-setup.md)** - Complete HA integration guide
+- **[Hardware Docs](5.0inch_ESP32-8048S050/)** - Official hardware documentation
 
-### Crash Log Operations
+## 🔍 Troubleshooting
 
-**View Stored Crash Logs:**
-Crash logs are automatically displayed at startup in the console output. Look for:
-```
-=== PREVIOUS CRASH LOGS ===
---- CRASH LOG 1 ---
-Timestamp: 1693123456
-Uptime: 3600 seconds
-Reason: Previous: Kernel panic
-...
-=== END CRASH LOGS ===
-```
+### Common Issues
+- **Build fails**: Check ESP-IDF version (requires v5.5)
+- **Flash fails**: Ensure correct USB port and driver installation
+- **Display blank**: Verify hardware connections and power supply
+- **Touch not working**: Check I2C connections and calibration
+- **WiFi issues**: Verify credentials in `wifi_config.h`
 
-**Clear All Crash Logs:**
-To clear stored crash logs, you can call the management function from code:
-```c
-#include "utils/crash_log_manager.h"
-crash_log_clear_all();
-```
+### Debug Tools
+- Serial monitor for system logs
+- Built-in crash log manager
+- Memory usage monitoring
+- Connection status indicators
 
-**Test Crash Logging:**
-For testing purposes, you can trigger a test crash log:
-```c
-#include "utils/crash_handler.h"
-crash_handler_trigger_test("Manual test crash");
-```
+## 📄 License
 
-**Storage Details:**
-- Maximum 5 crash logs stored (circular buffer)
-- Each log contains: timestamp, uptime, crash reason, heap info
-- Stored in NVS partition for persistence across power cycles
-- Automatic cleanup when storage limit reached
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Troubleshooting
 
