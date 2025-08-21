@@ -8,4 +8,4 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/sdkconfig")
     file(RENAME "${CMAKE_SOURCE_DIR}/sdkconfig" "${CMAKE_SOURCE_DIR}/sdkconfig.old")
 endif()
 
-project(fancy-board)
+project(ESP32-8048S050-Fancy-Board)

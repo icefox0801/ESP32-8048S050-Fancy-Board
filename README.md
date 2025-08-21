@@ -44,7 +44,7 @@ This dashboard integrates with **[SystemPerformanceNotifierService](https://gith
 ### 1. Clone and Setup
 ```bash
 git clone <repository-url>
-cd fancy-board
+cd ESP32-8048S050-Fancy-Board
 ```
 
 ### 2. Configuration
