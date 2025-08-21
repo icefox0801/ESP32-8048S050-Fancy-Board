@@ -43,7 +43,7 @@ This dashboard integrates with **[SystemPerformanceNotifierService](https://gith
 
 ### 1. Clone and Setup
 ```bash
-git clone <repository-url>
+git clone git@github.com:icefox0801/ESP32-8048S050-Fancy-Board.git
 cd ESP32-8048S050-Fancy-Board
 ```
 
@@ -158,4 +158,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Never commit sensitive credentials to version control
 - Use template files as configuration reference
 
+## License
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
